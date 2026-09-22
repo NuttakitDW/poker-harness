@@ -15,6 +15,26 @@ MAX_CHARS = 220
 FIRST_MAX_CHARS = 70
 _THAI_BREAK = re.compile(r"(?<=[ก-๙]) (?=[ก-๙])")
 
+# สระ วรรณยุกต์ และเครื่องหมายที่ต้องเกาะพยัญชนะตัวหน้า ห้ามตัดแยกออกมา
+_TRAILING_MARKS = (
+    "\u0e30\u0e31\u0e32\u0e33"
+    "\u0e34\u0e35\u0e36\u0e37\u0e38\u0e39\u0e3a"
+    "\u0e45\u0e46"
+    "\u0e47\u0e48\u0e49\u0e4a\u0e4b\u0e4c\u0e4d\u0e4e"
+)
+# สระหน้าที่ต้องอยู่กับพยัญชนะตัวถัดไป ห้ามตัดทิ้งไว้ท้ายชิ้น
+_LEADING_VOWELS = "\u0e40\u0e41\u0e42\u0e43\u0e44"
+
+
+def _safe_cut(text: str, cut: int) -> int:
+    """ขยับจุดตัดให้ไม่แยกสระหรือวรรณยุกต์ออกจากพยัญชนะที่มันเกาะอยู่"""
+    cut = min(max(cut, 1), len(text))
+    while cut > 1 and (text[cut] in _TRAILING_MARKS if cut < len(text) else False):
+        cut -= 1
+    while cut > 1 and text[cut - 1] in _LEADING_VOWELS:
+        cut -= 1
+    return cut
+
 
 def _split_long(chunk: str, limit: int = MAX_CHARS) -> list[str]:
     """ภาษาไทยไม่มีจุดจบประโยค ถ้าชิ้นยาวเกินไปให้ตัดที่ช่องว่างคำไทย"""
@@ -27,7 +47,7 @@ def _split_long(chunk: str, limit: int = MAX_CHARS) -> list[str]:
         breaks = list(_THAI_BREAK.finditer(window))
         cut = breaks[-1].start() if breaks else window.rfind(" ")
         if cut <= MIN_CHARS:
-            cut = limit
+            cut = _safe_cut(current, limit)
         parts.append(current[:cut].strip())
         current = current[cut:].strip()
         limit = MAX_CHARS
