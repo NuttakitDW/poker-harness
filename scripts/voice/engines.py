@@ -6,8 +6,12 @@
 
 from __future__ import annotations
 
+import os
 import time
 from typing import Callable, NamedTuple
+
+# ตัวโหลดโมเดลแสดงแถบความคืบหน้าทุกครั้งที่ตรวจแคช ทั้งที่ไม่ได้ดาวน์โหลดอะไร
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
 WHISPER_REPO = "mlx-community/whisper-large-v3-turbo"
 TYPHOON_MODEL = "scb10x/typhoon-asr-realtime"
