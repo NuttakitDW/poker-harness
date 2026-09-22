@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 from typing import Iterator
 
 SAMPLE_RATE = 16_000
@@ -23,10 +24,10 @@ FRAME_SECONDS = FRAME_SAMPLES / SAMPLE_RATE
 
 SPEECH_THRESHOLD = 0.5
 START_FRAMES = 3
-END_SILENCE_SECONDS = 0.7
+END_SILENCE_SECONDS = 0.9
 PREROLL_SECONDS = 0.3
 MIN_UTTERANCE_SECONDS = 0.4
-MAX_UTTERANCE_SECONDS = 30.0
+MAX_UTTERANCE_SECONDS = 45.0
 
 AEC_SOURCE = pathlib.Path(__file__).with_name("capture_aec.swift")
 AEC_BUNDLE = pathlib.Path(__file__).resolve().parents[2] / "tmp" / "bin" / "PokerHarnessVoice.app"
@@ -35,6 +36,7 @@ AEC_PLIST = pathlib.Path(__file__).with_name("capture_aec.plist")
 SILENCE_PROBE_FRAMES = 24
 
 _echo_cancelled = False
+_pending: "queue.Queue | None" = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -43,6 +45,9 @@ class Utterance:
 
     samples: "object"
     seconds: float
+    closed_at: float = 0.0
+    silence_before: float = 0.0
+    cut_short: bool = False
 
 
 class Endpointer:
@@ -59,6 +64,7 @@ class Endpointer:
         self._speech_run = 0
         self._silence_seconds = 0.0
         self._speaking = False
+        self.cut_short = False
 
     def reset(self) -> None:
         """ล้างสถานะ ใช้หลังจบประโยคหรือเมื่อเริ่มฟังรอบใหม่"""
@@ -100,7 +106,10 @@ class Endpointer:
 
         collected = self._collected
         trailing_silence = self._silence_seconds
+        # ชนเพดานความยาวโดยยังไม่เงียบ แปลว่าคนพูดยังไม่จบ ผู้เรียกควรรอท่อนต่อไป
+        cut_short = trailing_silence < END_SILENCE_SECONDS
         self.reset()
+        self.cut_short = cut_short
         if length - trailing_silence < MIN_UTTERANCE_SECONDS:
             return None
         return collected
@@ -139,7 +148,8 @@ class Detector:
         if collected is None:
             return None
         self._model.reset_states()
-        return Utterance(numpy.concatenate(collected), len(collected) * FRAME_SECONDS)
+        return Utterance(numpy.concatenate(collected), len(collected) * FRAME_SECONDS,
+                         cut_short=self._endpointer.cut_short)
 
 
 def build_aec() -> pathlib.Path | None:
@@ -177,7 +187,9 @@ def _aec_frames(binary: pathlib.Path) -> Iterator["object"]:
     """อ่าน PCM float32 จากตัวจับเสียงทีละเฟรม"""
     import numpy
 
-    process = subprocess.Popen([str(binary)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # ต้องคา stdin ไว้ ตัวช่วยถือว่า stdin ปิดคือสัญญาณให้เลิกทำงาน
+    process = subprocess.Popen([str(binary)], stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def drain_errors() -> None:
         for line in process.stderr:
@@ -202,7 +214,9 @@ def _portaudio_frames(device: int | None) -> Iterator["object"]:
     import numpy
     import sounddevice
 
+    global _pending
     frames: queue.Queue = queue.Queue()
+    _pending = frames
 
     def capture(indata, _frames, _time, status) -> None:
         if status:
@@ -221,20 +235,26 @@ def _portaudio_frames(device: int | None) -> Iterator["object"]:
             yield frames.get()
 
 
+def backlog_seconds() -> float:
+    """เสียงที่ค้างในคิวรอให้อ่าน บอกว่าลูปหลักตามเสียงจริงไม่ทันแค่ไหน"""
+    return _pending.qsize() * FRAME_SECONDS if _pending is not None else 0.0
+
+
 def echo_cancel_active() -> bool:
     """ตัวตัดเสียงสะท้อนกำลังทำงานอยู่หรือไม่ ใช้ตัดสินว่าเปิดให้พูดแทรกได้ไหม"""
     return _echo_cancelled
 
 
 def frames(device: int | None = None, echo_cancel: bool = False) -> Iterator["object"]:
-    """เฟรมเสียงจากไมโครโฟน
+    """เฟรมเสียงจากไมโครโฟน ทางเดียวไม่มีการเล่นเสียงกลับ
 
-    ตัวตัดเสียงสะท้อนเป็นทางเลือกเพราะ Voice Processing ของ macOS 26
-    เริ่มขาออกเสียงไม่สำเร็จ (-10875) จึงยังใช้การไม่ได้ ค่าเริ่มต้นจึงใช้ไมค์ปกติ
-    และถ้าเปิดไว้แต่ใช้ไม่ได้ ก็ตรวจพบเองแล้วถอยกลับ
+    ทางนี้ใช้สำหรับเครื่องมือที่ฟังเฉย ๆ เช่นตรวจไมค์ ถ้าต้องการตัดเสียงสะท้อน
+    ตอนคุยโต้ตอบให้ใช้ duplex.open_voice แทน เพราะยูนิตต้องเป็นตัวเล่นเสียงเองด้วย
+    จึงจะรู้ว่าต้องลบคลื่นอะไรออกจากไมค์
     """
-    global _echo_cancelled
+    global _echo_cancelled, _pending
     _echo_cancelled = False
+    _pending = None
     binary = build_aec() if echo_cancel and device is None else None
     if binary:
         stream = _aec_frames(binary)
@@ -259,3 +279,99 @@ def utterances(device: int | None = None, echo_cancel: bool = False) -> Iterator
         found = detector.push(frame)
         if found:
             yield found
+
+
+class Listener:
+    """ฟังไมโครโฟนในเธรดของตัวเอง แล้วส่งช่วงเสียงที่พูดจบออกมาทางคิว
+
+    ต้องแยกเธรด เพราะการถอดเสียงและการตอบใช้เวลาหลายวินาที ถ้าอ่านไมค์
+    ในลูปเดียวกับการตอบ เฟรมจะกองในคิวแล้วถูกอ่านย้อนหลัง ระบบจะไปตอบเสียง
+    ที่ผ่านไปนานแล้วและตามหลังผู้พูดมากขึ้นเรื่อย ๆ
+    """
+
+    def __init__(self, device: int | None = None, echo_cancel: bool = False,
+                 source: Iterator["object"] | None = None) -> None:
+        self._device = device
+        self._echo_cancel = echo_cancel
+        self._source = source
+        self._utterances: queue.Queue = queue.Queue()
+        self._ready = threading.Event()
+        self._speaking = threading.Event()
+        self._muted = threading.Event()
+        self._echo_cancelled = False
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def _run(self) -> None:
+        detector = Detector()
+        since_last = 0
+        stream = self._source if self._source is not None else frames(
+            device=self._device, echo_cancel=self._echo_cancel)
+        for frame in stream:
+            if not self._ready.is_set():
+                self._echo_cancelled = echo_cancel_active()
+                self._ready.set()
+            if self._muted.is_set():
+                self._speaking.clear()
+                detector.reset()
+                since_last = 0
+                continue
+
+            since_last += 1
+            found = detector.push(frame)
+            if detector.speaking:
+                self._speaking.set()
+            else:
+                self._speaking.clear()
+            if not found:
+                continue
+            quiet = max(0.0, since_last * FRAME_SECONDS - found.seconds)
+            since_last = 0
+            self._utterances.put(dataclasses.replace(
+                found, closed_at=time.monotonic(), silence_before=quiet))
+
+    def wait_ready(self, timeout: float | None = None) -> bool:
+        """รอจนสายเสียงเริ่มไหล คืนว่าเริ่มทันในเวลาที่รอหรือไม่"""
+        return self._ready.wait(timeout)
+
+    @property
+    def echo_cancelled(self) -> bool:
+        """ตัวตัดเสียงสะท้อนทำงานอยู่หรือไม่ ใช้ตัดสินว่าเปิดให้พูดแทรกได้ไหม"""
+        return self._echo_cancelled
+
+    @property
+    def speaking(self) -> bool:
+        """มีคนกำลังพูดอยู่ตอนนี้ ใช้รู้ตัวว่าถูกแทรกก่อนที่ประโยคจะจบ"""
+        return self._speaking.is_set()
+
+    @property
+    def waiting(self) -> int:
+        """จำนวนช่วงเสียงที่พูดจบแล้วแต่ยังไม่ได้ตอบ"""
+        return self._utterances.qsize()
+
+    def take(self, timeout: float | None = None) -> Utterance | None:
+        """เอาช่วงเสียงถัดไป คืน None ถ้าไม่มีภายในเวลาที่รอ"""
+        try:
+            return self._utterances.get(timeout=timeout)
+        except queue.Empty:
+            return None
+
+    def drain(self) -> int:
+        """ทิ้งช่วงเสียงที่ค้างอยู่ คืนจำนวนที่ทิ้ง ใช้ตอนไม่ต้องการตอบเสียงเก่า"""
+        dropped = 0
+        while True:
+            try:
+                self._utterances.get_nowait()
+            except queue.Empty:
+                return dropped
+            dropped += 1
+
+    def mute(self) -> None:
+        """หยุดฟังชั่วคราว ใช้ตอนเปิดลำโพงเพื่อไม่ให้ได้ยินเสียงตัวเอง"""
+        self._muted.set()
+        self.drain()
+
+    def unmute(self) -> None:
+        """กลับมาฟังต่อ โดยไม่เอาเสียงที่เกิดระหว่างปิดหูมาคิด"""
+        self.drain()
+        self._muted.clear()

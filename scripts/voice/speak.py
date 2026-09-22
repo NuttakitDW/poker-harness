@@ -20,9 +20,12 @@ import sys
 import tempfile
 import threading
 import time
-import time
 import urllib.error
 import urllib.request
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+
+import journal  # noqa: E402
 
 ENDPOINT = "https://api.paxalabs.com/v1/audio/speech"
 MODEL = "paxa-tts-flash-v1"
@@ -80,7 +83,11 @@ def synthesize(text: str, voice: str, key: str) -> tuple[bytes, float]:
         except (urllib.error.URLError, OSError) as error:
             last = f"เรียก Paxa ไม่สำเร็จ: {error}"
         if attempt < RETRIES - 1:
+            # การลองซ้ำเงียบ ๆ ทำให้ดูเหมือนระบบค้างเฉย ๆ จึงบอกออกมาให้เห็น
+            print(f"[สังเคราะห์เสียงใหม่ ครั้งที่ {attempt + 2}: {last}]", file=sys.stderr)
+            journal.note("speech-retry", attempt=attempt + 2, detail=last)
             time.sleep(RETRY_BACKOFF_SECONDS * (attempt + 1))
+    journal.note("speech-failed", detail=last)
     raise SpeechError(last or "สังเคราะห์เสียงไม่สำเร็จ")
 
 
@@ -103,48 +110,87 @@ def play(audio: bytes, register=None) -> None:
         os.unlink(temp_path)
 
 
+class Afplay:
+    """เล่นเสียงด้วย afplay หนึ่งชิ้นต่อหนึ่งกระบวนการ ตัวเล่นเสียงมาตรฐาน"""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._current: subprocess.Popen | None = None
+
+    def _register(self, process: subprocess.Popen | None) -> None:
+        with self._lock:
+            self._current = process
+
+    def play(self, audio: bytes) -> None:
+        """เล่นจนจบชิ้นนั้น"""
+        play(audio, register=self._register)
+
+    def stop(self) -> None:
+        """หยุดชิ้นที่กำลังเล่น"""
+        with self._lock:
+            process = self._current
+        if process and process.poll() is None:
+            process.terminate()
+
+
 class SpeechQueue:
     """เล่นเสียงตามลำดับในเธรดเบื้องหลัง เพื่อให้สังเคราะห์ชิ้นถัดไปได้พร้อมกัน"""
 
     _STOP = object()
 
-    def __init__(self) -> None:
+    def __init__(self, player: "Afplay | None" = None) -> None:
         self._items: queue.Queue = queue.Queue()
         self._lock = threading.Lock()
-        self._current: subprocess.Popen | None = None
+        self._idle = threading.Condition(self._lock)
+        self._pending = 0
+        self._player = player if player is not None else Afplay()
         self._interrupted = threading.Event()
         self._worker = threading.Thread(target=self._run, daemon=True)
         self._worker.start()
 
-    def _register(self, process: subprocess.Popen | None) -> None:
-        with self._lock:
-            self._current = process
+    def _finished(self) -> None:
+        """ลดจำนวนชิ้นที่ค้าง แล้วปลุกคนที่รอให้พูดจบ"""
+        with self._idle:
+            self._pending = max(0, self._pending - 1)
+            if not self._pending:
+                self._idle.notify_all()
 
     def _run(self) -> None:
         while True:
             item = self._items.get()
             if item is self._STOP:
                 return
-            if self._interrupted.is_set():
-                continue
             try:
-                play(item, register=self._register)
+                if not self._interrupted.is_set():
+                    self._player.play(item)
             except (OSError, subprocess.SubprocessError) as error:
                 print(f"เล่นเสียงไม่สำเร็จ: {error}", file=sys.stderr)
+            finally:
+                self._finished()
 
     def add(self, audio: bytes) -> None:
         """ต่อคิวเสียงหนึ่งชิ้น"""
-        if not self._interrupted.is_set():
-            self._items.put(audio)
+        if self._interrupted.is_set():
+            return
+        with self._lock:
+            self._pending += 1
+        self._items.put(audio)
 
     @property
     def busy(self) -> bool:
-        """ยังมีเสียงรออยู่หรือกำลังเล่นอยู่หรือไม่"""
-        if not self._items.empty():
-            return True
+        """ยังมีเสียงรออยู่หรือกำลังเล่นอยู่หรือไม่
+
+        นับจากชิ้นที่ยังไม่เล่นจบ ไม่ใช่จากคิวกับตัวกระบวนการ เพราะระหว่างที่
+        เธรดหยิบชิ้นออกจากคิวแต่ยังไม่ได้สั่งเล่น ทั้งสองอย่างจะว่างพร้อมกัน
+        แล้วผู้เรียกจะเข้าใจผิดว่าพูดจบแล้ว เปิดไมค์ทับเสียงตัวเอง
+        """
         with self._lock:
-            process = self._current
-        return bool(process and process.poll() is None)
+            return self._pending > 0
+
+    def wait_idle(self, timeout: float | None = None) -> bool:
+        """รอจนพูดจบทุกชิ้น คืนว่าจบจริงหรือหมดเวลารอ"""
+        with self._idle:
+            return self._idle.wait_for(lambda: not self._pending, timeout)
 
     @property
     def interrupted(self) -> bool:
@@ -154,10 +200,8 @@ class SpeechQueue:
     def interrupt(self) -> None:
         """หยุดเสียงที่กำลังเล่นและทิ้งคิวที่เหลือ ใช้เมื่อผู้ใช้พูดแทรก"""
         self._interrupted.set()
-        with self._lock:
-            process = self._current
-        if process and process.poll() is None:
-            process.terminate()
+        self._player.stop()
+        dropped = 0
         while True:
             try:
                 item = self._items.get_nowait()
@@ -166,6 +210,11 @@ class SpeechQueue:
             if item is self._STOP:
                 self._items.put(self._STOP)
                 break
+            dropped += 1
+        with self._idle:
+            self._pending = max(0, self._pending - dropped)
+            if not self._pending:
+                self._idle.notify_all()
 
     def close(self) -> None:
         """รอให้เล่นจนหมดคิวแล้วปิดเธรด"""

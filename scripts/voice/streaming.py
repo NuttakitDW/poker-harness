@@ -56,6 +56,35 @@ def _split_long(chunk: str, limit: int = MAX_CHARS) -> list[str]:
     return parts
 
 
+def split_reasoning(pieces: Iterable[str], marker: str,
+                    opening: str = "") -> Iterator[tuple[str, str]]:
+    """แยกช่วงคิดออกจากช่วงพูด คายเป็น (ช่อง, ข้อความ) โดยช่องคือ think หรือ say
+
+    เก็บส่วนคิดไว้ทั้งก้อนก่อนคาย เพราะถ้าคายทีละชิ้นแล้วสุดท้ายไม่เจอตัวคั่น
+    จะแยกไม่ออกว่าอันไหนคือคำตอบ และคำตอบจะหายไปจากปากผู้ช่วย
+    """
+    buffer = ""
+    for piece in pieces:
+        buffer += piece
+        index = buffer.find(marker)
+        if index < 0:
+            continue
+        thought = buffer[:index].strip()
+        if opening and thought.startswith(opening):
+            thought = thought[len(opening):].strip()
+        if thought:
+            yield "think", thought
+        rest = buffer[index + len(marker):].lstrip()
+        if rest:
+            yield "say", rest
+        for remaining in pieces:
+            yield "say", remaining
+        return
+    # ไม่มีตัวคั่นเลย ถือว่าโมเดลตอบตรง ๆ ทั้งก้อน ดีกว่าเงียบ
+    if buffer.strip():
+        yield "say", buffer.strip()
+
+
 def sentences(pieces: Iterable[str]) -> Iterator[str]:
     """รวมชิ้นส่วนที่ไหลเข้ามา แล้วคายออกเป็นประโยคที่ยาวพอจะพูด
 

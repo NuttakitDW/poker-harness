@@ -4,6 +4,7 @@
     .venv-whisper/bin/python scripts/voice/ask.py "ICM ตอน bubble ทำอะไร"
     .venv-whisper/bin/python scripts/voice/ask.py --audio tests/fixtures/voice/real/03.wav
     .venv-whisper/bin/python scripts/voice/ask.py --live
+    .venv-whisper/bin/python scripts/voice/ask.py --live --trace
 """
 
 from __future__ import annotations
@@ -16,6 +17,8 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 import brain  # noqa: E402
+import journal  # noqa: E402
+from engines import usable_text as engines_usable  # noqa: E402
 import spoken  # noqa: E402
 import streaming  # noqa: E402
 
@@ -38,12 +41,17 @@ def transcribe_samples(samples, engine: str) -> tuple[str, float]:
     return result.text, result.seconds
 
 
-def respond(question: str, language: str, voice: str, silent: bool) -> float:
-    """ตอบหนึ่งคำถาม ทยอยพูดทีละประโยค คืนเวลาถึงเสียงแรก"""
+def respond(question: str, language: str, voice: str, silent: bool,
+            history: brain.Conversation | None = None,
+            reasoning: bool = True) -> tuple[float, str, tuple[str, ...]]:
+    """ตอบหนึ่งคำถาม คืนเวลาถึงเสียงแรก คำตอบที่พูดไป และหน้าต้นฉบับที่ส่งเข้าโมเดล"""
     import speak as tts
 
     began = time.perf_counter()
-    (cards, pages), pieces = brain.stream_answer(question, language=language)
+    (cards, pages), pieces = brain.stream_answer(question, language=language,
+                                                 history=history, reasoning=reasoning)
+    if reasoning:
+        pieces = _speech_only(pieces, brain.SAY_MARKER, [])
 
     key = None if silent else tts.load_api_key()
     player = None if silent else tts.SpeechQueue()
@@ -70,97 +78,237 @@ def respond(question: str, language: str, voice: str, silent: bool) -> float:
         print(f"\nอ้างอิงการ์ด: {', '.join(cards)}")
     if pages:
         print(f"หน้าต้นฉบับ: {', '.join(pages)}")
-    return first_audio or (time.perf_counter() - began)
+    return first_audio or (time.perf_counter() - began), " ".join(spoken_parts), pages
 
 
 ECHO_TAIL_SECONDS = 0.45
+AUDIO_START_TIMEOUT = 30.0
+# ยอมต่อท่อนที่ถูกตัดเพราะยาวเกินได้ถึงเท่านี้ เกินกว่านี้ตอบเท่าที่ได้ยินก่อน
+MAX_MERGED_SECONDS = 120.0
+# เบากว่านี้เป็นเสียงลมหรือเสียงพิมพ์ ส่งให้ถอดเสียงมีแต่จะได้คำที่ไม่มีใครพูด
+MIN_SPEECH_PEAK = 0.02
+WARM_UP_SECONDS = 0.5
+
+
+def _speech_only(pieces, marker: str, thoughts: list):
+    """เก็บส่วนคิดไว้ดูบนจอ คายออกมาเฉพาะส่วนที่จะพูด"""
+    for channel, text in streaming.split_reasoning(pieces, marker, brain.THINK_MARKER):
+        if channel == "think":
+            thoughts.append(text)
+            journal.note("reasoning", text=text)
+            continue
+        yield text
+
+
+def _mark_first(pieces, marks: list):
+    """ส่งชิ้นข้อความผ่านไปเฉย ๆ แต่จดเวลาที่ชิ้นแรกมาถึง ใช้แยกเวลารอโมเดล"""
+    for piece in pieces:
+        if not marks:
+            marks.append(time.perf_counter())
+        yield piece
+
+
+def warm_up(engine: str) -> float:
+    """เรียกตัวถอดเสียงหนึ่งครั้งด้วยความเงียบ ให้โหลดโมเดลเสร็จก่อนเริ่มคุย
+
+    ถ้าไม่อุ่นไว้ รอบแรกจะช้าหลายวินาที ผู้ใช้พูดต่อระหว่างนั้นแล้วรอบแรกถูกตัดทิ้ง
+    """
+    import listen
+    import numpy
+
+    silence = numpy.zeros(int(WARM_UP_SECONDS * listen.SAMPLE_RATE), dtype=numpy.float32)
+    began = time.perf_counter()
+    transcribe_samples(silence, engine)
+    return time.perf_counter() - began
 
 
 def live(args: argparse.Namespace) -> int:
     """สนทนาสดผ่านไมโครโฟน
 
-    ถ้าไม่มีตัวตัดเสียงสะท้อน จะปิดหูตัวเองขณะกำลังพูด ไม่งั้นไมค์จะได้ยิน
-    เสียงตอบของระบบแล้วถือว่าเป็นคำถามใหม่ จนคุยกับตัวเองไม่รู้จบ
+    ไมค์ถูกฟังในเธรดแยก ลูปนี้จึงรับแต่ช่วงเสียงที่พูดจบแล้ว ไม่มีเสียงกองค้าง
+    ถ้าไม่มีตัวตัดเสียงสะท้อนและไม่ได้ใส่หูฟัง จะปิดหูตัวเองขณะกำลังพูด
+    ไม่งั้นไมค์จะได้ยินเสียงตอบของระบบแล้วถือว่าเป็นคำถามใหม่ จนคุยกับตัวเองไม่รู้จบ
     """
+    import duplex
     import listen
     import speak as tts
 
     key = None if args.no_speak else tts.load_api_key()
-    detector = listen.Detector()
+    log = journal.start(None if args.no_log_file else (args.log or journal.default_path()),
+                        echo=not args.quiet)
+    if log.path:
+        print(f"บันทึกไว้ที่ {log.path}")
+
+    # ทางเสียงสองทาง: เล่นเสียงตอบผ่านยูนิตเดียวกับที่จับเสียง ยูนิตจึงลบเสียงตัวเองออกได้
+    voice = None
+    source = None
+    if not args.no_aec and not args.no_speak and args.input_device is None:
+        opened = duplex.open_voice()
+        if opened is None:
+            print("เปิดตัวตัดเสียงสะท้อนไม่ได้ ใช้ไมค์ปกติแทน", file=sys.stderr)
+        else:
+            voice, source = opened
+
+    listener = listen.Listener(device=args.input_device, source=source)
     player: tts.SpeechQueue | None = None
-    deaf_until = 0.0
-    full_duplex: bool | None = None
+    conversation = brain.Conversation()
+    unfinished = ""
+    merged = 0.0
 
-    def playing() -> bool:
-        return bool(player and player.busy)
-
-    print("กำลังฟัง พูดได้เลย  หยุดด้วย Ctrl-C")
+    print("กำลังอุ่นเครื่องถอดเสียง โหลดโมเดลครั้งเดียว รอสักครู่")
     try:
-        for frame in listen.frames(device=args.input_device,
-                                   echo_cancel=args.echo_cancel):
-            if full_duplex is None:
-                full_duplex = listen.echo_cancel_active()
-                print("โหมด: พูดแทรกได้" if full_duplex
-                      else "โหมด: ผลัดกันพูด (ไม่มีตัวตัดเสียงสะท้อน)")
-            if not full_duplex and (playing() or time.monotonic() < deaf_until):
-                if playing():
-                    deaf_until = time.monotonic() + ECHO_TAIL_SECONDS
-                detector.reset()
-                continue
+        journal.note("warm-up", seconds=round(warm_up(args.engine), 2), engine=args.engine)
+    except KeyboardInterrupt:
+        print("\nยกเลิกก่อนเริ่ม")
+        journal.stop()
+        return 0
+    print("กำลังฟัง พูดได้เลย  หยุดด้วย Ctrl-C")
+    if not listener.wait_ready(AUDIO_START_TIMEOUT):
+        print("เสียงเข้าไม่เริ่มไหล ตรวจสิทธิ์ไมโครโฟน", file=sys.stderr)
+        return 1
+    # ตัดเสียงสะท้อนได้ หรือใส่หูฟังอยู่ เสียงตอบก็ไม่วนกลับเข้าไมค์ จึงพูดแทรกได้
+    full_duplex = voice is not None or args.headphones
+    journal.note("start", full_duplex=full_duplex, echo_cancel=voice is not None,
+                 engine=args.engine, language=args.language, voice=args.voice,
+                 speaking=not args.no_speak, device=args.input_device)
+    if voice is not None:
+        print("โหมด: พูดแทรกได้ (ตัดเสียงสะท้อนแล้ว)")
+    else:
+        print("โหมด: พูดแทรกได้" if full_duplex
+              else "โหมด: ผลัดกันพูด (เปิดลำโพงได้ ไม่คุยกับตัวเอง)")
 
-            utterance = detector.push(frame)
-            if not utterance:
+    try:
+        while True:
+            utterance = listener.take()
+            if utterance is None:
                 continue
 
             if player:
                 if full_duplex and player.busy:
                     player.interrupt()
-                    print("(หยุดพูดเพราะถูกแทรก)")
+                    journal.note("barge-in", during="playback")
                 player.close()
                 player = None
 
-            heard, stt_seconds = transcribe_samples(utterance.samples, args.engine)
-            if not heard.strip():
+            lag = time.monotonic() - utterance.closed_at
+            peak = float(abs(utterance.samples).max())
+            journal.note("utterance", seconds=round(utterance.seconds, 2), peak=round(peak, 4),
+                         cut_short=utterance.cut_short, lag=round(lag, 2),
+                         silence_before=round(utterance.silence_before, 2))
+            if peak < MIN_SPEECH_PEAK:
+                journal.note("ignored", reason="เสียงเบาเกินกว่าจะเป็นคำพูด", peak=round(peak, 4))
                 continue
-            print(f"\nคุณ: {heard}")
+            heard, stt_seconds = transcribe_samples(utterance.samples, args.engine)
+            journal.note("heard", text=heard, stt=round(stt_seconds, 2))
+            if not engines_usable(heard, args.language):
+                journal.note("ignored", reason="ถอดเป็นคำที่เชื่อไม่ได้", text=heard)
+                continue
+            question = f"{unfinished} {heard}".strip()
+            unfinished = ""
+            merged += utterance.seconds
+            print(f"\nคุณ: {question}")
+            # ถูกตัดเพราะพูดยาวชนเพดาน ไม่ใช่เพราะพูดจบ จึงรอท่อนต่อไปแล้วตอบทีเดียว
+            if utterance.cut_short and merged < MAX_MERGED_SECONDS:
+                unfinished = question
+                journal.note("continuation", reason="ตัดเพราะยาวชนเพดาน",
+                             merged=round(merged, 1))
+                continue
+            merged = 0.0
+            if not full_duplex:
+                listener.mute()
 
             began = time.perf_counter()
             first = 0.0
+            opened = 0.0
+            synth_first = 0.0
+            said = 0
+            spoken_parts: list[str] = []
+            thoughts: list[str] = []
+            barged = False
+            marks: list[float] = []
             cards: tuple[str, ...] = ()
+            pages: tuple[str, ...] = ()
+            stream = None
             try:
-                (cards, _), pieces = brain.stream_answer(heard, language=args.language)
-                player = None if args.no_speak else tts.SpeechQueue()
-                for sentence in streaming.sentences(pieces):
-                    if player and player.interrupted:
+                (cards, pages), pieces = brain.stream_answer(
+                    question, language=args.language, history=conversation,
+                    reasoning=not args.no_reasoning)
+                opened = time.perf_counter() - began
+                player = None if args.no_speak else tts.SpeechQueue(voice)
+                if not args.no_reasoning:
+                    pieces = _speech_only(pieces, brain.SAY_MARKER, thoughts)
+                stream = streaming.sentences(_mark_first(pieces, marks))
+                for sentence in stream:
+                    # ถูกแทรกแล้ว ไม่ต้องเสียเวลาสังเคราะห์ประโยคที่เหลือ
+                    if full_duplex and listener.waiting:
+                        barged = True
                         break
                     print(sentence)
+                    said += 1
+                    spoken_parts.append(sentence)
                     if not player:
                         continue
                     try:
-                        audio, _ = tts.synthesize(spoken.to_speech(sentence), args.voice, key)
+                        audio, synth = tts.synthesize(spoken.to_speech(sentence), args.voice, key)
                     except tts.SpeechError as error:
-                        print(f"[พูดไม่ได้ ข้ามประโยคนี้: {error}]", file=sys.stderr)
+                        journal.note("sentence-skipped", detail=str(error))
                         continue
                     if not first:
                         first = time.perf_counter() - began
+                        synth_first = synth
                     player.add(audio)
             except brain.BrainError as error:
-                print(f"[ตอบไม่ได้รอบนี้ ถามใหม่ได้เลย: {error}]", file=sys.stderr)
-            print(f"[ฟัง {utterance.seconds:.1f}s | stt {stt_seconds:.2f}s | "
-                  f"ถึงเสียงแรก {first:.2f}s | {', '.join(cards[:1])}]")
-            deaf_until = time.monotonic() + ECHO_TAIL_SECONDS
+                journal.note("brain-error", detail=str(error))
+            finally:
+                if stream is not None:
+                    stream.close()
+
+            if barged and player:
+                player.interrupt()
+                journal.note("barge-in", during="answer", spoken_sentences=said)
+            if barged and not first:
+                # ยังไม่ได้เริ่มพูดตอบ แปลว่าคนพูดยังไม่จบ ให้เอาท่อนก่อนไปต่อกับท่อนใหม่
+                unfinished = question
+                journal.note("continuation", reason="ถูกแทรกก่อนเริ่มตอบ",
+                             merged=round(merged, 1))
+
+            # จำไว้ว่าคุยอะไรกันไปแล้ว คำถามถัดไปจะได้ต่อเนื่องโดยไม่ต้องเล่าใหม่
+            if not unfinished:
+                conversation = conversation.with_turn("user", question)
+                answer = " ".join(spoken_parts)
+                if answer and barged:
+                    answer = f"{answer} (พูดค้างไว้เพราะถูกขัด)"
+                conversation = conversation.with_turn("assistant", answer).with_pages(pages)
+
+            journal.note("answer", cards=list(cards[:3]), sentences=said,
+                         opened=round(opened, 2),
+                         first_token=round((marks[0] - began) if marks else 0.0, 2),
+                         first_audio=round(first, 2), synth_first=round(synth_first, 2),
+                         total=round(time.perf_counter() - began, 2),
+                         barged=barged, text=" ".join(spoken_parts))
+            if not full_duplex:
+                if player:
+                    player.wait_idle()
+                time.sleep(ECHO_TAIL_SECONDS)
+                listener.unmute()
     except KeyboardInterrupt:
         print("\nจบการสนทนา")
+        journal.note("stopped", reason="ผู้ใช้กด Ctrl-C")
     finally:
+        journal.note("end")
+        journal.stop()
         if player:
             player.interrupt()
             player.close()
+        if voice:
+            voice.close()
     return 0
 
 
 def repl(args: argparse.Namespace) -> int:
     """ถามต่อเนื่องหลายคำถาม โหลดโมเดลถอดเสียงครั้งเดียวแล้วใช้ซ้ำ"""
     print("พิมพ์คำถาม หรือพิมพ์พาธไฟล์เสียง  ออกด้วย Ctrl-D หรือพิมพ์ ออก")
+    conversation = brain.Conversation()
     while True:
         try:
             line = input("\n> ").strip()
@@ -175,7 +323,11 @@ def repl(args: argparse.Namespace) -> int:
         if candidate.suffix.lower() in (".wav", ".mp3", ".m4a") and candidate.exists():
             question, stt_seconds = transcribe(candidate, args.engine)
             print(f"ได้ยินว่า: {question}\n")
-        first = respond(question, args.language, args.voice, args.no_speak)
+        first, answer, pages = respond(question, args.language, args.voice, args.no_speak,
+                                       history=conversation,
+                                       reasoning=not args.no_reasoning)
+        conversation = conversation.with_turn("user", question)
+        conversation = conversation.with_turn("assistant", answer).with_pages(pages)
         print(f"\nstt {stt_seconds:.2f}s | ถึงเสียงแรก {first:.2f}s")
 
 
@@ -186,16 +338,28 @@ def main() -> int:
     parser.add_argument("--repl", action="store_true", help="ถามต่อเนื่อง โหลดโมเดลครั้งเดียว")
     parser.add_argument("--live", action="store_true", help="สนทนาสดผ่านไมโครโฟน")
     parser.add_argument("--input-device", type=int, help="หมายเลขอุปกรณ์เสียงเข้า")
-    parser.add_argument("--echo-cancel", action="store_true",
-                        help="ลองใช้ตัวตัดเสียงสะท้อนของระบบ ยังใช้ไม่ได้บน macOS 26")
+    parser.add_argument("--no-aec", action="store_true",
+                        help="ไม่ต้องตัดเสียงสะท้อน เล่นเสียงด้วย afplay แบบผลัดกันพูด")
+    parser.add_argument("--headphones", action="store_true",
+                        help="ใส่หูฟังอยู่ เปิดให้พูดแทรกได้แม้ไม่มีตัวตัดเสียงสะท้อน")
     parser.add_argument("--engine", default="whisper-biased", help="ตัวถอดเสียงที่ใช้กับไฟล์เสียง")
     parser.add_argument("--language", default="TH", choices=["TH", "EN"])
     parser.add_argument("--voice", default=DEFAULT_VOICE)
     parser.add_argument("--no-speak", action="store_true", help="แสดงข้อความอย่างเดียว")
+    parser.add_argument("--log", type=pathlib.Path,
+                        help="ที่เก็บบันทึกเหตุการณ์ ค่าเริ่มต้นคือ tmp/logs/live-<เวลา>.jsonl")
+    parser.add_argument("--no-log-file", action="store_true",
+                        help="โชว์เหตุการณ์บนจอแต่ไม่เขียนไฟล์")
+    parser.add_argument("--quiet", action="store_true",
+                        help="ไม่ต้องโชว์เหตุการณ์บนจอ")
+    parser.add_argument("--no-reasoning", action="store_true",
+                        help="ไม่ต้องให้คิดก่อนตอบ ตอบทันทีแบบเดิม")
     args = parser.parse_args()
 
     if args.live:
         return live(args)
+    if not args.no_reasoning:
+        journal.start(None, echo=not args.quiet)
     if args.repl:
         return repl(args)
     if not args.question and not args.audio:
@@ -214,7 +378,8 @@ def main() -> int:
         print("ไม่ได้ยินคำถาม", file=sys.stderr)
         return 1
 
-    first = respond(question, args.language, args.voice, args.no_speak)
+    first, _, _ = respond(question, args.language, args.voice, args.no_speak,
+                          reasoning=not args.no_reasoning)
     print(f"\nstt {stt_seconds:.2f}s | ถึงเสียงแรก {first:.2f}s")
     return 0
 

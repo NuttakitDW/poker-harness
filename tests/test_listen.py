@@ -78,3 +78,24 @@ class TurnEndTests(unittest.TestCase):
             if closed is not None:
                 break
         self.assertIsNotNone(closed)
+
+
+class CutShortTests(unittest.TestCase):
+    """เสียงที่ถูกปิดเพราะชนเพดานความยาว ต้องบอกได้ว่าคนพูดยังไม่จบ"""
+
+    def test_a_turn_ended_by_silence_is_not_marked_cut_short(self):
+        endpointer = listen.Endpointer()
+        for _ in range(30):
+            endpointer.push("f", True)
+        for _ in range(SILENCE_FRAMES):
+            if endpointer.push("f", False) is not None:
+                break
+        self.assertFalse(endpointer.cut_short)
+
+    def test_a_turn_ended_by_the_length_limit_is_marked_cut_short(self):
+        endpointer = listen.Endpointer()
+        limit = int(listen.MAX_UTTERANCE_SECONDS / listen.FRAME_SECONDS) + 5
+        for _ in range(limit):
+            if endpointer.push("f", True) is not None:
+                break
+        self.assertTrue(endpointer.cut_short)

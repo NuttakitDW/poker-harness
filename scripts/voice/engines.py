@@ -6,7 +6,9 @@
 
 from __future__ import annotations
 
+import collections
 import os
+import re
 import time
 from typing import Callable, NamedTuple
 
@@ -15,6 +17,44 @@ os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
 WHISPER_REPO = "mlx-community/whisper-large-v3-turbo"
 TYPHOON_MODEL = "scb10x/typhoon-asr-realtime"
+
+
+_THAI = re.compile(r"[ก-๙]")
+# อักษรนอกละตินและนอกไทย เช่นซีริลลิกหรือจีน เป็นร่องรอยว่าเดาภาษาผิด
+_OTHER_SCRIPT = re.compile(r"[^\u0000-\u007fก-๙\s]")
+
+
+REPEAT_WINDOW = 10
+MAX_REPEATS = 4
+
+
+def repetitive(text: str) -> bool:
+    """ข้อความวนซ้ำเป็นอาการค้างของตัวถอดเสียง ไม่ใช่คำที่มีคนพูดจริง
+
+    เจอตอนป้อนเสียงรบกวนสั้น ๆ ให้ Whisper แล้วมันวนคำเดิมนับสิบรอบ
+    """
+    body = text.strip()
+    if len(body) < REPEAT_WINDOW * MAX_REPEATS:
+        return False
+    shingles = collections.Counter(
+        body[index:index + REPEAT_WINDOW] for index in range(len(body) - REPEAT_WINDOW))
+    return max(shingles.values()) >= MAX_REPEATS
+
+
+def usable_text(text: str, language: str = "TH") -> bool:
+    """ผลถอดเสียงนี้น่าเชื่อพอจะเอาไปตอบไหม
+
+    คลิปสั้นและเบาทำให้ Whisper เดาเป็นภาษาอื่นแล้วคายคำที่ไม่มีใครพูดออกมา
+    ถ้าตั้งใจฟังไทยแต่ไม่มีอักษรไทยเลยและมีอักษรของภาษาอื่นโผล่ ถือว่าเดาผิด
+    """
+    body = text.strip()
+    if not body or repetitive(body):
+        return False
+    if language.upper() != "TH":
+        return True
+    if _THAI.search(body):
+        return True
+    return not _OTHER_SCRIPT.search(body)
 
 
 class Transcript(NamedTuple):
@@ -71,6 +111,8 @@ def whisper_biased(path: str, device: str = "auto", language: str | None = "th")
         language=language,
         initial_prompt=bias_prompt() or None,
         condition_on_previous_text=False,
+        # ถอดรอบเดียว ไม่ไล่หลายอุณหภูมิ ไม่งั้นคลิปที่ถอดไม่ออกกินเวลาเป็นสิบวินาที
+        temperature=0.0,
     )
     wall = time.perf_counter() - started
     segments = result.get("segments") or []
