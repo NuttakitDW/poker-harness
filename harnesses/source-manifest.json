@@ -1,0 +1,7699 @@
+{
+  "archive": "Poker book-20260922T043840Z-1-001.zip",
+  "archive_entries": 26,
+  "unique_sha256": 25,
+  "total_unique_pdf_pages": 5675,
+  "books": [
+    {
+      "id": "thai-document-915850",
+      "title": "บันทึกภาษาไทย: short stack cash game และ mindset",
+      "source_pdf": "sources/pdf/915850_เอกสาร 1 (3).pdf",
+      "sha256": "f9f900b2f9a42b7bb6d31b19c81f9fb96a7b8962abd4178951ca7a6d625b9d9f",
+      "pdf_pages": 6,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [],
+      "embedded_image_pages": [],
+      "embedded_image_count": 0,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 6,
+          "path": "EN/sources/thai-document-915850/pages-0001-0006.md"
+        }
+      ],
+      "en_index": "EN/sources/thai-document-915850/index.md",
+      "th_index": "TH/sources/thai-document-915850/index.md"
+    },
+    {
+      "id": "getting-the-answer-key",
+      "title": "Getting the Answer: Answer Key",
+      "source_pdf": "sources/pdf/GTO/Getting-The-Answer-Key.pdf",
+      "sha256": "bf6e8e0a98a40c962ea894b4b8aa071216ddd8d3be69ccc713a52e377a00edc5",
+      "pdf_pages": 1,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [],
+      "embedded_image_pages": [
+        1
+      ],
+      "embedded_image_count": 2,
+      "embedded_url_pages": [
+        1
+      ],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 1,
+          "path": "EN/sources/getting-the-answer-key/pages-0001-0001.md"
+        }
+      ],
+      "en_index": "EN/sources/getting-the-answer-key/index.md",
+      "th_index": "TH/sources/getting-the-answer-key/index.md"
+    },
+    {
+      "id": "two-plus-two-nl-six-max",
+      "title": "2+2 NL 6-Max",
+      "source_pdf": "sources/pdf/2p2NL6max.pdf",
+      "sha256": "5301c491ef617962dd1e9cb565ca5b9bcf64a0f5a8c2bcfb9c81261523b5ffb3",
+      "pdf_pages": 44,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [],
+      "embedded_image_pages": [],
+      "embedded_image_count": 0,
+      "embedded_url_pages": [
+        3,
+        44
+      ],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/two-plus-two-nl-six-max/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/two-plus-two-nl-six-max/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/two-plus-two-nl-six-max/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/two-plus-two-nl-six-max/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/two-plus-two-nl-six-max/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 44,
+          "path": "EN/sources/two-plus-two-nl-six-max/pages-0041-0044.md"
+        }
+      ],
+      "en_index": "EN/sources/two-plus-two-nl-six-max/index.md",
+      "th_index": "TH/sources/two-plus-two-nl-six-max/index.md"
+    },
+    {
+      "id": "getting-the-spreadsheets",
+      "title": "Getting the Answer: Spreadsheets",
+      "source_pdf": "sources/pdf/GTO/Getting-The-Spreadsheets.pdf",
+      "sha256": "cfd48f6af3c7a0459cdfbdd06748c46c295b57258efa4521060a849dfd89dbce",
+      "pdf_pages": 1,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [],
+      "embedded_image_pages": [
+        1
+      ],
+      "embedded_image_count": 2,
+      "embedded_url_pages": [
+        1
+      ],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 1,
+          "path": "EN/sources/getting-the-spreadsheets/pages-0001-0001.md"
+        }
+      ],
+      "en_index": "EN/sources/getting-the-spreadsheets/index.md",
+      "th_index": "TH/sources/getting-the-spreadsheets/index.md"
+    },
+    {
+      "id": "strategies-beating-small-stakes-tournaments",
+      "title": "Strategies for Beating Small Stakes Poker Tournaments",
+      "source_pdf": "sources/pdf/Strategies for Beating Small Stakes Poker Tournaments..pdf",
+      "sha256": "9f9dc18326686c982b6a572eb4735c15c43eaed2596859e31b1500f3c938393b",
+      "pdf_pages": 57,
+      "aliases": [],
+      "empty_text_pages": [
+        1,
+        57
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        57
+      ],
+      "embedded_image_pages": [
+        1,
+        5,
+        7,
+        13,
+        14,
+        18,
+        20,
+        21,
+        25,
+        27,
+        28,
+        29,
+        30,
+        31,
+        34,
+        36,
+        41,
+        42,
+        43,
+        44,
+        46,
+        47,
+        57
+      ],
+      "embedded_image_count": 151,
+      "embedded_url_pages": [
+        4,
+        6,
+        8,
+        55,
+        56
+      ],
+      "ocr_attempted_pages": [
+        1,
+        57
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        57
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 57,
+          "path": "EN/sources/strategies-beating-small-stakes-tournaments/pages-0057-0057.md"
+        }
+      ],
+      "en_index": "EN/sources/strategies-beating-small-stakes-tournaments/index.md",
+      "th_index": "TH/sources/strategies-beating-small-stakes-tournaments/index.md"
+    },
+    {
+      "id": "cash-game-killer",
+      "title": "Cash Game Killer",
+      "source_pdf": "sources/pdf/Cash Game Killer (Ultimate Poker eBook).pdf",
+      "sha256": "bcb79553ae23260ff60f5d52ab671c8780e478aa91e3c84c2e634ea8cc70250a",
+      "pdf_pages": 64,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        60,
+        63,
+        64
+      ],
+      "embedded_image_pages": [
+        1,
+        4,
+        46,
+        60,
+        62,
+        63,
+        64
+      ],
+      "embedded_image_count": 7,
+      "embedded_url_pages": [
+        1,
+        3,
+        6,
+        7,
+        10,
+        11,
+        52,
+        53,
+        64
+      ],
+      "ocr_attempted_pages": [
+        60,
+        63,
+        64
+      ],
+      "ocr_nonempty_pages": [
+        60,
+        63,
+        64
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/cash-game-killer/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/cash-game-killer/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/cash-game-killer/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/cash-game-killer/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/cash-game-killer/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/cash-game-killer/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/cash-game-killer/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/cash-game-killer/pages-0057-0064.md"
+        }
+      ],
+      "en_index": "EN/sources/cash-game-killer/index.md",
+      "th_index": "TH/sources/cash-game-killer/index.md"
+    },
+    {
+      "id": "play-optimal-poker",
+      "title": "Play Optimal Poker",
+      "source_pdf": "sources/pdf/Play Optimal Poker.pdf",
+      "sha256": "4c6cab74b8d6064e72925acc2e4463c0d2555f42eec41e2436fd2869aa60632b",
+      "pdf_pages": 243,
+      "aliases": [
+        "sources/pdf/GTO/Play Optimal Poker.pdf"
+      ],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        6,
+        44,
+        88,
+        124,
+        154,
+        190,
+        218
+      ],
+      "embedded_image_pages": [
+        30,
+        31,
+        113,
+        114,
+        115,
+        121
+      ],
+      "embedded_image_count": 7,
+      "embedded_url_pages": [
+        29
+      ],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/play-optimal-poker/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/play-optimal-poker/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/play-optimal-poker/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/play-optimal-poker/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/play-optimal-poker/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/play-optimal-poker/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/play-optimal-poker/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/play-optimal-poker/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/play-optimal-poker/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/play-optimal-poker/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/play-optimal-poker/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/play-optimal-poker/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/play-optimal-poker/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/play-optimal-poker/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/play-optimal-poker/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/play-optimal-poker/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/play-optimal-poker/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/play-optimal-poker/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/play-optimal-poker/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/play-optimal-poker/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/play-optimal-poker/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/play-optimal-poker/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/play-optimal-poker/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/play-optimal-poker/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/play-optimal-poker/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/play-optimal-poker/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/play-optimal-poker/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/play-optimal-poker/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/play-optimal-poker/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/play-optimal-poker/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 243,
+          "path": "EN/sources/play-optimal-poker/pages-0241-0243.md"
+        }
+      ],
+      "en_index": "EN/sources/play-optimal-poker/index.md",
+      "th_index": "TH/sources/play-optimal-poker/index.md"
+    },
+    {
+      "id": "super-system-1",
+      "title": "Doyle Brunson's Super System 1",
+      "source_pdf": "sources/pdf/Doyle Brunson_s Super System 1.pdf",
+      "sha256": "b6aa31652b7dc2af9dbbf30e0b277d8c198ca45d525614745a7e65538af3171c",
+      "pdf_pages": 115,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [],
+      "embedded_image_pages": [
+        31,
+        36,
+        37,
+        38,
+        39,
+        40,
+        45,
+        49,
+        65,
+        74,
+        80,
+        94,
+        95
+      ],
+      "embedded_image_count": 17,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/super-system-1/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/super-system-1/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/super-system-1/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/super-system-1/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/super-system-1/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/super-system-1/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/super-system-1/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/super-system-1/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/super-system-1/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/super-system-1/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/super-system-1/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/super-system-1/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/super-system-1/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/super-system-1/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 115,
+          "path": "EN/sources/super-system-1/pages-0113-0115.md"
+        }
+      ],
+      "en_index": "EN/sources/super-system-1/index.md",
+      "th_index": "TH/sources/super-system-1/index.md"
+    },
+    {
+      "id": "peak-poker-performance",
+      "title": "Peak Poker Performance",
+      "source_pdf": "sources/pdf/Peak Poker Performance.pdf",
+      "sha256": "faedde795e2634e9a3fd4477ccd1b362bcdea3fbe565b13475813211b1188648",
+      "pdf_pages": 257,
+      "aliases": [],
+      "empty_text_pages": [
+        1,
+        251
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        4,
+        251
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        3,
+        4,
+        190,
+        191,
+        192,
+        196,
+        199,
+        200,
+        201,
+        252,
+        257
+      ],
+      "embedded_image_count": 120,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [
+        1,
+        2,
+        4
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        2,
+        4
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/peak-poker-performance/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/peak-poker-performance/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/peak-poker-performance/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/peak-poker-performance/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/peak-poker-performance/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/peak-poker-performance/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/peak-poker-performance/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/peak-poker-performance/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/peak-poker-performance/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/peak-poker-performance/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/peak-poker-performance/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/peak-poker-performance/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/peak-poker-performance/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/peak-poker-performance/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/peak-poker-performance/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/peak-poker-performance/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/peak-poker-performance/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/peak-poker-performance/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/peak-poker-performance/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/peak-poker-performance/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/peak-poker-performance/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/peak-poker-performance/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/peak-poker-performance/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/peak-poker-performance/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/peak-poker-performance/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/peak-poker-performance/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/peak-poker-performance/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/peak-poker-performance/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/peak-poker-performance/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/peak-poker-performance/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/peak-poker-performance/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 256,
+          "path": "EN/sources/peak-poker-performance/pages-0249-0256.md"
+        },
+        {
+          "start": 257,
+          "end": 257,
+          "path": "EN/sources/peak-poker-performance/pages-0257-0257.md"
+        }
+      ],
+      "en_index": "EN/sources/peak-poker-performance/index.md",
+      "th_index": "TH/sources/peak-poker-performance/index.md"
+    },
+    {
+      "id": "hole-card-confessions",
+      "title": "Hole Card Confessions",
+      "source_pdf": "sources/pdf/Hole Card Confessions.pdf",
+      "sha256": "bbfecbe346887abe85d85c78865b1a33e93b382faaea35fadabcb9ca9883ba8e",
+      "pdf_pages": 193,
+      "aliases": [],
+      "empty_text_pages": [
+        1
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        7,
+        9,
+        19,
+        71,
+        74,
+        89,
+        131,
+        165,
+        169,
+        185
+      ],
+      "embedded_image_pages": [
+        1,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193
+      ],
+      "embedded_image_count": 398,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [
+        1,
+        19,
+        71,
+        74,
+        89,
+        131,
+        165,
+        169,
+        185
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        19,
+        71,
+        74,
+        89,
+        131,
+        165,
+        169,
+        185
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/hole-card-confessions/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/hole-card-confessions/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/hole-card-confessions/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/hole-card-confessions/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/hole-card-confessions/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/hole-card-confessions/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/hole-card-confessions/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/hole-card-confessions/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/hole-card-confessions/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/hole-card-confessions/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/hole-card-confessions/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/hole-card-confessions/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/hole-card-confessions/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/hole-card-confessions/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/hole-card-confessions/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/hole-card-confessions/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/hole-card-confessions/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/hole-card-confessions/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/hole-card-confessions/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/hole-card-confessions/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/hole-card-confessions/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/hole-card-confessions/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/hole-card-confessions/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/hole-card-confessions/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 193,
+          "path": "EN/sources/hole-card-confessions/pages-0193-0193.md"
+        }
+      ],
+      "en_index": "EN/sources/hole-card-confessions/index.md",
+      "th_index": "TH/sources/hole-card-confessions/index.md"
+    },
+    {
+      "id": "negreanu-holdem-wisdom",
+      "title": "Negreanu's Hold'em Wisdom",
+      "source_pdf": "sources/pdf/Negreanu_Holdem_Wisdom.pdf",
+      "sha256": "406e18a7de2f2841c5e3d52e773c276461669a3acd2749016f017c7b5e8b0041",
+      "pdf_pages": 166,
+      "aliases": [],
+      "empty_text_pages": [
+        1,
+        5,
+        9,
+        13,
+        15,
+        163
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        5,
+        8,
+        9,
+        13,
+        15,
+        163,
+        166
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166
+      ],
+      "embedded_image_count": 166,
+      "embedded_url_pages": [
+        3,
+        166
+      ],
+      "ocr_attempted_pages": [
+        1,
+        2,
+        5,
+        8,
+        9,
+        13,
+        15,
+        163,
+        166
+      ],
+      "ocr_nonempty_pages": [
+        2,
+        8,
+        166
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 166,
+          "path": "EN/sources/negreanu-holdem-wisdom/pages-0161-0166.md"
+        }
+      ],
+      "en_index": "EN/sources/negreanu-holdem-wisdom/index.md",
+      "th_index": "TH/sources/negreanu-holdem-wisdom/index.md"
+    },
+    {
+      "id": "gto-crash-course",
+      "title": "GTO Crash Course Strategy Guide",
+      "source_pdf": "sources/pdf/GTO/GTO Crash Course Strategy Guide - Red Chip Poker.pdf",
+      "sha256": "4c408c550c2388ce9344db0c98915c86861059742709db507e199262e0faa365",
+      "pdf_pages": 60,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        1
+      ],
+      "embedded_image_pages": [
+        1,
+        3,
+        9,
+        43,
+        48,
+        60
+      ],
+      "embedded_image_count": 8,
+      "embedded_url_pages": [
+        3,
+        4,
+        9,
+        43,
+        60
+      ],
+      "ocr_attempted_pages": [
+        1
+      ],
+      "ocr_nonempty_pages": [
+        1
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/gto-crash-course/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/gto-crash-course/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/gto-crash-course/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/gto-crash-course/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/gto-crash-course/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/gto-crash-course/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/gto-crash-course/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 60,
+          "path": "EN/sources/gto-crash-course/pages-0057-0060.md"
+        }
+      ],
+      "en_index": "EN/sources/gto-crash-course/index.md",
+      "th_index": "TH/sources/gto-crash-course/index.md"
+    },
+    {
+      "id": "poker-face-of-wall-street",
+      "title": "The Poker Face of Wall Street",
+      "source_pdf": "sources/pdf/Aaron Brown - The Poker Face of Wall Street.pdf",
+      "sha256": "c2caaf145059ab86010cc83cb6c1d7b5d295a973bafe425f292d56c7a6feea64",
+      "pdf_pages": 373,
+      "aliases": [],
+      "empty_text_pages": [
+        1,
+        3,
+        5,
+        22,
+        179,
+        209,
+        243,
+        291,
+        355
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        22,
+        179,
+        209,
+        243,
+        291,
+        355
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        6,
+        14,
+        21,
+        23,
+        33,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        59,
+        61,
+        62,
+        76,
+        77,
+        94,
+        95,
+        96,
+        97,
+        100,
+        101,
+        103,
+        104,
+        106,
+        107,
+        109,
+        110,
+        112,
+        114,
+        131,
+        134,
+        142,
+        143,
+        172,
+        176,
+        177,
+        180,
+        210,
+        218,
+        244,
+        245,
+        252,
+        264,
+        266,
+        268,
+        269,
+        270,
+        273,
+        275,
+        292,
+        305,
+        332,
+        348
+      ],
+      "embedded_image_count": 194,
+      "embedded_url_pages": [
+        7,
+        21,
+        134
+      ],
+      "ocr_attempted_pages": [
+        1,
+        2,
+        6
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        2,
+        6
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 256,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0249-0256.md"
+        },
+        {
+          "start": 257,
+          "end": 264,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0257-0264.md"
+        },
+        {
+          "start": 265,
+          "end": 272,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0265-0272.md"
+        },
+        {
+          "start": 273,
+          "end": 280,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0273-0280.md"
+        },
+        {
+          "start": 281,
+          "end": 288,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0281-0288.md"
+        },
+        {
+          "start": 289,
+          "end": 296,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0289-0296.md"
+        },
+        {
+          "start": 297,
+          "end": 304,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0297-0304.md"
+        },
+        {
+          "start": 305,
+          "end": 312,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0305-0312.md"
+        },
+        {
+          "start": 313,
+          "end": 320,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0313-0320.md"
+        },
+        {
+          "start": 321,
+          "end": 328,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0321-0328.md"
+        },
+        {
+          "start": 329,
+          "end": 336,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0329-0336.md"
+        },
+        {
+          "start": 337,
+          "end": 344,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0337-0344.md"
+        },
+        {
+          "start": 345,
+          "end": 352,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0345-0352.md"
+        },
+        {
+          "start": 353,
+          "end": 360,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0353-0360.md"
+        },
+        {
+          "start": 361,
+          "end": 368,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0361-0368.md"
+        },
+        {
+          "start": 369,
+          "end": 373,
+          "path": "EN/sources/poker-face-of-wall-street/pages-0369-0373.md"
+        }
+      ],
+      "en_index": "EN/sources/poker-face-of-wall-street/index.md",
+      "th_index": "TH/sources/poker-face-of-wall-street/index.md"
+    },
+    {
+      "id": "dn-workbook-9036",
+      "title": "DN Workbook 9036",
+      "source_pdf": "sources/pdf/9036_DN_Workbook.pdf",
+      "sha256": "b489453522345c97eeba3a0435403cfcc5c387844ff0c26556db3d28c4c2a6ca",
+      "pdf_pages": 122,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        1,
+        57
+      ],
+      "embedded_image_pages": [
+        2,
+        6,
+        8,
+        9,
+        12,
+        13,
+        14,
+        16,
+        17,
+        21,
+        22,
+        31,
+        32,
+        33,
+        35,
+        39,
+        41,
+        42,
+        43,
+        44,
+        52,
+        55,
+        57,
+        62,
+        63,
+        89,
+        90,
+        104,
+        105
+      ],
+      "embedded_image_count": 489,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [
+        57
+      ],
+      "ocr_nonempty_pages": [
+        57
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/dn-workbook-9036/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/dn-workbook-9036/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/dn-workbook-9036/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/dn-workbook-9036/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/dn-workbook-9036/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/dn-workbook-9036/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/dn-workbook-9036/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/dn-workbook-9036/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/dn-workbook-9036/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/dn-workbook-9036/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/dn-workbook-9036/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/dn-workbook-9036/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/dn-workbook-9036/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/dn-workbook-9036/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/dn-workbook-9036/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 122,
+          "path": "EN/sources/dn-workbook-9036/pages-0121-0122.md"
+        }
+      ],
+      "en_index": "EN/sources/dn-workbook-9036/index.md",
+      "th_index": "TH/sources/dn-workbook-9036/index.md"
+    },
+    {
+      "id": "crushing-the-microstakes",
+      "title": "Crushing the Microstakes",
+      "source_pdf": "sources/pdf/crushing_the_microstakes.pdf",
+      "sha256": "f86ad183411e82a40ab5e8893fa1f14753c8edeae02a65375067bb5e5940b732",
+      "pdf_pages": 254,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        1,
+        32,
+        43,
+        49,
+        60,
+        64,
+        66,
+        92,
+        94,
+        102,
+        138,
+        152,
+        165,
+        167,
+        192,
+        224,
+        226,
+        239
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254
+      ],
+      "embedded_image_count": 1410,
+      "embedded_url_pages": [
+        3,
+        13,
+        20,
+        27,
+        28,
+        34,
+        53,
+        63,
+        207,
+        245,
+        246
+      ],
+      "ocr_attempted_pages": [
+        1,
+        32,
+        43,
+        49,
+        60,
+        64,
+        66,
+        92,
+        94,
+        102,
+        138,
+        152,
+        165,
+        167,
+        192,
+        224,
+        226,
+        239
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        32,
+        43,
+        49,
+        60,
+        64,
+        66,
+        92,
+        94,
+        102,
+        138,
+        152,
+        165,
+        167,
+        192,
+        224,
+        226,
+        239
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/crushing-the-microstakes/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/crushing-the-microstakes/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/crushing-the-microstakes/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/crushing-the-microstakes/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/crushing-the-microstakes/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/crushing-the-microstakes/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/crushing-the-microstakes/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/crushing-the-microstakes/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/crushing-the-microstakes/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/crushing-the-microstakes/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/crushing-the-microstakes/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/crushing-the-microstakes/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/crushing-the-microstakes/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/crushing-the-microstakes/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/crushing-the-microstakes/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/crushing-the-microstakes/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/crushing-the-microstakes/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/crushing-the-microstakes/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/crushing-the-microstakes/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/crushing-the-microstakes/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/crushing-the-microstakes/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/crushing-the-microstakes/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/crushing-the-microstakes/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/crushing-the-microstakes/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/crushing-the-microstakes/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/crushing-the-microstakes/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/crushing-the-microstakes/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/crushing-the-microstakes/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/crushing-the-microstakes/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/crushing-the-microstakes/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/crushing-the-microstakes/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 254,
+          "path": "EN/sources/crushing-the-microstakes/pages-0249-0254.md"
+        }
+      ],
+      "en_index": "EN/sources/crushing-the-microstakes/index.md",
+      "th_index": "TH/sources/crushing-the-microstakes/index.md"
+    },
+    {
+      "id": "pot-limit-omaha-jeff-hwang",
+      "title": "Pot-Limit Omaha — Jeff Hwang",
+      "source_pdf": "sources/pdf/Pot_Limit_Omaha_Jeff_Hwang.pdf",
+      "sha256": "2116a6090a63c0fcd87a72927ab5dc093b2aaf6f4bd092243195152cd85f7be2",
+      "pdf_pages": 357,
+      "aliases": [],
+      "empty_text_pages": [
+        1,
+        356
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        8,
+        9,
+        10,
+        141,
+        144,
+        149,
+        153,
+        156,
+        157,
+        168,
+        175,
+        235,
+        255,
+        259,
+        262,
+        275,
+        278,
+        285,
+        293,
+        298,
+        331,
+        356,
+        357
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10,
+        12,
+        16,
+        18,
+        26,
+        30,
+        31,
+        32,
+        33,
+        35,
+        36,
+        37,
+        40,
+        43,
+        44,
+        48,
+        52,
+        56,
+        66,
+        68,
+        73,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        108,
+        109,
+        110,
+        111,
+        115,
+        119,
+        120,
+        121,
+        122,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        177,
+        178,
+        179,
+        180,
+        181,
+        205,
+        206,
+        207,
+        212,
+        215,
+        217,
+        220,
+        221,
+        222,
+        223,
+        224,
+        226,
+        227,
+        231,
+        232,
+        233,
+        234,
+        235,
+        239,
+        241,
+        242,
+        243,
+        245,
+        246,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272,
+        273,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        295,
+        296,
+        297,
+        298,
+        303,
+        304,
+        305,
+        307,
+        309,
+        310,
+        313,
+        314,
+        315,
+        316,
+        317,
+        318,
+        319,
+        321,
+        322,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336,
+        356,
+        357
+      ],
+      "embedded_image_count": 798,
+      "embedded_url_pages": [
+        2,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10,
+        32,
+        33,
+        37,
+        192,
+        336,
+        357
+      ],
+      "ocr_attempted_pages": [
+        1,
+        2,
+        4,
+        6,
+        8,
+        9,
+        10,
+        141,
+        144,
+        149,
+        153,
+        156,
+        157,
+        168,
+        175,
+        235,
+        255,
+        259,
+        262,
+        275,
+        278,
+        285,
+        293,
+        298,
+        331,
+        356,
+        357
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        2,
+        4,
+        6,
+        8,
+        9,
+        10,
+        141,
+        144,
+        149,
+        153,
+        156,
+        157,
+        168,
+        175,
+        235,
+        255,
+        259,
+        262,
+        275,
+        278,
+        285,
+        293,
+        298,
+        331,
+        356,
+        357
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 256,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0249-0256.md"
+        },
+        {
+          "start": 257,
+          "end": 264,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0257-0264.md"
+        },
+        {
+          "start": 265,
+          "end": 272,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0265-0272.md"
+        },
+        {
+          "start": 273,
+          "end": 280,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0273-0280.md"
+        },
+        {
+          "start": 281,
+          "end": 288,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0281-0288.md"
+        },
+        {
+          "start": 289,
+          "end": 296,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0289-0296.md"
+        },
+        {
+          "start": 297,
+          "end": 304,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0297-0304.md"
+        },
+        {
+          "start": 305,
+          "end": 312,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0305-0312.md"
+        },
+        {
+          "start": 313,
+          "end": 320,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0313-0320.md"
+        },
+        {
+          "start": 321,
+          "end": 328,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0321-0328.md"
+        },
+        {
+          "start": 329,
+          "end": 336,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0329-0336.md"
+        },
+        {
+          "start": 337,
+          "end": 344,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0337-0344.md"
+        },
+        {
+          "start": 345,
+          "end": 352,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0345-0352.md"
+        },
+        {
+          "start": 353,
+          "end": 357,
+          "path": "EN/sources/pot-limit-omaha-jeff-hwang/pages-0353-0357.md"
+        }
+      ],
+      "en_index": "EN/sources/pot-limit-omaha-jeff-hwang/index.md",
+      "th_index": "TH/sources/pot-limit-omaha-jeff-hwang/index.md"
+    },
+    {
+      "id": "micro-stakes-playbook-9049",
+      "title": "The Micro Stakes Playbook",
+      "source_pdf": "sources/pdf/9049_the_micro_stakes_playbook.pdf",
+      "sha256": "43320755a73378f68e7df320381fe058a545a7ec914640beb6ba411778f46c0e",
+      "pdf_pages": 271,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        1
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271
+      ],
+      "embedded_image_count": 991,
+      "embedded_url_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271
+      ],
+      "ocr_attempted_pages": [
+        1
+      ],
+      "ocr_nonempty_pages": [
+        1
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 256,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0249-0256.md"
+        },
+        {
+          "start": 257,
+          "end": 264,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0257-0264.md"
+        },
+        {
+          "start": 265,
+          "end": 271,
+          "path": "EN/sources/micro-stakes-playbook-9049/pages-0265-0271.md"
+        }
+      ],
+      "en_index": "EN/sources/micro-stakes-playbook-9049/index.md",
+      "th_index": "TH/sources/micro-stakes-playbook-9049/index.md"
+    },
+    {
+      "id": "super-system-2",
+      "title": "Doyle Brunson's Super System 2",
+      "source_pdf": "sources/pdf/Doyle Brunson_s Super System 2 - A Course in Power Poker (Doyle Brunson).pdf",
+      "sha256": "09780643ff5ed11d9279f8845487176f4e8405a0ffd7c2c3af5474e4cf5a49d9",
+      "pdf_pages": 446,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        1,
+        45
+      ],
+      "embedded_image_pages": [
+        1,
+        2
+      ],
+      "embedded_image_count": 2,
+      "embedded_url_pages": [
+        2
+      ],
+      "ocr_attempted_pages": [
+        1
+      ],
+      "ocr_nonempty_pages": [
+        1
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/super-system-2/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/super-system-2/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/super-system-2/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/super-system-2/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/super-system-2/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/super-system-2/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/super-system-2/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/super-system-2/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/super-system-2/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/super-system-2/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/super-system-2/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/super-system-2/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/super-system-2/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/super-system-2/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/super-system-2/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/super-system-2/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/super-system-2/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/super-system-2/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/super-system-2/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/super-system-2/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/super-system-2/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/super-system-2/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/super-system-2/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/super-system-2/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/super-system-2/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/super-system-2/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/super-system-2/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/super-system-2/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/super-system-2/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/super-system-2/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/super-system-2/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 256,
+          "path": "EN/sources/super-system-2/pages-0249-0256.md"
+        },
+        {
+          "start": 257,
+          "end": 264,
+          "path": "EN/sources/super-system-2/pages-0257-0264.md"
+        },
+        {
+          "start": 265,
+          "end": 272,
+          "path": "EN/sources/super-system-2/pages-0265-0272.md"
+        },
+        {
+          "start": 273,
+          "end": 280,
+          "path": "EN/sources/super-system-2/pages-0273-0280.md"
+        },
+        {
+          "start": 281,
+          "end": 288,
+          "path": "EN/sources/super-system-2/pages-0281-0288.md"
+        },
+        {
+          "start": 289,
+          "end": 296,
+          "path": "EN/sources/super-system-2/pages-0289-0296.md"
+        },
+        {
+          "start": 297,
+          "end": 304,
+          "path": "EN/sources/super-system-2/pages-0297-0304.md"
+        },
+        {
+          "start": 305,
+          "end": 312,
+          "path": "EN/sources/super-system-2/pages-0305-0312.md"
+        },
+        {
+          "start": 313,
+          "end": 320,
+          "path": "EN/sources/super-system-2/pages-0313-0320.md"
+        },
+        {
+          "start": 321,
+          "end": 328,
+          "path": "EN/sources/super-system-2/pages-0321-0328.md"
+        },
+        {
+          "start": 329,
+          "end": 336,
+          "path": "EN/sources/super-system-2/pages-0329-0336.md"
+        },
+        {
+          "start": 337,
+          "end": 344,
+          "path": "EN/sources/super-system-2/pages-0337-0344.md"
+        },
+        {
+          "start": 345,
+          "end": 352,
+          "path": "EN/sources/super-system-2/pages-0345-0352.md"
+        },
+        {
+          "start": 353,
+          "end": 360,
+          "path": "EN/sources/super-system-2/pages-0353-0360.md"
+        },
+        {
+          "start": 361,
+          "end": 368,
+          "path": "EN/sources/super-system-2/pages-0361-0368.md"
+        },
+        {
+          "start": 369,
+          "end": 376,
+          "path": "EN/sources/super-system-2/pages-0369-0376.md"
+        },
+        {
+          "start": 377,
+          "end": 384,
+          "path": "EN/sources/super-system-2/pages-0377-0384.md"
+        },
+        {
+          "start": 385,
+          "end": 392,
+          "path": "EN/sources/super-system-2/pages-0385-0392.md"
+        },
+        {
+          "start": 393,
+          "end": 400,
+          "path": "EN/sources/super-system-2/pages-0393-0400.md"
+        },
+        {
+          "start": 401,
+          "end": 408,
+          "path": "EN/sources/super-system-2/pages-0401-0408.md"
+        },
+        {
+          "start": 409,
+          "end": 416,
+          "path": "EN/sources/super-system-2/pages-0409-0416.md"
+        },
+        {
+          "start": 417,
+          "end": 424,
+          "path": "EN/sources/super-system-2/pages-0417-0424.md"
+        },
+        {
+          "start": 425,
+          "end": 432,
+          "path": "EN/sources/super-system-2/pages-0425-0432.md"
+        },
+        {
+          "start": 433,
+          "end": 440,
+          "path": "EN/sources/super-system-2/pages-0433-0440.md"
+        },
+        {
+          "start": 441,
+          "end": 446,
+          "path": "EN/sources/super-system-2/pages-0441-0446.md"
+        }
+      ],
+      "en_index": "EN/sources/super-system-2/index.md",
+      "th_index": "TH/sources/super-system-2/index.md"
+    },
+    {
+      "id": "gripsed-mtt-strategy-guide",
+      "title": "Gripsed MTT Strategy Guide",
+      "source_pdf": "sources/pdf/Gripsed MTT Strategy Guide.pdf",
+      "sha256": "24148d3a8ce67a2e2db93cc52dabf8fc251c3a19b88bdacbc6db5472c70d0139",
+      "pdf_pages": 45,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        1
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44
+      ],
+      "embedded_image_count": 243,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [
+        1
+      ],
+      "ocr_nonempty_pages": [
+        1
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/gripsed-mtt-strategy-guide/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/gripsed-mtt-strategy-guide/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/gripsed-mtt-strategy-guide/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/gripsed-mtt-strategy-guide/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/gripsed-mtt-strategy-guide/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 45,
+          "path": "EN/sources/gripsed-mtt-strategy-guide/pages-0041-0045.md"
+        }
+      ],
+      "en_index": "EN/sources/gripsed-mtt-strategy-guide/index.md",
+      "th_index": "TH/sources/gripsed-mtt-strategy-guide/index.md"
+    },
+    {
+      "id": "the-theory-of-poker",
+      "title": "The Theory of Poker — David Sklansky",
+      "source_pdf": "sources/pdf/The Theory of Poker (Seventh printing, Complete) (David Sklansky).pdf",
+      "sha256": "3cb5c40c508cdcbe29b4f9ec564a30d900527063f4b65488277c17bee1939451",
+      "pdf_pages": 170,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        21,
+        24,
+        32,
+        41,
+        75,
+        79,
+        92,
+        130
+      ],
+      "embedded_image_pages": [
+        1,
+        5,
+        20,
+        22,
+        23,
+        31,
+        33,
+        34,
+        36,
+        37,
+        38,
+        46,
+        50,
+        53,
+        54,
+        56,
+        57,
+        58,
+        59,
+        61,
+        63,
+        64,
+        65,
+        66,
+        68,
+        71,
+        72,
+        73,
+        74,
+        76,
+        77,
+        78,
+        79,
+        81,
+        82,
+        85,
+        89,
+        93,
+        94,
+        97,
+        101,
+        102,
+        103,
+        105,
+        107,
+        108,
+        111,
+        118,
+        119,
+        121,
+        128,
+        129,
+        133,
+        134,
+        135,
+        137,
+        140,
+        141,
+        146,
+        147,
+        149,
+        153,
+        154,
+        161,
+        168,
+        169
+      ],
+      "embedded_image_count": 184,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [
+        79
+      ],
+      "ocr_nonempty_pages": [
+        79
+      ],
+      "extraction_note": "PDF spread split left then right",
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/the-theory-of-poker/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/the-theory-of-poker/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/the-theory-of-poker/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/the-theory-of-poker/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/the-theory-of-poker/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/the-theory-of-poker/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/the-theory-of-poker/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/the-theory-of-poker/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/the-theory-of-poker/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/the-theory-of-poker/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/the-theory-of-poker/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/the-theory-of-poker/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/the-theory-of-poker/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/the-theory-of-poker/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/the-theory-of-poker/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/the-theory-of-poker/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/the-theory-of-poker/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/the-theory-of-poker/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/the-theory-of-poker/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/the-theory-of-poker/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/the-theory-of-poker/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 170,
+          "path": "EN/sources/the-theory-of-poker/pages-0169-0170.md"
+        }
+      ],
+      "en_index": "EN/sources/the-theory-of-poker/index.md",
+      "th_index": "TH/sources/the-theory-of-poker/index.md"
+    },
+    {
+      "id": "mental-game-of-poker",
+      "title": "The Mental Game of Poker — Jared Tendler",
+      "source_pdf": "sources/pdf/The_Mental_Game_of_Poker_ Jared_Tendler.pdf",
+      "sha256": "37616de2472bb49b42cbe1ff9303632e83b38033bf7e32c6cf8e343bdfbb0d6b",
+      "pdf_pages": 198,
+      "aliases": [],
+      "empty_text_pages": [
+        4
+      ],
+      "low_text_pages": [
+        4,
+        5,
+        151
+      ],
+      "embedded_image_pages": [
+        1,
+        6,
+        7,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198
+      ],
+      "embedded_image_count": 381,
+      "embedded_url_pages": [
+        6,
+        188,
+        196,
+        197
+      ],
+      "ocr_attempted_pages": [
+        151
+      ],
+      "ocr_nonempty_pages": [
+        151
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/mental-game-of-poker/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/mental-game-of-poker/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/mental-game-of-poker/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/mental-game-of-poker/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/mental-game-of-poker/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/mental-game-of-poker/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/mental-game-of-poker/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/mental-game-of-poker/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/mental-game-of-poker/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/mental-game-of-poker/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/mental-game-of-poker/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/mental-game-of-poker/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/mental-game-of-poker/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/mental-game-of-poker/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/mental-game-of-poker/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/mental-game-of-poker/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/mental-game-of-poker/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/mental-game-of-poker/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/mental-game-of-poker/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/mental-game-of-poker/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/mental-game-of-poker/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/mental-game-of-poker/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/mental-game-of-poker/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/mental-game-of-poker/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 198,
+          "path": "EN/sources/mental-game-of-poker/pages-0193-0198.md"
+        }
+      ],
+      "en_index": "EN/sources/mental-game-of-poker/index.md",
+      "th_index": "TH/sources/mental-game-of-poker/index.md"
+    },
+    {
+      "id": "poker-math-preflop-workbook",
+      "title": "Poker Math Preflop Workbook",
+      "source_pdf": "sources/pdf/GTO/Poker-Math-Preflop-Workbook.pdf",
+      "sha256": "9d4baec8d76af9666c6284e4db2fc518de90cc8c999b45dd94c8fbd54eb3fa22",
+      "pdf_pages": 252,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [
+        1
+      ],
+      "embedded_image_pages": [
+        4,
+        10,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        55,
+        56,
+        57,
+        58,
+        59,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        77,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        96,
+        100,
+        105,
+        119,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        142,
+        147,
+        157,
+        158,
+        159,
+        161,
+        162,
+        163,
+        165,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        175,
+        176,
+        177,
+        178,
+        179,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        204,
+        215,
+        216,
+        217,
+        218,
+        219,
+        221,
+        222,
+        223,
+        224,
+        225,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        251,
+        252
+      ],
+      "embedded_image_count": 344,
+      "embedded_url_pages": [
+        2,
+        4,
+        8,
+        96,
+        111,
+        119,
+        125,
+        142,
+        147,
+        152,
+        160,
+        164,
+        166,
+        180,
+        204,
+        226,
+        246,
+        251,
+        252
+      ],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 252,
+          "path": "EN/sources/poker-math-preflop-workbook/pages-0249-0252.md"
+        }
+      ],
+      "en_index": "EN/sources/poker-math-preflop-workbook/index.md",
+      "th_index": "TH/sources/poker-math-preflop-workbook/index.md"
+    },
+    {
+      "id": "winning-secrets-online-poker",
+      "title": "Winning Secrets of Online Poker",
+      "source_pdf": "sources/pdf/Winning Secrets of Online Poker.pdf",
+      "sha256": "f4db93935b52d439c5b1a7387d8886e86f977ac14d4aad63a6568581e990a3f2",
+      "pdf_pages": 277,
+      "aliases": [],
+      "empty_text_pages": [
+        1
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        4,
+        16,
+        88,
+        115,
+        141,
+        178,
+        240
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276,
+        277
+      ],
+      "embedded_image_count": 994,
+      "embedded_url_pages": [
+        3,
+        18,
+        23,
+        24,
+        27,
+        29,
+        65,
+        78,
+        79,
+        80,
+        81,
+        82,
+        96,
+        97,
+        103,
+        111,
+        167,
+        211,
+        212,
+        213,
+        235,
+        256,
+        257
+      ],
+      "ocr_attempted_pages": [
+        1,
+        2,
+        16,
+        88,
+        115,
+        141,
+        178,
+        240
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        2,
+        16,
+        88,
+        115,
+        141,
+        178,
+        240
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 256,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0249-0256.md"
+        },
+        {
+          "start": 257,
+          "end": 264,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0257-0264.md"
+        },
+        {
+          "start": 265,
+          "end": 272,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0265-0272.md"
+        },
+        {
+          "start": 273,
+          "end": 277,
+          "path": "EN/sources/winning-secrets-online-poker/pages-0273-0277.md"
+        }
+      ],
+      "en_index": "EN/sources/winning-secrets-online-poker/index.md",
+      "th_index": "TH/sources/winning-secrets-online-poker/index.md"
+    },
+    {
+      "id": "decide-to-play-great-poker",
+      "title": "Decide to Play Great Poker — Annie Duke",
+      "source_pdf": "sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf",
+      "sha256": "e3be2ef00cb585e7a879f1192652d6aa7c3b62408121196c1ff0d4a980df6d71",
+      "pdf_pages": 136,
+      "aliases": [],
+      "empty_text_pages": [
+        1
+      ],
+      "low_text_pages": [
+        1,
+        3,
+        12,
+        38,
+        92
+      ],
+      "embedded_image_pages": [
+        1,
+        14,
+        41,
+        43,
+        44,
+        48,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        60,
+        62,
+        64,
+        65,
+        67,
+        71,
+        73,
+        76,
+        78,
+        79,
+        80,
+        83,
+        84,
+        86,
+        87,
+        88,
+        90,
+        93,
+        95,
+        96,
+        100,
+        101
+      ],
+      "embedded_image_count": 43,
+      "embedded_url_pages": [],
+      "ocr_attempted_pages": [
+        1
+      ],
+      "ocr_nonempty_pages": [
+        1
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/decide-to-play-great-poker/pages-0129-0136.md"
+        }
+      ],
+      "en_index": "EN/sources/decide-to-play-great-poker/index.md",
+      "th_index": "TH/sources/decide-to-play-great-poker/index.md"
+    },
+    {
+      "id": "grinders-manual",
+      "title": "The Grinder's Manual",
+      "source_pdf": "sources/pdf/grinders manual.pdf",
+      "sha256": "31f1bba2f403e02d5ebdb4dd1ae8b5fbf0a4aa08b0c8144f86b3e29922b22599",
+      "pdf_pages": 1567,
+      "aliases": [],
+      "empty_text_pages": [
+        1,
+        78,
+        196,
+        275,
+        292,
+        388,
+        391,
+        426,
+        431,
+        441,
+        445,
+        448,
+        459,
+        464,
+        469,
+        472,
+        588,
+        594,
+        618,
+        624,
+        633,
+        638,
+        644,
+        841,
+        887,
+        1328,
+        1355,
+        1360,
+        1391,
+        1402,
+        1411,
+        1413,
+        1417,
+        1458
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        48,
+        49,
+        52,
+        58,
+        60,
+        78,
+        106,
+        112,
+        119,
+        127,
+        138,
+        147,
+        153,
+        156,
+        175,
+        181,
+        196,
+        214,
+        244,
+        247,
+        252,
+        275,
+        285,
+        292,
+        324,
+        344,
+        346,
+        349,
+        362,
+        376,
+        382,
+        388,
+        390,
+        391,
+        396,
+        410,
+        426,
+        431,
+        440,
+        441,
+        445,
+        448,
+        459,
+        464,
+        469,
+        472,
+        474,
+        494,
+        501,
+        507,
+        517,
+        520,
+        524,
+        588,
+        594,
+        616,
+        618,
+        620,
+        622,
+        624,
+        632,
+        633,
+        638,
+        644,
+        657,
+        677,
+        691,
+        712,
+        804,
+        807,
+        820,
+        829,
+        834,
+        840,
+        841,
+        876,
+        886,
+        887,
+        902,
+        917,
+        945,
+        989,
+        1037,
+        1046,
+        1076,
+        1093,
+        1119,
+        1136,
+        1153,
+        1160,
+        1164,
+        1172,
+        1186,
+        1204,
+        1229,
+        1233,
+        1234,
+        1253,
+        1254,
+        1258,
+        1276,
+        1278,
+        1279,
+        1282,
+        1286,
+        1289,
+        1304,
+        1309,
+        1312,
+        1316,
+        1318,
+        1321,
+        1325,
+        1328,
+        1349,
+        1355,
+        1360,
+        1384,
+        1390,
+        1391,
+        1395,
+        1402,
+        1411,
+        1413,
+        1417,
+        1446,
+        1458,
+        1485,
+        1517,
+        1523,
+        1567
+      ],
+      "embedded_image_pages": [
+        1,
+        2,
+        24,
+        32,
+        36,
+        42,
+        44,
+        49,
+        55,
+        58,
+        66,
+        67,
+        69,
+        71,
+        72,
+        73,
+        74,
+        76,
+        78,
+        80,
+        82,
+        84,
+        87,
+        89,
+        92,
+        95,
+        101,
+        106,
+        109,
+        112,
+        119,
+        122,
+        125,
+        131,
+        133,
+        135,
+        138,
+        140,
+        144,
+        147,
+        148,
+        150,
+        156,
+        162,
+        164,
+        167,
+        171,
+        175,
+        176,
+        183,
+        184,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        218,
+        220,
+        224,
+        225,
+        229,
+        233,
+        234,
+        237,
+        240,
+        242,
+        245,
+        248,
+        250,
+        255,
+        257,
+        258,
+        259,
+        261,
+        262,
+        264,
+        265,
+        268,
+        270,
+        272,
+        275,
+        276,
+        279,
+        280,
+        285,
+        286,
+        289,
+        292,
+        293,
+        296,
+        298,
+        300,
+        301,
+        302,
+        303,
+        305,
+        307,
+        310,
+        312,
+        317,
+        318,
+        320,
+        323,
+        326,
+        328,
+        334,
+        336,
+        341,
+        343,
+        346,
+        349,
+        353,
+        354,
+        355,
+        363,
+        366,
+        368,
+        370,
+        372,
+        374,
+        376,
+        385,
+        388,
+        391,
+        392,
+        394,
+        396,
+        398,
+        399,
+        409,
+        410,
+        414,
+        418,
+        419,
+        423,
+        425,
+        426,
+        431,
+        441,
+        445,
+        448,
+        455,
+        456,
+        459,
+        464,
+        468,
+        469,
+        472,
+        476,
+        478,
+        484,
+        485,
+        487,
+        488,
+        489,
+        490,
+        491,
+        494,
+        496,
+        499,
+        501,
+        507,
+        508,
+        509,
+        510,
+        512,
+        517,
+        518,
+        520,
+        524,
+        525,
+        527,
+        535,
+        536,
+        548,
+        550,
+        552,
+        559,
+        562,
+        570,
+        572,
+        575,
+        581,
+        586,
+        588,
+        594,
+        597,
+        607,
+        614,
+        616,
+        618,
+        620,
+        622,
+        624,
+        633,
+        638,
+        644,
+        651,
+        655,
+        658,
+        662,
+        664,
+        666,
+        677,
+        678,
+        684,
+        691,
+        697,
+        704,
+        709,
+        713,
+        715,
+        718,
+        720,
+        735,
+        741,
+        747,
+        748,
+        754,
+        759,
+        762,
+        771,
+        773,
+        775,
+        785,
+        797,
+        804,
+        806,
+        807,
+        808,
+        813,
+        814,
+        820,
+        824,
+        829,
+        835,
+        841,
+        842,
+        845,
+        849,
+        852,
+        853,
+        854,
+        860,
+        866,
+        872,
+        873,
+        878,
+        882,
+        887,
+        894,
+        897,
+        902,
+        913,
+        915,
+        917,
+        927,
+        932,
+        933,
+        934,
+        940,
+        942,
+        945,
+        958,
+        962,
+        966,
+        971,
+        972,
+        975,
+        977,
+        981,
+        984,
+        989,
+        990,
+        991,
+        996,
+        999,
+        1009,
+        1013,
+        1015,
+        1018,
+        1021,
+        1025,
+        1031,
+        1037,
+        1039,
+        1049,
+        1056,
+        1060,
+        1065,
+        1071,
+        1072,
+        1074,
+        1076,
+        1083,
+        1093,
+        1094,
+        1098,
+        1102,
+        1105,
+        1108,
+        1121,
+        1125,
+        1129,
+        1132,
+        1141,
+        1145,
+        1147,
+        1153,
+        1154,
+        1160,
+        1161,
+        1164,
+        1165,
+        1167,
+        1172,
+        1176,
+        1178,
+        1187,
+        1190,
+        1192,
+        1195,
+        1197,
+        1200,
+        1204,
+        1208,
+        1211,
+        1213,
+        1222,
+        1229,
+        1234,
+        1239,
+        1243,
+        1244,
+        1247,
+        1251,
+        1254,
+        1258,
+        1262,
+        1265,
+        1270,
+        1273,
+        1276,
+        1279,
+        1282,
+        1286,
+        1290,
+        1292,
+        1294,
+        1299,
+        1300,
+        1301,
+        1305,
+        1309,
+        1312,
+        1316,
+        1321,
+        1325,
+        1328,
+        1335,
+        1341,
+        1342,
+        1343,
+        1346,
+        1349,
+        1355,
+        1360,
+        1363,
+        1366,
+        1368,
+        1369,
+        1375,
+        1380,
+        1384,
+        1391,
+        1395,
+        1402,
+        1403,
+        1406,
+        1411,
+        1413,
+        1417,
+        1420,
+        1421,
+        1428,
+        1431,
+        1436,
+        1443,
+        1445,
+        1446,
+        1449,
+        1452,
+        1454,
+        1458,
+        1462,
+        1468,
+        1475,
+        1479,
+        1485,
+        1492,
+        1497,
+        1507,
+        1513,
+        1517,
+        1521
+      ],
+      "embedded_image_count": 448,
+      "embedded_url_pages": [
+        965,
+        1522
+      ],
+      "ocr_attempted_pages": [
+        1,
+        2,
+        49,
+        58,
+        78,
+        106,
+        112,
+        119,
+        138,
+        147,
+        156,
+        175,
+        196,
+        275,
+        285,
+        292,
+        346,
+        349,
+        376,
+        388,
+        391,
+        396,
+        410,
+        426,
+        431,
+        441,
+        445,
+        448,
+        459,
+        464,
+        469,
+        472,
+        494,
+        501,
+        507,
+        517,
+        520,
+        524,
+        588,
+        594,
+        616,
+        618,
+        620,
+        622,
+        624,
+        633,
+        638,
+        644,
+        677,
+        691,
+        804,
+        807,
+        820,
+        829,
+        841,
+        887,
+        902,
+        917,
+        945,
+        989,
+        1037,
+        1076,
+        1093,
+        1153,
+        1160,
+        1164,
+        1172,
+        1204,
+        1229,
+        1234,
+        1254,
+        1258,
+        1276,
+        1279,
+        1282,
+        1286,
+        1309,
+        1312,
+        1316,
+        1321,
+        1325,
+        1328,
+        1349,
+        1355,
+        1360,
+        1384,
+        1391,
+        1395,
+        1402,
+        1411,
+        1413,
+        1417,
+        1446,
+        1458,
+        1485,
+        1517
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        2,
+        49,
+        58,
+        78,
+        106,
+        112,
+        119,
+        138,
+        147,
+        156,
+        175,
+        196,
+        275,
+        285,
+        292,
+        346,
+        349,
+        376,
+        388,
+        391,
+        396,
+        410,
+        426,
+        431,
+        441,
+        445,
+        448,
+        459,
+        464,
+        469,
+        472,
+        494,
+        501,
+        507,
+        517,
+        520,
+        524,
+        588,
+        594,
+        616,
+        618,
+        620,
+        622,
+        624,
+        633,
+        638,
+        644,
+        677,
+        691,
+        804,
+        807,
+        820,
+        829,
+        841,
+        887,
+        902,
+        917,
+        945,
+        989,
+        1037,
+        1076,
+        1093,
+        1153,
+        1160,
+        1164,
+        1172,
+        1204,
+        1229,
+        1234,
+        1254,
+        1258,
+        1276,
+        1279,
+        1282,
+        1286,
+        1309,
+        1312,
+        1316,
+        1321,
+        1325,
+        1328,
+        1349,
+        1355,
+        1360,
+        1384,
+        1391,
+        1395,
+        1402,
+        1411,
+        1413,
+        1417,
+        1446,
+        1458,
+        1485,
+        1517
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/grinders-manual/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/grinders-manual/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/grinders-manual/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 32,
+          "path": "EN/sources/grinders-manual/pages-0025-0032.md"
+        },
+        {
+          "start": 33,
+          "end": 40,
+          "path": "EN/sources/grinders-manual/pages-0033-0040.md"
+        },
+        {
+          "start": 41,
+          "end": 48,
+          "path": "EN/sources/grinders-manual/pages-0041-0048.md"
+        },
+        {
+          "start": 49,
+          "end": 56,
+          "path": "EN/sources/grinders-manual/pages-0049-0056.md"
+        },
+        {
+          "start": 57,
+          "end": 64,
+          "path": "EN/sources/grinders-manual/pages-0057-0064.md"
+        },
+        {
+          "start": 65,
+          "end": 72,
+          "path": "EN/sources/grinders-manual/pages-0065-0072.md"
+        },
+        {
+          "start": 73,
+          "end": 80,
+          "path": "EN/sources/grinders-manual/pages-0073-0080.md"
+        },
+        {
+          "start": 81,
+          "end": 88,
+          "path": "EN/sources/grinders-manual/pages-0081-0088.md"
+        },
+        {
+          "start": 89,
+          "end": 96,
+          "path": "EN/sources/grinders-manual/pages-0089-0096.md"
+        },
+        {
+          "start": 97,
+          "end": 104,
+          "path": "EN/sources/grinders-manual/pages-0097-0104.md"
+        },
+        {
+          "start": 105,
+          "end": 112,
+          "path": "EN/sources/grinders-manual/pages-0105-0112.md"
+        },
+        {
+          "start": 113,
+          "end": 120,
+          "path": "EN/sources/grinders-manual/pages-0113-0120.md"
+        },
+        {
+          "start": 121,
+          "end": 128,
+          "path": "EN/sources/grinders-manual/pages-0121-0128.md"
+        },
+        {
+          "start": 129,
+          "end": 136,
+          "path": "EN/sources/grinders-manual/pages-0129-0136.md"
+        },
+        {
+          "start": 137,
+          "end": 144,
+          "path": "EN/sources/grinders-manual/pages-0137-0144.md"
+        },
+        {
+          "start": 145,
+          "end": 152,
+          "path": "EN/sources/grinders-manual/pages-0145-0152.md"
+        },
+        {
+          "start": 153,
+          "end": 160,
+          "path": "EN/sources/grinders-manual/pages-0153-0160.md"
+        },
+        {
+          "start": 161,
+          "end": 168,
+          "path": "EN/sources/grinders-manual/pages-0161-0168.md"
+        },
+        {
+          "start": 169,
+          "end": 176,
+          "path": "EN/sources/grinders-manual/pages-0169-0176.md"
+        },
+        {
+          "start": 177,
+          "end": 184,
+          "path": "EN/sources/grinders-manual/pages-0177-0184.md"
+        },
+        {
+          "start": 185,
+          "end": 192,
+          "path": "EN/sources/grinders-manual/pages-0185-0192.md"
+        },
+        {
+          "start": 193,
+          "end": 200,
+          "path": "EN/sources/grinders-manual/pages-0193-0200.md"
+        },
+        {
+          "start": 201,
+          "end": 208,
+          "path": "EN/sources/grinders-manual/pages-0201-0208.md"
+        },
+        {
+          "start": 209,
+          "end": 216,
+          "path": "EN/sources/grinders-manual/pages-0209-0216.md"
+        },
+        {
+          "start": 217,
+          "end": 224,
+          "path": "EN/sources/grinders-manual/pages-0217-0224.md"
+        },
+        {
+          "start": 225,
+          "end": 232,
+          "path": "EN/sources/grinders-manual/pages-0225-0232.md"
+        },
+        {
+          "start": 233,
+          "end": 240,
+          "path": "EN/sources/grinders-manual/pages-0233-0240.md"
+        },
+        {
+          "start": 241,
+          "end": 248,
+          "path": "EN/sources/grinders-manual/pages-0241-0248.md"
+        },
+        {
+          "start": 249,
+          "end": 256,
+          "path": "EN/sources/grinders-manual/pages-0249-0256.md"
+        },
+        {
+          "start": 257,
+          "end": 264,
+          "path": "EN/sources/grinders-manual/pages-0257-0264.md"
+        },
+        {
+          "start": 265,
+          "end": 272,
+          "path": "EN/sources/grinders-manual/pages-0265-0272.md"
+        },
+        {
+          "start": 273,
+          "end": 280,
+          "path": "EN/sources/grinders-manual/pages-0273-0280.md"
+        },
+        {
+          "start": 281,
+          "end": 288,
+          "path": "EN/sources/grinders-manual/pages-0281-0288.md"
+        },
+        {
+          "start": 289,
+          "end": 296,
+          "path": "EN/sources/grinders-manual/pages-0289-0296.md"
+        },
+        {
+          "start": 297,
+          "end": 304,
+          "path": "EN/sources/grinders-manual/pages-0297-0304.md"
+        },
+        {
+          "start": 305,
+          "end": 312,
+          "path": "EN/sources/grinders-manual/pages-0305-0312.md"
+        },
+        {
+          "start": 313,
+          "end": 320,
+          "path": "EN/sources/grinders-manual/pages-0313-0320.md"
+        },
+        {
+          "start": 321,
+          "end": 328,
+          "path": "EN/sources/grinders-manual/pages-0321-0328.md"
+        },
+        {
+          "start": 329,
+          "end": 336,
+          "path": "EN/sources/grinders-manual/pages-0329-0336.md"
+        },
+        {
+          "start": 337,
+          "end": 344,
+          "path": "EN/sources/grinders-manual/pages-0337-0344.md"
+        },
+        {
+          "start": 345,
+          "end": 352,
+          "path": "EN/sources/grinders-manual/pages-0345-0352.md"
+        },
+        {
+          "start": 353,
+          "end": 360,
+          "path": "EN/sources/grinders-manual/pages-0353-0360.md"
+        },
+        {
+          "start": 361,
+          "end": 368,
+          "path": "EN/sources/grinders-manual/pages-0361-0368.md"
+        },
+        {
+          "start": 369,
+          "end": 376,
+          "path": "EN/sources/grinders-manual/pages-0369-0376.md"
+        },
+        {
+          "start": 377,
+          "end": 384,
+          "path": "EN/sources/grinders-manual/pages-0377-0384.md"
+        },
+        {
+          "start": 385,
+          "end": 392,
+          "path": "EN/sources/grinders-manual/pages-0385-0392.md"
+        },
+        {
+          "start": 393,
+          "end": 400,
+          "path": "EN/sources/grinders-manual/pages-0393-0400.md"
+        },
+        {
+          "start": 401,
+          "end": 408,
+          "path": "EN/sources/grinders-manual/pages-0401-0408.md"
+        },
+        {
+          "start": 409,
+          "end": 416,
+          "path": "EN/sources/grinders-manual/pages-0409-0416.md"
+        },
+        {
+          "start": 417,
+          "end": 424,
+          "path": "EN/sources/grinders-manual/pages-0417-0424.md"
+        },
+        {
+          "start": 425,
+          "end": 432,
+          "path": "EN/sources/grinders-manual/pages-0425-0432.md"
+        },
+        {
+          "start": 433,
+          "end": 440,
+          "path": "EN/sources/grinders-manual/pages-0433-0440.md"
+        },
+        {
+          "start": 441,
+          "end": 448,
+          "path": "EN/sources/grinders-manual/pages-0441-0448.md"
+        },
+        {
+          "start": 449,
+          "end": 456,
+          "path": "EN/sources/grinders-manual/pages-0449-0456.md"
+        },
+        {
+          "start": 457,
+          "end": 464,
+          "path": "EN/sources/grinders-manual/pages-0457-0464.md"
+        },
+        {
+          "start": 465,
+          "end": 472,
+          "path": "EN/sources/grinders-manual/pages-0465-0472.md"
+        },
+        {
+          "start": 473,
+          "end": 480,
+          "path": "EN/sources/grinders-manual/pages-0473-0480.md"
+        },
+        {
+          "start": 481,
+          "end": 488,
+          "path": "EN/sources/grinders-manual/pages-0481-0488.md"
+        },
+        {
+          "start": 489,
+          "end": 496,
+          "path": "EN/sources/grinders-manual/pages-0489-0496.md"
+        },
+        {
+          "start": 497,
+          "end": 504,
+          "path": "EN/sources/grinders-manual/pages-0497-0504.md"
+        },
+        {
+          "start": 505,
+          "end": 512,
+          "path": "EN/sources/grinders-manual/pages-0505-0512.md"
+        },
+        {
+          "start": 513,
+          "end": 520,
+          "path": "EN/sources/grinders-manual/pages-0513-0520.md"
+        },
+        {
+          "start": 521,
+          "end": 528,
+          "path": "EN/sources/grinders-manual/pages-0521-0528.md"
+        },
+        {
+          "start": 529,
+          "end": 536,
+          "path": "EN/sources/grinders-manual/pages-0529-0536.md"
+        },
+        {
+          "start": 537,
+          "end": 544,
+          "path": "EN/sources/grinders-manual/pages-0537-0544.md"
+        },
+        {
+          "start": 545,
+          "end": 552,
+          "path": "EN/sources/grinders-manual/pages-0545-0552.md"
+        },
+        {
+          "start": 553,
+          "end": 560,
+          "path": "EN/sources/grinders-manual/pages-0553-0560.md"
+        },
+        {
+          "start": 561,
+          "end": 568,
+          "path": "EN/sources/grinders-manual/pages-0561-0568.md"
+        },
+        {
+          "start": 569,
+          "end": 576,
+          "path": "EN/sources/grinders-manual/pages-0569-0576.md"
+        },
+        {
+          "start": 577,
+          "end": 584,
+          "path": "EN/sources/grinders-manual/pages-0577-0584.md"
+        },
+        {
+          "start": 585,
+          "end": 592,
+          "path": "EN/sources/grinders-manual/pages-0585-0592.md"
+        },
+        {
+          "start": 593,
+          "end": 600,
+          "path": "EN/sources/grinders-manual/pages-0593-0600.md"
+        },
+        {
+          "start": 601,
+          "end": 608,
+          "path": "EN/sources/grinders-manual/pages-0601-0608.md"
+        },
+        {
+          "start": 609,
+          "end": 616,
+          "path": "EN/sources/grinders-manual/pages-0609-0616.md"
+        },
+        {
+          "start": 617,
+          "end": 624,
+          "path": "EN/sources/grinders-manual/pages-0617-0624.md"
+        },
+        {
+          "start": 625,
+          "end": 632,
+          "path": "EN/sources/grinders-manual/pages-0625-0632.md"
+        },
+        {
+          "start": 633,
+          "end": 640,
+          "path": "EN/sources/grinders-manual/pages-0633-0640.md"
+        },
+        {
+          "start": 641,
+          "end": 648,
+          "path": "EN/sources/grinders-manual/pages-0641-0648.md"
+        },
+        {
+          "start": 649,
+          "end": 656,
+          "path": "EN/sources/grinders-manual/pages-0649-0656.md"
+        },
+        {
+          "start": 657,
+          "end": 664,
+          "path": "EN/sources/grinders-manual/pages-0657-0664.md"
+        },
+        {
+          "start": 665,
+          "end": 672,
+          "path": "EN/sources/grinders-manual/pages-0665-0672.md"
+        },
+        {
+          "start": 673,
+          "end": 680,
+          "path": "EN/sources/grinders-manual/pages-0673-0680.md"
+        },
+        {
+          "start": 681,
+          "end": 688,
+          "path": "EN/sources/grinders-manual/pages-0681-0688.md"
+        },
+        {
+          "start": 689,
+          "end": 696,
+          "path": "EN/sources/grinders-manual/pages-0689-0696.md"
+        },
+        {
+          "start": 697,
+          "end": 704,
+          "path": "EN/sources/grinders-manual/pages-0697-0704.md"
+        },
+        {
+          "start": 705,
+          "end": 712,
+          "path": "EN/sources/grinders-manual/pages-0705-0712.md"
+        },
+        {
+          "start": 713,
+          "end": 720,
+          "path": "EN/sources/grinders-manual/pages-0713-0720.md"
+        },
+        {
+          "start": 721,
+          "end": 728,
+          "path": "EN/sources/grinders-manual/pages-0721-0728.md"
+        },
+        {
+          "start": 729,
+          "end": 736,
+          "path": "EN/sources/grinders-manual/pages-0729-0736.md"
+        },
+        {
+          "start": 737,
+          "end": 744,
+          "path": "EN/sources/grinders-manual/pages-0737-0744.md"
+        },
+        {
+          "start": 745,
+          "end": 752,
+          "path": "EN/sources/grinders-manual/pages-0745-0752.md"
+        },
+        {
+          "start": 753,
+          "end": 760,
+          "path": "EN/sources/grinders-manual/pages-0753-0760.md"
+        },
+        {
+          "start": 761,
+          "end": 768,
+          "path": "EN/sources/grinders-manual/pages-0761-0768.md"
+        },
+        {
+          "start": 769,
+          "end": 776,
+          "path": "EN/sources/grinders-manual/pages-0769-0776.md"
+        },
+        {
+          "start": 777,
+          "end": 784,
+          "path": "EN/sources/grinders-manual/pages-0777-0784.md"
+        },
+        {
+          "start": 785,
+          "end": 792,
+          "path": "EN/sources/grinders-manual/pages-0785-0792.md"
+        },
+        {
+          "start": 793,
+          "end": 800,
+          "path": "EN/sources/grinders-manual/pages-0793-0800.md"
+        },
+        {
+          "start": 801,
+          "end": 808,
+          "path": "EN/sources/grinders-manual/pages-0801-0808.md"
+        },
+        {
+          "start": 809,
+          "end": 816,
+          "path": "EN/sources/grinders-manual/pages-0809-0816.md"
+        },
+        {
+          "start": 817,
+          "end": 824,
+          "path": "EN/sources/grinders-manual/pages-0817-0824.md"
+        },
+        {
+          "start": 825,
+          "end": 832,
+          "path": "EN/sources/grinders-manual/pages-0825-0832.md"
+        },
+        {
+          "start": 833,
+          "end": 840,
+          "path": "EN/sources/grinders-manual/pages-0833-0840.md"
+        },
+        {
+          "start": 841,
+          "end": 848,
+          "path": "EN/sources/grinders-manual/pages-0841-0848.md"
+        },
+        {
+          "start": 849,
+          "end": 856,
+          "path": "EN/sources/grinders-manual/pages-0849-0856.md"
+        },
+        {
+          "start": 857,
+          "end": 864,
+          "path": "EN/sources/grinders-manual/pages-0857-0864.md"
+        },
+        {
+          "start": 865,
+          "end": 872,
+          "path": "EN/sources/grinders-manual/pages-0865-0872.md"
+        },
+        {
+          "start": 873,
+          "end": 880,
+          "path": "EN/sources/grinders-manual/pages-0873-0880.md"
+        },
+        {
+          "start": 881,
+          "end": 888,
+          "path": "EN/sources/grinders-manual/pages-0881-0888.md"
+        },
+        {
+          "start": 889,
+          "end": 896,
+          "path": "EN/sources/grinders-manual/pages-0889-0896.md"
+        },
+        {
+          "start": 897,
+          "end": 904,
+          "path": "EN/sources/grinders-manual/pages-0897-0904.md"
+        },
+        {
+          "start": 905,
+          "end": 912,
+          "path": "EN/sources/grinders-manual/pages-0905-0912.md"
+        },
+        {
+          "start": 913,
+          "end": 920,
+          "path": "EN/sources/grinders-manual/pages-0913-0920.md"
+        },
+        {
+          "start": 921,
+          "end": 928,
+          "path": "EN/sources/grinders-manual/pages-0921-0928.md"
+        },
+        {
+          "start": 929,
+          "end": 936,
+          "path": "EN/sources/grinders-manual/pages-0929-0936.md"
+        },
+        {
+          "start": 937,
+          "end": 944,
+          "path": "EN/sources/grinders-manual/pages-0937-0944.md"
+        },
+        {
+          "start": 945,
+          "end": 952,
+          "path": "EN/sources/grinders-manual/pages-0945-0952.md"
+        },
+        {
+          "start": 953,
+          "end": 960,
+          "path": "EN/sources/grinders-manual/pages-0953-0960.md"
+        },
+        {
+          "start": 961,
+          "end": 968,
+          "path": "EN/sources/grinders-manual/pages-0961-0968.md"
+        },
+        {
+          "start": 969,
+          "end": 976,
+          "path": "EN/sources/grinders-manual/pages-0969-0976.md"
+        },
+        {
+          "start": 977,
+          "end": 984,
+          "path": "EN/sources/grinders-manual/pages-0977-0984.md"
+        },
+        {
+          "start": 985,
+          "end": 992,
+          "path": "EN/sources/grinders-manual/pages-0985-0992.md"
+        },
+        {
+          "start": 993,
+          "end": 1000,
+          "path": "EN/sources/grinders-manual/pages-0993-1000.md"
+        },
+        {
+          "start": 1001,
+          "end": 1008,
+          "path": "EN/sources/grinders-manual/pages-1001-1008.md"
+        },
+        {
+          "start": 1009,
+          "end": 1016,
+          "path": "EN/sources/grinders-manual/pages-1009-1016.md"
+        },
+        {
+          "start": 1017,
+          "end": 1024,
+          "path": "EN/sources/grinders-manual/pages-1017-1024.md"
+        },
+        {
+          "start": 1025,
+          "end": 1032,
+          "path": "EN/sources/grinders-manual/pages-1025-1032.md"
+        },
+        {
+          "start": 1033,
+          "end": 1040,
+          "path": "EN/sources/grinders-manual/pages-1033-1040.md"
+        },
+        {
+          "start": 1041,
+          "end": 1048,
+          "path": "EN/sources/grinders-manual/pages-1041-1048.md"
+        },
+        {
+          "start": 1049,
+          "end": 1056,
+          "path": "EN/sources/grinders-manual/pages-1049-1056.md"
+        },
+        {
+          "start": 1057,
+          "end": 1064,
+          "path": "EN/sources/grinders-manual/pages-1057-1064.md"
+        },
+        {
+          "start": 1065,
+          "end": 1072,
+          "path": "EN/sources/grinders-manual/pages-1065-1072.md"
+        },
+        {
+          "start": 1073,
+          "end": 1080,
+          "path": "EN/sources/grinders-manual/pages-1073-1080.md"
+        },
+        {
+          "start": 1081,
+          "end": 1088,
+          "path": "EN/sources/grinders-manual/pages-1081-1088.md"
+        },
+        {
+          "start": 1089,
+          "end": 1096,
+          "path": "EN/sources/grinders-manual/pages-1089-1096.md"
+        },
+        {
+          "start": 1097,
+          "end": 1104,
+          "path": "EN/sources/grinders-manual/pages-1097-1104.md"
+        },
+        {
+          "start": 1105,
+          "end": 1112,
+          "path": "EN/sources/grinders-manual/pages-1105-1112.md"
+        },
+        {
+          "start": 1113,
+          "end": 1120,
+          "path": "EN/sources/grinders-manual/pages-1113-1120.md"
+        },
+        {
+          "start": 1121,
+          "end": 1128,
+          "path": "EN/sources/grinders-manual/pages-1121-1128.md"
+        },
+        {
+          "start": 1129,
+          "end": 1136,
+          "path": "EN/sources/grinders-manual/pages-1129-1136.md"
+        },
+        {
+          "start": 1137,
+          "end": 1144,
+          "path": "EN/sources/grinders-manual/pages-1137-1144.md"
+        },
+        {
+          "start": 1145,
+          "end": 1152,
+          "path": "EN/sources/grinders-manual/pages-1145-1152.md"
+        },
+        {
+          "start": 1153,
+          "end": 1160,
+          "path": "EN/sources/grinders-manual/pages-1153-1160.md"
+        },
+        {
+          "start": 1161,
+          "end": 1168,
+          "path": "EN/sources/grinders-manual/pages-1161-1168.md"
+        },
+        {
+          "start": 1169,
+          "end": 1176,
+          "path": "EN/sources/grinders-manual/pages-1169-1176.md"
+        },
+        {
+          "start": 1177,
+          "end": 1184,
+          "path": "EN/sources/grinders-manual/pages-1177-1184.md"
+        },
+        {
+          "start": 1185,
+          "end": 1192,
+          "path": "EN/sources/grinders-manual/pages-1185-1192.md"
+        },
+        {
+          "start": 1193,
+          "end": 1200,
+          "path": "EN/sources/grinders-manual/pages-1193-1200.md"
+        },
+        {
+          "start": 1201,
+          "end": 1208,
+          "path": "EN/sources/grinders-manual/pages-1201-1208.md"
+        },
+        {
+          "start": 1209,
+          "end": 1216,
+          "path": "EN/sources/grinders-manual/pages-1209-1216.md"
+        },
+        {
+          "start": 1217,
+          "end": 1224,
+          "path": "EN/sources/grinders-manual/pages-1217-1224.md"
+        },
+        {
+          "start": 1225,
+          "end": 1232,
+          "path": "EN/sources/grinders-manual/pages-1225-1232.md"
+        },
+        {
+          "start": 1233,
+          "end": 1240,
+          "path": "EN/sources/grinders-manual/pages-1233-1240.md"
+        },
+        {
+          "start": 1241,
+          "end": 1248,
+          "path": "EN/sources/grinders-manual/pages-1241-1248.md"
+        },
+        {
+          "start": 1249,
+          "end": 1256,
+          "path": "EN/sources/grinders-manual/pages-1249-1256.md"
+        },
+        {
+          "start": 1257,
+          "end": 1264,
+          "path": "EN/sources/grinders-manual/pages-1257-1264.md"
+        },
+        {
+          "start": 1265,
+          "end": 1272,
+          "path": "EN/sources/grinders-manual/pages-1265-1272.md"
+        },
+        {
+          "start": 1273,
+          "end": 1280,
+          "path": "EN/sources/grinders-manual/pages-1273-1280.md"
+        },
+        {
+          "start": 1281,
+          "end": 1288,
+          "path": "EN/sources/grinders-manual/pages-1281-1288.md"
+        },
+        {
+          "start": 1289,
+          "end": 1296,
+          "path": "EN/sources/grinders-manual/pages-1289-1296.md"
+        },
+        {
+          "start": 1297,
+          "end": 1304,
+          "path": "EN/sources/grinders-manual/pages-1297-1304.md"
+        },
+        {
+          "start": 1305,
+          "end": 1312,
+          "path": "EN/sources/grinders-manual/pages-1305-1312.md"
+        },
+        {
+          "start": 1313,
+          "end": 1320,
+          "path": "EN/sources/grinders-manual/pages-1313-1320.md"
+        },
+        {
+          "start": 1321,
+          "end": 1328,
+          "path": "EN/sources/grinders-manual/pages-1321-1328.md"
+        },
+        {
+          "start": 1329,
+          "end": 1336,
+          "path": "EN/sources/grinders-manual/pages-1329-1336.md"
+        },
+        {
+          "start": 1337,
+          "end": 1344,
+          "path": "EN/sources/grinders-manual/pages-1337-1344.md"
+        },
+        {
+          "start": 1345,
+          "end": 1352,
+          "path": "EN/sources/grinders-manual/pages-1345-1352.md"
+        },
+        {
+          "start": 1353,
+          "end": 1360,
+          "path": "EN/sources/grinders-manual/pages-1353-1360.md"
+        },
+        {
+          "start": 1361,
+          "end": 1368,
+          "path": "EN/sources/grinders-manual/pages-1361-1368.md"
+        },
+        {
+          "start": 1369,
+          "end": 1376,
+          "path": "EN/sources/grinders-manual/pages-1369-1376.md"
+        },
+        {
+          "start": 1377,
+          "end": 1384,
+          "path": "EN/sources/grinders-manual/pages-1377-1384.md"
+        },
+        {
+          "start": 1385,
+          "end": 1392,
+          "path": "EN/sources/grinders-manual/pages-1385-1392.md"
+        },
+        {
+          "start": 1393,
+          "end": 1400,
+          "path": "EN/sources/grinders-manual/pages-1393-1400.md"
+        },
+        {
+          "start": 1401,
+          "end": 1408,
+          "path": "EN/sources/grinders-manual/pages-1401-1408.md"
+        },
+        {
+          "start": 1409,
+          "end": 1416,
+          "path": "EN/sources/grinders-manual/pages-1409-1416.md"
+        },
+        {
+          "start": 1417,
+          "end": 1424,
+          "path": "EN/sources/grinders-manual/pages-1417-1424.md"
+        },
+        {
+          "start": 1425,
+          "end": 1432,
+          "path": "EN/sources/grinders-manual/pages-1425-1432.md"
+        },
+        {
+          "start": 1433,
+          "end": 1440,
+          "path": "EN/sources/grinders-manual/pages-1433-1440.md"
+        },
+        {
+          "start": 1441,
+          "end": 1448,
+          "path": "EN/sources/grinders-manual/pages-1441-1448.md"
+        },
+        {
+          "start": 1449,
+          "end": 1456,
+          "path": "EN/sources/grinders-manual/pages-1449-1456.md"
+        },
+        {
+          "start": 1457,
+          "end": 1464,
+          "path": "EN/sources/grinders-manual/pages-1457-1464.md"
+        },
+        {
+          "start": 1465,
+          "end": 1472,
+          "path": "EN/sources/grinders-manual/pages-1465-1472.md"
+        },
+        {
+          "start": 1473,
+          "end": 1480,
+          "path": "EN/sources/grinders-manual/pages-1473-1480.md"
+        },
+        {
+          "start": 1481,
+          "end": 1488,
+          "path": "EN/sources/grinders-manual/pages-1481-1488.md"
+        },
+        {
+          "start": 1489,
+          "end": 1496,
+          "path": "EN/sources/grinders-manual/pages-1489-1496.md"
+        },
+        {
+          "start": 1497,
+          "end": 1504,
+          "path": "EN/sources/grinders-manual/pages-1497-1504.md"
+        },
+        {
+          "start": 1505,
+          "end": 1512,
+          "path": "EN/sources/grinders-manual/pages-1505-1512.md"
+        },
+        {
+          "start": 1513,
+          "end": 1520,
+          "path": "EN/sources/grinders-manual/pages-1513-1520.md"
+        },
+        {
+          "start": 1521,
+          "end": 1528,
+          "path": "EN/sources/grinders-manual/pages-1521-1528.md"
+        },
+        {
+          "start": 1529,
+          "end": 1536,
+          "path": "EN/sources/grinders-manual/pages-1529-1536.md"
+        },
+        {
+          "start": 1537,
+          "end": 1544,
+          "path": "EN/sources/grinders-manual/pages-1537-1544.md"
+        },
+        {
+          "start": 1545,
+          "end": 1552,
+          "path": "EN/sources/grinders-manual/pages-1545-1552.md"
+        },
+        {
+          "start": 1553,
+          "end": 1560,
+          "path": "EN/sources/grinders-manual/pages-1553-1560.md"
+        },
+        {
+          "start": 1561,
+          "end": 1567,
+          "path": "EN/sources/grinders-manual/pages-1561-1567.md"
+        }
+      ],
+      "en_index": "EN/sources/grinders-manual/index.md",
+      "th_index": "TH/sources/grinders-manual/index.md"
+    }
+  ]
+}
