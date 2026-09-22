@@ -1,6 +1,6 @@
 # Source-specific guides
 
-All 25 unique PDFs have a source-specific map: 343 main TOC entries and 108 explained study themes. The archive contains 26 PDF entries because *Play Optimal Poker* occurs twice; this index lists the identical book once. Each guide links the original PDF and page-faithful corpus.
+All 27 unique PDFs have a source-specific map: 353 main entries and 117 explained study themes. The ZIP contains 26 entries (25 unique PDFs) because *Play Optimal Poker* occurs twice; two more PDFs come from PokerCoaching. Each guide links the original PDF and page-faithful corpus.
 
 | Source | PDF pages | TOC entries | Study themes | Guide |
 |---|---:|---:|---:|---|
@@ -29,5 +29,7 @@ All 25 unique PDFs have a source-specific map: 343 main TOC entries and 108 expl
 | Winning Secrets of Online Poker | 277 | 16 | 4 | [guide](winning-secrets-online-poker.md) |
 | Decide to Play Great Poker — Annie Duke | 136 | 20 | 4 | [guide](decide-to-play-great-poker.md) |
 | The Grinder's Manual | 1567 | 15 | 5 | [guide](grinders-manual.md) |
+| PokerCoaching Cash Game Cheat Sheet | 5 | 5 | 4 | [guide](pokercoaching-cash-game-cheat-sheet.md) |
+| PokerCoaching Tournament Cheat Sheet | 5 | 5 | 5 | [guide](pokercoaching-tournament-cheat-sheet.md) |
 
 Read the [English source corpus](../sources/index.md) for all page-level text and PDF links.

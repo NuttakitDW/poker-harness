@@ -1,8 +1,8 @@
 {
   "archive": "Poker book-20260922T043840Z-1-001.zip",
   "archive_entries": 26,
-  "unique_sha256": 25,
-  "total_unique_pdf_pages": 5675,
+  "unique_sha256": 27,
+  "total_unique_pdf_pages": 5685,
   "books": [
     {
       "id": "thai-document-915850",
@@ -7694,6 +7694,115 @@
       ],
       "en_index": "EN/sources/grinders-manual/index.md",
       "th_index": "TH/sources/grinders-manual/index.md"
+    },
+    {
+      "id": "pokercoaching-cash-game-cheat-sheet",
+      "title": "PokerCoaching Cash Game Cheat Sheet",
+      "source_pdf": "sources/pdf/pokercoaching/PokerCoaching_Cash_Game_Cheat_Sheet.pdf",
+      "sha256": "4ae49b56fabdab03cee5a661cbaca756c4fefb4a067fe6c6e01ccc8e6559e05d",
+      "pdf_pages": 5,
+      "aliases": [],
+      "empty_text_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "low_text_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "embedded_image_pages": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "embedded_image_count": 22,
+      "embedded_url_pages": [
+        5
+      ],
+      "ocr_attempted_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "ocr_nonempty_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 5,
+          "path": "EN/sources/pokercoaching-cash-game-cheat-sheet/pages-0001-0005.md"
+        }
+      ],
+      "en_index": "EN/sources/pokercoaching-cash-game-cheat-sheet/index.md",
+      "th_index": "TH/sources/pokercoaching-cash-game-cheat-sheet/index.md",
+      "provenance": {
+        "url": "https://jlsecrets.s3.amazonaws.com/cheatsheet/PokerCoaching_Cash_Game_Cheat_Sheet.pdf",
+        "landing_url": "https://pokercoaching.com/downloadable-cheatsheets-thankyou",
+        "retrieved_on": "2026-09-22"
+      }
+    },
+    {
+      "id": "pokercoaching-tournament-cheat-sheet",
+      "title": "PokerCoaching Tournament Cheat Sheet",
+      "source_pdf": "sources/pdf/pokercoaching/PokerCoaching_Tournament_Cheat_Sheet.pdf",
+      "sha256": "773c28ab1de01c234958d62bd316224f7bd315491126028fe502443d30f47e0e",
+      "pdf_pages": 5,
+      "aliases": [],
+      "empty_text_pages": [
+        4
+      ],
+      "low_text_pages": [
+        4,
+        5
+      ],
+      "embedded_image_pages": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "embedded_image_count": 36,
+      "embedded_url_pages": [
+        5
+      ],
+      "ocr_attempted_pages": [
+        4,
+        5
+      ],
+      "ocr_nonempty_pages": [
+        4,
+        5
+      ],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 5,
+          "path": "EN/sources/pokercoaching-tournament-cheat-sheet/pages-0001-0005.md"
+        }
+      ],
+      "en_index": "EN/sources/pokercoaching-tournament-cheat-sheet/index.md",
+      "th_index": "TH/sources/pokercoaching-tournament-cheat-sheet/index.md",
+      "provenance": {
+        "url": "https://jlsecrets.s3.amazonaws.com/cheatsheet/PokerCoaching_Tournament_Cheat_Sheet.pdf",
+        "landing_url": "https://pokercoaching.com/downloadable-cheatsheets-thankyou",
+        "retrieved_on": "2026-09-22"
+      }
     }
   ]
 }

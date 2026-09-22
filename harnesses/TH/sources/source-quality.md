@@ -33,6 +33,9 @@ The Theory of Poker เป็นไฟล์ PDF แบบหน้าคู่ 
 | [Decide to Play Great Poker — Annie Duke](decide-to-play-great-poker/index.md) | 136 | 5 | 37 | 43 | 0 | 1 |
 | [The Grinder's Manual](grinders-manual/index.md) | 1567 | 133 | 411 | 448 | 2 | 96 |
 
+| [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md) | 5 | 5 | 4 | 22 | 1 | 5 |
+| [PokerCoaching Tournament Cheat Sheet](pokercoaching-tournament-cheat-sheet/index.md) | 5 | 2 | 4 | 36 | 1 | 2 |
+
 ## ข้อจำกัดที่ตรวจพบ
 
 - [Poker Math Preflop Workbook หน้า PDF 11](poker-math-preflop-workbook/index.md): สัญลักษณ์ดอกไพ่หาย และอักษรหน้าไพ่บางตัวอ่านผิด เช่น Q เป็น O มีการถอดคู่ไพ่ 6 ข้อจากภาพจริงไว้ในหน้าข้อความนั้นแล้ว สำหรับโจทย์หน้าอื่นในเล่มนี้ควรเทียบ PDF ต้นฉบับก่อนใช้ข้อมูลไพ่หรือตัวเลข
@@ -42,3 +45,7 @@ The Theory of Poker เป็นไฟล์ PDF แบบหน้าคู่ 
 
 - [Super System 2 หน้า PDF 251](../../EN/sources/super-system-2/pages-0249-0256.md#pdf-page-251): ดอกไพ่ในตัวอย่าง Stud eight-or-better ปรากฏเป็นเครื่องหมายคำถามทั้งใน PDF ต้นฉบับและข้อความที่สกัด จึงไม่ควรเดาดอกไพ่
 - [Pot-Limit Omaha — Jeff Hwang หน้า PDF 35](../../EN/sources/pot-limit-omaha-jeff-hwang/pages-0033-0040.md#pdf-page-35): ภาพไพ่ในตัวอย่างต้นบทเลื่อนแทรกข้อความและขอบขวาถูกตัด ส่วนข้อความสกัดไม่แสดงไพ่ส่วนตัวและบอร์ด จึงไม่ควรถอดไพ่หรือเอาต์ที่แน่นอนแล้วอ้างว่าตรวจยืนยัน
+
+- [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md): ทั้งห้าหน้าไม่มีข้อความที่สกัดจาก PDF โดยตรง OCR ยังไม่ได้ตรวจทานและอาจสลับลำดับสองคอลัมน์ หน้า 4 เป็นภาพลำดับไพ่ ควรดูไพ่และดอกใน PDF
+
+- [PokerCoaching Tournament Cheat Sheet หน้า PDF 4](../../EN/sources/pokercoaching-tournament-cheat-sheet/pages-0001-0005.md#pdf-page-4): ภาพลำดับไพ่ไม่มีข้อความต้นฉบับที่สกัดได้ หน้า 5 ใช้หัว Cash Game Cheat Sheet แม้หน้า 1–3 ระบุว่าเป็นชีตทัวร์นาเมนต์ จึงถือเป็นป้ายหน้าทรัพยากร ไม่ใช่เอกสารอีกฉบับ

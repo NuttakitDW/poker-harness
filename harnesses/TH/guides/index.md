@@ -1,6 +1,6 @@
 # คู่มือแยกตามต้นฉบับ
 
-PDF ไม่ซ้ำมี 25 เล่ม/เอกสาร จับคู่สารบัญหลัก 343 รายการและอธิบายแก่นเรื่อง 108 กลุ่ม ส่วน ZIP มี 26 รายการเพราะ *Play Optimal Poker* ซ้ำกัน จึงลงรายการครั้งเดียว ทุกคู่มือเชื่อมไปยัง PDF ต้นฉบับและข้อความที่สกัดตามหน้า
+PDF ไม่ซ้ำทั้งหมด 27 เล่ม/เอกสาร จับคู่หัวข้อหลัก 353 รายการและอธิบายแก่นเรื่อง 117 กลุ่ม ZIP มี 26 รายการ (ไม่ซ้ำ 25 ไฟล์) เพราะ *Play Optimal Poker* ซ้ำกัน อีก 2 ไฟล์มาจาก PokerCoaching ทุกคู่มือเชื่อม PDF ต้นฉบับและข้อความสกัดตามหน้า
 
 | ต้นฉบับ | หน้า PDF | หัวข้อสารบัญ | กลุ่มคำอธิบาย | คู่มือ |
 |---|---:|---:|---:|---|
@@ -29,5 +29,7 @@ PDF ไม่ซ้ำมี 25 เล่ม/เอกสาร จับคู�
 | Winning Secrets of Online Poker | 277 | 16 | 4 | [อ่านคู่มือ](winning-secrets-online-poker.md) |
 | Decide to Play Great Poker — Annie Duke | 136 | 20 | 4 | [อ่านคู่มือ](decide-to-play-great-poker.md) |
 | The Grinder's Manual | 1567 | 15 | 5 | [อ่านคู่มือ](grinders-manual.md) |
+| PokerCoaching Cash Game Cheat Sheet | 5 | 5 | 4 | [อ่านคู่มือ](pokercoaching-cash-game-cheat-sheet.md) |
+| PokerCoaching Tournament Cheat Sheet | 5 | 5 | 5 | [อ่านคู่มือ](pokercoaching-tournament-cheat-sheet.md) |
 
 ดู [คลังต้นฉบับภาษาอังกฤษ](../../EN/sources/index.md) เพื่อค้นข้อความตามหน้าและลิงก์ PDF

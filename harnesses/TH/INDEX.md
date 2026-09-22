@@ -9,6 +9,8 @@
 - [ศัพท์สองภาษา](glossary.md)
 - [ฉบับอังกฤษ](../EN/INDEX.md)
 
+ชีต PokerCoaching: [เกมเงินสด](guides/pokercoaching-cash-game-cheat-sheet.md) · [ทัวร์นาเมนต์](guides/pokercoaching-tournament-cheat-sheet.md) ไฟล์ต้นฉบับอยู่ใน[รายการต้นฉบับ](sources/index.md)
+
 ## การ์ดหัวข้อ
 
 - [กติกา การเปิดไพ่ และลำดับไพ่](topics/01-rules-and-rankings.md)
@@ -32,3 +34,6 @@
 - [จิตใจ สมรรถนะ และเงินทุน](topics/19-mental-game-and-bankroll.md)
 - [การศึกษา Workbook และการประเมินแหล่งข้อมูล](topics/20-study-and-source-evaluation.md)
 - [อุปมาโป๊กเกอร์กับการเงิน](topics/21-poker-and-finance-analogies.md)
+- [นักโป๊กเกอร์และผู้เล่นไทย](topics/22-poker-players-and-thailand.md)
+- [ทัวร์โป๊กเกอร์และประวัติ](topics/23-poker-tours-and-history.md)
+- [อันดับและผลงานโป๊กเกอร์](topics/24-poker-rankings-and-results.md)

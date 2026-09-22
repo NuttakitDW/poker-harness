@@ -8,12 +8,19 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "voice"))
 import corpus  # noqa: E402
 import retrieval  # noqa: E402
+import brain  # noqa: E402
 
 
 class CorpusTests(unittest.TestCase):
     def test_both_language_editions_load(self):
         languages = {card.language for card in corpus.load_cards()}
         self.assertEqual(languages, {"TH", "EN"})
+
+    def test_general_poker_cards_have_both_language_editions(self):
+        cards = corpus.load_cards()
+        for slug in ("22-poker-players-and-thailand", "23-poker-tours-and-history", "24-poker-rankings-and-results"):
+            with self.subTest(slug=slug):
+                self.assertEqual({card.language for card in cards if card.slug == slug}, {"TH", "EN"})
 
     def test_cards_resolve_real_source_pages(self):
         cards = [c for c in corpus.load_cards() if c.citations]
@@ -51,3 +58,56 @@ class RoutingTests(unittest.TestCase):
 
     def test_unrelated_question_returns_nothing(self):
         self.assertEqual(retrieval.search("zzzz qqqq xxxx"), ())
+
+    def test_general_poker_people_tours_and_rankings_route_to_new_cards(self):
+        for question, prefix in (
+            ("ลูกชุปรู้จักพิปป๊อปนาทีนักโป๊กเกินดับหนึ่งในประเทศไทยไหมครับ", "24"),
+            ("รู้จักปุณณัตถ์ ปุณศรีไหม", "22"),
+            ("Phil Ivey คือใคร", "22"),
+            ("รู้จักฟิล ไอวี่ไหม", "22"),
+            ("แดเนียล เนเกรนูคือใคร", "22"),
+            ("EPT คืออะไร", "23"),
+            ("Triton คืออะไร", "23"),
+            ("ไทรทันคืออะไร", "23"),
+            ("เวิลด์โป๊กเกอร์ทัวร์คืออะไร", "23"),
+            ("เวิลด์ซีรีส์ออฟโป๊กเกอร์คืออะไร", "23"),
+            ("GPI Player of the Year ต่างจาก all-time money list อย่างไร", "24"),
+        ):
+            with self.subTest(question=question):
+                self.assert_routes_to(question, prefix)
+
+    def test_general_knowledge_context_includes_relevant_dated_evidence(self):
+        for question, evidence in (
+            ("ลูกชุปรู้จักพิปป๊อปนาทีนักโป๊กเกินดับหนึ่งในประเทศไทยไหมครับ", "Ranking snapshot: Generated 2026-09-20"),
+            ("รู้จักปุณณัตถ์ ปุณศรีไหม", "Tatler Asia Thai-language interview"),
+            ("Phil Ivey คือใคร", "2017 Poker Hall of Fame"),
+            ("รู้จักฟิล ไอวี่ไหม", "2017 Poker Hall of Fame"),
+            ("แดเนียล เนเกรนูคือใคร", "2014 Poker Hall of Fame"),
+            ("Kannapong Tent คือใคร", "Natural8 official announcement"),
+            ("Triton คืออะไร", "Triton Poker Series official story page"),
+            ("ไทรทันคืออะไร", "Triton Poker Series official story page"),
+            ("เวิลด์โป๊กเกอร์ทัวร์คืออะไร", "World Poker Tour official about page"),
+            ("เวิลด์ซีรีส์ออฟโป๊กเกอร์คืออะไร", "World Series of Poker official news"),
+        ):
+            with self.subTest(question=question):
+                context, topics, pages = brain.gather(question)
+                self.assertIn(evidence, context)
+                self.assertTrue(topics)
+                self.assertTrue(pages)
+
+    def test_ambiguous_name_context_asks_to_identify_person(self):
+        context, topics, _ = brain.gather("พิปป๊อปนาทีคือใคร")
+        self.assertIn("TH/22-poker-players-and-thailand", topics)
+        self.assertIn("ถ้าชื่อจากเสียงไม่ชัด", context)
+        self.assertIn("ถามชื่อซ้ำสั้น ๆ", context)
+        self.assertIn("ชื่อคนจากเสียงอาจเพี้ยน", brain.system_prompt())
+
+    def test_english_general_knowledge_routes_to_matching_cards(self):
+        for question, prefix in (
+            ("Who won GPI 2025 Player of the Year?", "22"),
+            ("Who founded the World Poker Tour?", "23"),
+        ):
+            with self.subTest(question=question):
+                hits = retrieval.search(question, language="EN")
+                self.assertTrue(hits)
+                self.assertTrue(hits[0].card.slug.startswith(prefix))

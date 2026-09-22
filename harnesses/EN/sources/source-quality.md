@@ -33,6 +33,9 @@ The Theory of Poker uses two printed pages per landscape PDF page. Its extractio
 | [Decide to Play Great Poker — Annie Duke](decide-to-play-great-poker/index.md) | 136 | 5 | 37 | 43 | 0 | 1 |
 | [The Grinder's Manual](grinders-manual/index.md) | 1567 | 133 | 411 | 448 | 2 | 96 |
 
+| [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md) | 5 | 5 | 4 | 22 | 1 | 5 |
+| [PokerCoaching Tournament Cheat Sheet](pokercoaching-tournament-cheat-sheet/index.md) | 5 | 2 | 4 | 36 | 1 | 2 |
+
 ## Specific extraction limits
 
 - [Poker Math Preflop Workbook, PDF page 11](poker-math-preflop-workbook/pages-0009-0016.md#pdf-page-11): suit symbols disappear and some card ranks are misread (for example Q may appear as O). A six-matchup visual transcription is attached to that page. Exercise pages throughout this workbook require comparison with the PDF before using card notation or numeric results.
@@ -42,3 +45,7 @@ The Theory of Poker uses two printed pages per landscape PDF page. Its extractio
 
 - [Super System 2, PDF page 251](super-system-2/pages-0249-0256.md#pdf-page-251): card suits in a stud eight-or-better example appear as literal question marks in the original PDF and extraction; do not infer those suits.
 - [Pot-Limit Omaha — Jeff Hwang, PDF page 35](pot-limit-omaha-jeff-hwang/pages-0033-0040.md#pdf-page-35): the opening example's card images are displaced into the prose, its right edge is clipped, and the extracted text omits the hands and board. Do not reconstruct exact cards or outs as verified.
+
+- [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md): all five pages lack native extractable text. OCR supplements are unverified and can scramble the two-column reading order. Page 4 is an illustrated hand-ranking chart; inspect the PDF for cards and suits.
+
+- [PokerCoaching Tournament Cheat Sheet, PDF page 4](pokercoaching-tournament-cheat-sheet/pages-0001-0005.md#pdf-page-4): the hand-ranking chart is visual and has no native text. Page 5 has a Cash Game Cheat Sheet heading despite the tournament title on pages 1–3; treat it as a resource-page label, not a different document.

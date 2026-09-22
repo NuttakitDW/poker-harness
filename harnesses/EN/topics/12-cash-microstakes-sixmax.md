@@ -28,8 +28,8 @@ Assuming all microstakes opponents play alike; ignoring rake in small pots.
 
 ## Source pages
 
-[Crushing the Microstakes, PDF p. 25](../sources/crushing-the-microstakes/pages-0025-0032.md#pdf-page-25) · [2+2 NL 6-Max, PDF p. 13](../sources/two-plus-two-nl-six-max/pages-0009-0016.md#pdf-page-13) · [The Grinder's Manual, PDF p. 43](../sources/grinders-manual/pages-0041-0048.md#pdf-page-43)
+[Crushing the Microstakes, PDF p. 25](../sources/crushing-the-microstakes/pages-0025-0032.md#pdf-page-25) · [2+2 NL 6-Max, PDF p. 13](../sources/two-plus-two-nl-six-max/pages-0009-0016.md#pdf-page-13) · [The Grinder's Manual, PDF p. 43](../sources/grinders-manual/pages-0041-0048.md#pdf-page-43) · [PokerCoaching Cash Game Cheat Sheet, PDF p. 2 (OCR unverified)](../sources/pokercoaching-cash-game-cheat-sheet/pages-0001-0005.md#pdf-page-2)
 
 ## Related
 
-[Position, ranges and combinations](./02-position-ranges-combos.md) · [Preflop decision sequence](./06-preflop-decisions.md) · [Mental game, performance and bankroll](./19-mental-game-and-bankroll.md) · [Topic index](../INDEX.md)
+[Position, ranges and combinations](./02-position-ranges-combos.md) · [Preflop decision sequence](./06-preflop-decisions.md) · [PokerCoaching cash cheat sheet](../guides/pokercoaching-cash-game-cheat-sheet.md) · [Mental game, performance and bankroll](./19-mental-game-and-bankroll.md) · [Topic index](../INDEX.md)

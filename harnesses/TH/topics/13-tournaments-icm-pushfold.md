@@ -31,8 +31,8 @@ blind และ ante ในทัวร์นาเมนต์สูงขึ�
 
 ## หน้าต้นฉบับ
 
-[DN Workbook 9036, PDF p. 65](../../EN/sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-65) · [Gripsed MTT Strategy Guide, PDF p. 24](../../EN/sources/gripsed-mtt-strategy-guide/pages-0017-0024.md#pdf-page-24) · [DN Workbook 9036, PDF p. 68](../../EN/sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-68)
+[DN Workbook 9036, PDF p. 65](../../EN/sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-65) · [Gripsed MTT Strategy Guide, PDF p. 24](../../EN/sources/gripsed-mtt-strategy-guide/pages-0017-0024.md#pdf-page-24) · [DN Workbook 9036, PDF p. 68](../../EN/sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-68) · [PokerCoaching Tournament Cheat Sheet หน้า PDF 1](../../EN/sources/pokercoaching-tournament-cheat-sheet/pages-0001-0005.md#pdf-page-1)
 
 ## หัวข้อที่เกี่ยวข้อง
 
-[ความลึกสแตกและรูปทรงพอต](./03-stack-depth-and-spr.md) · [อิควิตี พอตออดส์ และมูลค่าคาดหวัง](./04-equity-pot-odds-ev.md) · [จิตใจ สมรรถนะ และเงินทุน](./19-mental-game-and-bankroll.md) · [สารบัญหัวข้อ](../INDEX.md)
+[ความลึกสแตกและรูปทรงพอต](./03-stack-depth-and-spr.md) · [อิควิตี พอตออดส์ และมูลค่าคาดหวัง](./04-equity-pot-odds-ev.md) · [ชีต PokerCoaching ทัวร์นาเมนต์](../guides/pokercoaching-tournament-cheat-sheet.md) · [จิตใจ สมรรถนะ และเงินทุน](./19-mental-game-and-bankroll.md) · [สารบัญหัวข้อ](../INDEX.md)

@@ -108,6 +108,19 @@ def native_text_present(page_body: str) -> bool:
     return False
 
 
+def valid_web_source(path: Path, root: Path) -> bool:
+    """Web notes are local evidence with an attributable, dated original."""
+    if not path.is_relative_to(root / "harnesses" / "EN" / "sources" / "web") or not path.is_file():
+        return False
+    body = prose_only(path.read_text(encoding="utf-8"))
+    return all((
+        re.search(r"^Source: \S.+$", body, re.MULTILINE),
+        re.search(r"^URL: https://\S+$", body, re.MULTILINE),
+        re.search(r"^Checked: \d{4}-\d{2}-\d{2}$", body, re.MULTILINE),
+        re.search(r"^Evidence:\s*\S", body, re.MULTILINE),
+    ))
+
+
 def validate_curated(root: Path, books: list[dict]) -> list[str]:
     errors = []
     book_ids = {book["id"] for book in books}
@@ -120,8 +133,10 @@ def validate_curated(root: Path, books: list[dict]) -> list[str]:
             files = {path.stem: path for path in (base / subdir).glob("*.md") if path.name != "index.md"}
             if expected is not None and set(files) != expected:
                 errors.append(f"{language} guide coverage differs from manifest: missing={sorted(expected - set(files))} extra={sorted(set(files) - expected)}")
-            if subdir == "topics" and len(files) != 21:
-                errors.append(f"{language} topic count differs from expected 21: {len(files)}")
+            if subdir == "topics":
+                legacy = {name for name in files if re.match(r"^(?:0[1-9]|1\d|2[01])-", name)}
+                if len(legacy) != 21:
+                    errors.append(f"{language} legacy PDF topic coverage differs from expected 21: {len(legacy)}")
             index = base / ("guides/index.md" if subdir == "guides" else "INDEX.md")
             if not index.is_file():
                 errors.append(f"Missing {language} {subdir} index: {index}")
@@ -139,8 +154,15 @@ def validate_curated(root: Path, books: list[dict]) -> list[str]:
                     if not re.search(rf"`{re.escape(slug)}`", body):
                         errors.append(f"Missing stable topic ID {slug}: {path}")
                     section = body.split("## Source pages\n", 1)[-1].split("## หน้าต้นฉบับ\n", 1)[-1].split("\n## ", 1)[0]
-                    if not re.search(r"sources/[^/)]+/pages-\d+-\d+\.md#pdf-page-\d+", section):
-                        errors.append(f"Missing page-specific source citation: {path}")
+                    if slug in legacy:
+                        if not re.search(r"sources/[^/)]+/pages-\d+-\d+\.md#pdf-page-\d+", section):
+                            errors.append(f"Missing page-specific source citation: {path}")
+                    else:
+                        citations = [unquote(urlsplit(link).path) for link in LINK.findall(section)]
+                        web_notes = [(path.parent / target).resolve() for target in citations
+                                     if target.endswith(".md") and "/sources/web/" in target]
+                        if not web_notes or any(not valid_web_source(note, root) for note in web_notes):
+                            errors.append(f"Missing valid web source evidence: {path}")
                 elif not re.search(rf"sources/{re.escape(slug)}/index\.md", body):
                     errors.append(f"Missing matching source catalog link: {path}")
                 if subdir == "guides" and not re.search(r"\.pdf#page=\d+", body):
@@ -163,19 +185,24 @@ def validate() -> list[str]:
             errors.append(f"Archive CRC failure: {bad_member}")
         archive_names = {m.filename for m in members}
         archive_crc = {m.filename: m.CRC for m in members}
-    all_sources: set[str] = set()
+    archive_sources: set[str] = set()
     pdf_pages: dict[Path, int] = {}
     for book in books:
         pdf = ROOT / book["source_pdf"]
         if not pdf.is_file() or sha256(pdf) != book["sha256"]:
             errors.append(f"Missing or changed source PDF: {pdf}")
         pdf_pages[pdf.resolve()] = book["pdf_pages"]
-        archive_name = "Poker book/" + pdf.relative_to(ROOT / "sources" / "pdf").as_posix()
-        if archive_name not in archive_names:
-            errors.append(f"Source PDF absent from archive: {pdf}")
-        elif pdf.is_file() and crc32(pdf) != archive_crc[archive_name]:
-            errors.append(f"Source PDF CRC differs from archive: {pdf}")
-        all_sources.add(archive_name)
+        provenance = book.get("provenance")
+        if provenance:
+            if not all(provenance.get(key) for key in ("url", "landing_url", "retrieved_on")):
+                errors.append(f"Incomplete external provenance: {book['id']}")
+        else:
+            archive_name = "Poker book/" + pdf.relative_to(ROOT / "sources" / "pdf").as_posix()
+            if archive_name not in archive_names:
+                errors.append(f"Source PDF absent from archive: {pdf}")
+            elif pdf.is_file() and crc32(pdf) != archive_crc[archive_name]:
+                errors.append(f"Source PDF CRC differs from archive: {pdf}")
+            archive_sources.add(archive_name)
         for alias in book["aliases"]:
             target = ROOT / alias
             if not target.is_file() or sha256(target) != book["sha256"]:
@@ -183,7 +210,7 @@ def validate() -> list[str]:
             alias_name = "Poker book/" + target.relative_to(ROOT / "sources" / "pdf").as_posix()
             if alias_name in archive_crc and target.is_file() and crc32(target) != archive_crc[alias_name]:
                 errors.append(f"Alias CRC differs from archive: {target}")
-            all_sources.add(alias_name)
+            archive_sources.add(alias_name)
             pdf_pages[target.resolve()] = book["pdf_pages"]
         expected = list(range(1, book["pdf_pages"] + 1))
         actual: list[int] = []
@@ -217,8 +244,8 @@ def validate() -> list[str]:
         for key in ("empty_text_pages", "low_text_pages", "embedded_image_pages", "embedded_url_pages"):
             if any(not 1 <= value <= book["pdf_pages"] for value in book[key]):
                 errors.append(f"Out-of-bounds {key}: {book['id']}")
-    if all_sources != archive_names:
-        errors.append(f"Archive coverage differs: missing={sorted(archive_names - all_sources)} extra={sorted(all_sources - archive_names)}")
+    if archive_sources != archive_names:
+        errors.append(f"Archive coverage differs: missing={sorted(archive_names - archive_sources)} extra={sorted(archive_sources - archive_names)}")
     for subdir in ("topics", "guides"):
         en = {path.name for path in (ROOT / "harnesses" / "EN" / subdir).glob("*.md")}
         th = {path.name for path in (ROOT / "harnesses" / "TH" / subdir).glob("*.md")}

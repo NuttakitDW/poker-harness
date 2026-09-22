@@ -9,6 +9,8 @@ Use a small read budget: index → 1–3 topic cards → cited page chunks → o
 - [Glossary](glossary.md)
 - [Thai edition](../TH/INDEX.md)
 
+PokerCoaching cheat sheets: [cash game](guides/pokercoaching-cash-game-cheat-sheet.md) · [tournament](guides/pokercoaching-tournament-cheat-sheet.md). The originals are also listed in the [source catalog](sources/index.md).
+
 ## Topic cards
 
 - [Rules, showdown and hand ranks](topics/01-rules-and-rankings.md)
@@ -32,3 +34,6 @@ Use a small read budget: index → 1–3 topic cards → cited page chunks → o
 - [Mental game, performance and bankroll](topics/19-mental-game-and-bankroll.md)
 - [Study, workbooks and source evaluation](topics/20-study-and-source-evaluation.md)
 - [Poker and finance analogies](topics/21-poker-and-finance-analogies.md)
+- [Poker players and Thailand](topics/22-poker-players-and-thailand.md)
+- [Poker tours and history](topics/23-poker-tours-and-history.md)
+- [Poker rankings and results](topics/24-poker-rankings-and-results.md)

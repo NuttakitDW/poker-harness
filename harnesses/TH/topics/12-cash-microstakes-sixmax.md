@@ -28,8 +28,8 @@
 
 ## หน้าต้นฉบับ
 
-[Crushing the Microstakes, PDF p. 25](../../EN/sources/crushing-the-microstakes/pages-0025-0032.md#pdf-page-25) · [2+2 NL 6-Max, PDF p. 13](../../EN/sources/two-plus-two-nl-six-max/pages-0009-0016.md#pdf-page-13) · [The Grinder's Manual, PDF p. 43](../../EN/sources/grinders-manual/pages-0041-0048.md#pdf-page-43)
+[Crushing the Microstakes, PDF p. 25](../../EN/sources/crushing-the-microstakes/pages-0025-0032.md#pdf-page-25) · [2+2 NL 6-Max, PDF p. 13](../../EN/sources/two-plus-two-nl-six-max/pages-0009-0016.md#pdf-page-13) · [The Grinder's Manual, PDF p. 43](../../EN/sources/grinders-manual/pages-0041-0048.md#pdf-page-43) · [PokerCoaching Cash Game Cheat Sheet หน้า PDF 2 (OCR ยังไม่ตรวจทาน)](../../EN/sources/pokercoaching-cash-game-cheat-sheet/pages-0001-0005.md#pdf-page-2)
 
 ## หัวข้อที่เกี่ยวข้อง
 
-[ตำแหน่ง เรนจ์ และจำนวนคอมโบ](./02-position-ranges-combos.md) · [ลำดับคิดก่อน flop](./06-preflop-decisions.md) · [จิตใจ สมรรถนะ และเงินทุน](./19-mental-game-and-bankroll.md) · [สารบัญหัวข้อ](../INDEX.md)
+[ตำแหน่ง เรนจ์ และจำนวนคอมโบ](./02-position-ranges-combos.md) · [ลำดับคิดก่อน flop](./06-preflop-decisions.md) · [ชีต PokerCoaching เกมเงินสด](../guides/pokercoaching-cash-game-cheat-sheet.md) · [จิตใจ สมรรถนะ และเงินทุน](./19-mental-game-and-bankroll.md) · [สารบัญหัวข้อ](../INDEX.md)

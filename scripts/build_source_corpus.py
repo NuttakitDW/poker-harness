@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.request
 import zipfile
 from collections import Counter
 from pathlib import Path
@@ -29,6 +30,26 @@ BRIEF = ROOT / "tmp" / "source-briefs.json"
 EN_QUALITY = EN_ROOT / "source-quality.md"
 TH_QUALITY = TH_ROOT / "source-quality.md"
 PAGES_PER_CHUNK = 8
+EXTERNAL_SOURCES = (
+    {
+        "id": "pokercoaching-cash-game-cheat-sheet",
+        "title": "PokerCoaching Cash Game Cheat Sheet",
+        "filename": "PokerCoaching_Cash_Game_Cheat_Sheet.pdf",
+        "sha256": "4ae49b56fabdab03cee5a661cbaca756c4fefb4a067fe6c6e01ccc8e6559e05d",
+        "url": "https://jlsecrets.s3.amazonaws.com/cheatsheet/PokerCoaching_Cash_Game_Cheat_Sheet.pdf",
+        "landing_url": "https://pokercoaching.com/downloadable-cheatsheets-thankyou",
+        "retrieved_on": "2026-09-22",
+    },
+    {
+        "id": "pokercoaching-tournament-cheat-sheet",
+        "title": "PokerCoaching Tournament Cheat Sheet",
+        "filename": "PokerCoaching_Tournament_Cheat_Sheet.pdf",
+        "sha256": "773c28ab1de01c234958d62bd316224f7bd315491126028fe502443d30f47e0e",
+        "url": "https://jlsecrets.s3.amazonaws.com/cheatsheet/PokerCoaching_Tournament_Cheat_Sheet.pdf",
+        "landing_url": "https://pokercoaching.com/downloadable-cheatsheets-thankyou",
+        "retrieved_on": "2026-09-22",
+    },
+)
 
 TITLES = {
     "915850_เอกสาร 1 (3).pdf": ("thai-document-915850", "บันทึกภาษาไทย: short stack cash game และ mindset"),
@@ -81,6 +102,30 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def external_pdf(source: dict, download: bool) -> Path:
+    """Return a pinned local download, never replacing unexpected bytes."""
+    path = SOURCE_ROOT / "pokercoaching" / source["filename"]
+    if not path.exists():
+        if not download:
+            raise FileNotFoundError(f"Missing external PDF: {path}; rerun with --download-external")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(prefix="pokercoaching-", suffix=".pdf", dir=path.parent, delete=False) as tmp:
+            temporary = Path(tmp.name)
+        try:
+            with urllib.request.urlopen(source["url"], timeout=60) as response, temporary.open("wb") as output:
+                shutil.copyfileobj(response, output)
+            actual = sha256(temporary)
+            if actual != source["sha256"]:
+                raise ValueError(f"External PDF SHA-256 differs from pin: {source['id']}: {actual}")
+            temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)
+    actual = sha256(path)
+    if actual != source["sha256"]:
+        raise ValueError(f"External PDF SHA-256 differs from pin: {source['id']}: {actual}")
+    return path
 
 
 def safe_archive_member(name: str) -> Path:
@@ -222,7 +267,7 @@ def text_fence(content: str) -> str:
     return "`" * max(3, 1 + max((len(run) for run in re.findall(r"`+", content)), default=0))
 
 
-def write_book(slug: str, title: str, pdf: Path, digest: str, pages: list[str], aliases: list[str], use_ocr: bool) -> dict:
+def write_book(slug: str, title: str, pdf: Path, digest: str, pages: list[str], aliases: list[str], use_ocr: bool, provenance: dict | None = None) -> dict:
     book_dir = EN_ROOT / slug
     pdf_link = pdf_url(pdf)
     counts = [len(re.sub(r"\s+", "", page)) for page in pages]
@@ -232,7 +277,7 @@ def write_book(slug: str, title: str, pdf: Path, digest: str, pages: list[str], 
     images, image_count = image_pages(pdf)
     ocr: dict[int, str] = {}
     if use_ocr:
-        selected = sorted(set(low) & set(images))
+        selected = sorted(set(low) if provenance else set(low) & set(images))
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             for number, content in pool.map(lambda n: ocr_page(pdf, slug, n), selected):
                 ocr[number] = content
@@ -282,6 +327,8 @@ def write_book(slug: str, title: str, pdf: Path, digest: str, pages: list[str], 
     ]
     if aliases:
         index_lines += ["Duplicate archive paths (same SHA-256):", "", *[f"- `{alias}`" for alias in aliases], ""]
+    if provenance:
+        index_lines += [f"External source: [{provenance['url']}]({provenance['url']}) · [landing page]({provenance['landing_url']}) · retrieved {provenance['retrieved_on']}", ""]
     if low:
         index_lines += [low_text_ocr_note(low, sorted(ocr), "EN"), ""]
     index_lines += ["## Page ranges", "", *[f"- [PDF pages {chunk['start']}–{chunk['end']}]({Path(chunk['path']).name})" for chunk in chunks], ""]
@@ -297,14 +344,20 @@ def write_book(slug: str, title: str, pdf: Path, digest: str, pages: list[str], 
     ]
     if low:
         th_lines += [low_text_ocr_note(low, sorted(ocr), "TH"), ""]
+    if provenance:
+        th_lines += [f"ต้นฉบับภายนอก: [{provenance['url']}]({provenance['url']}) · [หน้าดาวน์โหลด]({provenance['landing_url']}) · เข้าถึงเมื่อ {provenance['retrieved_on']}", ""]
     write_generated(TH_ROOT / slug / "index.md", "\n".join(th_lines))
-    return {"id": slug, "title": title, "source_pdf": pdf.relative_to(ROOT).as_posix(), "sha256": digest, "pdf_pages": len(pages), "aliases": aliases, "empty_text_pages": empty, "low_text_pages": low, "embedded_image_pages": sorted(images), "embedded_image_count": image_count, "embedded_url_pages": sorted(urls), "ocr_attempted_pages": sorted(ocr), "ocr_nonempty_pages": sorted(number for number, content in ocr.items() if content), "extraction_note": "PDF spread split left then right" if slug == "the-theory-of-poker" else None, "chunks": chunks, "en_index": f"EN/sources/{slug}/index.md", "th_index": f"TH/sources/{slug}/index.md"}
+    record = {"id": slug, "title": title, "source_pdf": pdf.relative_to(ROOT).as_posix(), "sha256": digest, "pdf_pages": len(pages), "aliases": aliases, "empty_text_pages": empty, "low_text_pages": low, "embedded_image_pages": sorted(images), "embedded_image_count": image_count, "embedded_url_pages": sorted(urls), "ocr_attempted_pages": sorted(ocr), "ocr_nonempty_pages": sorted(number for number, content in ocr.items() if content), "extraction_note": "PDF spread split left then right" if slug == "the-theory-of-poker" else None, "chunks": chunks, "en_index": f"EN/sources/{slug}/index.md", "th_index": f"TH/sources/{slug}/index.md"}
+    if provenance:
+        record["provenance"] = {key: provenance[key] for key in ("url", "landing_url", "retrieved_on")}
+    return record
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path, default=DEFAULT_ARCHIVE, help="Input ZIP archive")
     parser.add_argument("--ocr", action="store_true", help="OCR low-text pages containing embedded images (Tesseract or macOS Vision)")
+    parser.add_argument("--download-external", action="store_true", help="Download missing pinned PokerCoaching PDFs")
     args = parser.parse_args()
     if args.ocr and not shutil.which("tesseract"):
         if not shutil.which("swiftc"):
@@ -333,8 +386,15 @@ def main() -> None:
         snippets = [line.strip() for page in pages[:15] for line in page.splitlines() if 8 <= len(line.strip()) <= 140]
         briefs.append({"id": slug, "title": title, "pages": count, "first_15_pages_lines": snippets[:140], "low_text_page_count": len(record["low_text_pages"])})
         print(f"{slug}: {count} pages, {len(record['low_text_pages'])} low-text", flush=True)
-    en = ["<!-- Generated by scripts/build_source_corpus.py -->", "# Poker source books", "", "Full text is organized by 1-based PDF page number. Each book links to its original PDF. This is source material, not verified strategy advice.", "", "[Extraction quality and known limitations](source-quality.md)", ""]
-    th = ["<!-- Generated by scripts/build_source_corpus.py -->", "# ดัชนีหนังสือโป๊กเกอร์ต้นฉบับ", "", "เลือกหนังสือเพื่อเปิดข้อความที่ดึงจาก PDF ตามเลขหน้า PDF จริง ข้อความต้นฉบับยังคงเป็นภาษาของหนังสือ ไม่ใช่คำแปลภาษาไทย", "", "[คุณภาพการดึงข้อความและข้อจำกัดที่ตรวจพบ](source-quality.md)", ""]
+    for source in EXTERNAL_SOURCES:
+        pdf = external_pdf(source, args.download_external)
+        count = page_count(pdf)
+        pages = extract_pages(pdf, count)
+        record = write_book(source["id"], source["title"], pdf, source["sha256"], pages, [], args.ocr, source)
+        manifest.append(record)
+        print(f"{source['id']}: {count} pages, {len(record['low_text_pages'])} low-text", flush=True)
+    en = ["<!-- Generated by scripts/build_source_corpus.py -->", "# Poker source documents", "", "Full text is organized by 1-based PDF page number. Each book links to its original PDF. This is source material, not verified strategy advice.", "", "[Extraction quality and known limitations](source-quality.md)", ""]
+    th = ["<!-- Generated by scripts/build_source_corpus.py -->", "# ดัชนีเอกสารโป๊กเกอร์ต้นฉบับ", "", "เลือกหนังสือเพื่อเปิดข้อความที่ดึงจาก PDF ตามเลขหน้า PDF จริง ข้อความต้นฉบับยังคงเป็นภาษาของหนังสือ ไม่ใช่คำแปลภาษาไทย", "", "[คุณภาพการดึงข้อความและข้อจำกัดที่ตรวจพบ](source-quality.md)", ""]
     for record in manifest:
         en.append(f"- [{record['title']}]({record['id']}/index.md) — {record['pdf_pages']} PDF pages")
         th.append(f"- [{record['title']}]({record['id']}/index.md) — {record['pdf_pages']} หน้า PDF")
@@ -351,6 +411,8 @@ def main() -> None:
     th_quality += ["", "## ข้อจำกัดที่ตรวจพบ", "", "- [Poker Math Preflop Workbook หน้า PDF 11](poker-math-preflop-workbook/index.md): สัญลักษณ์ดอกไพ่หาย และอักษรหน้าไพ่บางตัวอ่านผิด เช่น Q เป็น O มีการถอดคู่ไพ่ 6 ข้อจากภาพจริงไว้ในหน้าข้อความนั้นแล้ว สำหรับโจทย์หน้าอื่นในเล่มนี้ควรเทียบ PDF ต้นฉบับก่อนใช้ข้อมูลไพ่หรือตัวเลข", "- [The Grinder's Manual หน้า PDF 49](grinders-manual/index.md): ตารางหรือแผนภาพไม่ได้อยู่ในชั้นข้อความอย่างครบถ้วน ควรเปิด PDF ต้นฉบับ", "- [The Theory of Poker](the-theory-of-poker/index.md): PDF หนึ่งหน้าประกอบด้วยหน้าพิมพ์สองหน้า ข้อความจัดเป็นฝั่งซ้ายและขวา แต่เลขหน้าพิมพ์ต่างจากเลขหน้า PDF", "- [The Theory of Poker หน้า PDF 33–34](the-theory-of-poker/index.md): ตารางใน PDF ต้นฉบับเองมีตัวเลขทับซ้อนหรือถูกตัด ไม่ควรอนุมานค่าตัวเลขจากข้อความที่ดึงหรือถอดใหม่โดยอ้างว่าตรวจสอบแล้ว", ""]
     en_quality += ["- [Super System 2, PDF page 251](super-system-2/pages-0249-0256.md#pdf-page-251): card suits in a stud eight-or-better example appear as literal question marks in the original PDF and extraction; do not infer those suits.", "- [Pot-Limit Omaha — Jeff Hwang, PDF page 35](pot-limit-omaha-jeff-hwang/pages-0033-0040.md#pdf-page-35): the opening example's card images are displaced into the prose, its right edge is clipped, and the extracted text omits the hands and board. Do not reconstruct exact cards or outs as verified.", ""]
     th_quality += ["- [Super System 2 หน้า PDF 251](../../EN/sources/super-system-2/pages-0249-0256.md#pdf-page-251): ดอกไพ่ในตัวอย่าง Stud eight-or-better ปรากฏเป็นเครื่องหมายคำถามทั้งใน PDF ต้นฉบับและข้อความที่สกัด จึงไม่ควรเดาดอกไพ่", "- [Pot-Limit Omaha — Jeff Hwang หน้า PDF 35](../../EN/sources/pot-limit-omaha-jeff-hwang/pages-0033-0040.md#pdf-page-35): ภาพไพ่ในตัวอย่างต้นบทเลื่อนแทรกข้อความและขอบขวาถูกตัด ส่วนข้อความสกัดไม่แสดงไพ่ส่วนตัวและบอร์ด จึงไม่ควรถอดไพ่หรือเอาต์ที่แน่นอนแล้วอ้างว่าตรวจยืนยัน", ""]
+    en_quality += ["- [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md): all five pages lack native extractable text. OCR supplements are unverified and can scramble the two-column reading order. Page 4 is an illustrated hand-ranking chart; inspect the PDF for cards and suits.", "- [PokerCoaching Tournament Cheat Sheet, PDF page 4](pokercoaching-tournament-cheat-sheet/pages-0001-0005.md#pdf-page-4): the hand-ranking chart is visual and has no native text. Page 5 has a Cash Game Cheat Sheet heading despite the tournament title on pages 1–3; treat it as a resource-page label, not a different document.", ""]
+    th_quality += ["- [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md): ทั้งห้าหน้าไม่มีข้อความที่สกัดจาก PDF โดยตรง OCR ยังไม่ได้ตรวจทานและอาจสลับลำดับสองคอลัมน์ หน้า 4 เป็นภาพลำดับไพ่ ควรดูไพ่และดอกใน PDF", "- [PokerCoaching Tournament Cheat Sheet หน้า PDF 4](../../EN/sources/pokercoaching-tournament-cheat-sheet/pages-0001-0005.md#pdf-page-4): ภาพลำดับไพ่ไม่มีข้อความต้นฉบับที่สกัดได้ หน้า 5 ใช้หัว Cash Game Cheat Sheet แม้หน้า 1–3 ระบุว่าเป็นชีตทัวร์นาเมนต์ จึงถือเป็นป้ายหน้าทรัพยากร ไม่ใช่เอกสารอีกฉบับ", ""]
     write_generated(EN_QUALITY, "\n".join(en_quality) + "\n")
     write_generated(TH_QUALITY, "\n".join(th_quality) + "\n")
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)

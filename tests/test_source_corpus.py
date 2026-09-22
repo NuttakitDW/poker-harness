@@ -4,8 +4,8 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.build_source_corpus import crc32, extract_archive, low_text_ocr_note, safe_archive_member, text_fence
-from scripts.validate_harness import headings, native_text_present, prose_only, source_page_sections, validate_curated
+from scripts.build_source_corpus import crc32, external_pdf, extract_archive, low_text_ocr_note, safe_archive_member, text_fence
+from scripts.validate_harness import headings, native_text_present, prose_only, source_page_sections, valid_web_source, validate_curated
 
 
 class ArchiveSafetyTests(unittest.TestCase):
@@ -84,6 +84,40 @@ class MarkdownParsingTests(unittest.TestCase):
 
 
 class CorpusIntegrityTests(unittest.TestCase):
+    def test_web_evidence_requires_original_url_date_and_summary(self):
+        with tempfile.TemporaryDirectory() as work:
+            root = Path(work)
+            note = root / "harnesses" / "EN" / "sources" / "web" / "event.md"
+            note.parent.mkdir(parents=True)
+            note.write_text("Source: Tour results\nURL: https://example.org/event\nChecked: 2026-09-22\nEvidence: Winner and event date.\n", encoding="utf-8")
+            self.assertTrue(valid_web_source(note, root))
+            note.write_text("Source: Tour results\nEvidence: Winner and event date.\n", encoding="utf-8")
+            self.assertFalse(valid_web_source(note, root))
+
+    def test_curated_validation_rejects_web_card_with_missing_provenance(self):
+        with tempfile.TemporaryDirectory() as work:
+            root = Path(work)
+            topic = root / "harnesses" / "EN" / "topics" / "22-example.md"
+            topic.parent.mkdir(parents=True)
+            topic.write_text("# Example\n\n- Stable ID: `22-example`\n\n## Core idea\n\nExample\n\n## Worked example (authored; not quoted from source)\n\nExample\n\n## Source pages\n\n[Event](../sources/web/event.md)\n", encoding="utf-8")
+            note = root / "harnesses" / "EN" / "sources" / "web" / "event.md"
+            note.parent.mkdir(parents=True)
+            note.write_text("Source: Event\nEvidence: Reported winner.\n", encoding="utf-8")
+            errors = validate_curated(root, [])
+            self.assertTrue(any("Missing valid web source evidence" in error for error in errors))
+
+    def test_external_pdf_requires_pinned_hash_and_explicit_download(self):
+        with tempfile.TemporaryDirectory() as work:
+            source = {"id": "test-sheet", "filename": "sheet.pdf", "sha256": "0" * 64, "url": "https://example.org/sheet.pdf"}
+            with patch("scripts.build_source_corpus.SOURCE_ROOT", Path(work)):
+                with self.assertRaisesRegex(FileNotFoundError, "--download-external"):
+                    external_pdf(source, False)
+                path = Path(work) / "pokercoaching" / "sheet.pdf"
+                path.parent.mkdir()
+                path.write_bytes(b"changed")
+                with self.assertRaisesRegex(ValueError, "differs from pin"):
+                    external_pdf(source, False)
+
     def test_ocr_note_reports_attempts_per_book(self):
         self.assertIn("OCR was attempted on pages 1, 4", low_text_ocr_note([1, 4, 5], [1, 4], "EN"))
         self.assertIn("ทดลอง OCR แล้วในหน้า: 1, 4", low_text_ocr_note([1, 4, 5], [1, 4], "TH"))

@@ -15,6 +15,19 @@ BRIEFS = source_briefs()
 
 # Each row: English heading | Thai heading | English lesson | Thai lesson | phrase to locate.
 DATA = {
+"pokercoaching-cash-game-cheat-sheet": [
+ ("Cash fundamentals", "พื้นฐานเกมเงินสด", "The sheet asks players to value bet when weaker hands call, consider opponent ranges, and adjust preflop play to effective stacks. Its 10:1 implied-odds cue for small pairs and 20:1 for suited connectors are author heuristics, not universal thresholds.", "ชีตชวนให้เบตเพื่อมูลค่าเมื่อมือที่อ่อนกว่าคอล พิจารณาช่วงไพ่คู่ต่อสู้ และปรับก่อนฟลอปตามเงินกองที่มีผล คำแนะนำ implied odds 10:1 สำหรับคู่เล็กและ 20:1 สำหรับไพ่เรียงดอกเป็นแนวทางผู้เขียน ไม่ใช่เกณฑ์สากล", "Cash Game"),
+ ("Opponent adaptation", "ปรับตามคู่ต่อสู้", "The sheet separates common player types and asks for responses to their observed tendencies. Use observed ranges and action history before applying any broad label.", "ชีตแยกคู่ต่อสู้หลายประเภทและเสนอวิธีตอบโต้ตามพฤติกรรมที่สังเกตได้ ให้ดูช่วงไพ่และประวัติการเล่นก่อนใช้ป้ายเรียกกว้าง ๆ", "Against"),
+ ("Visual hand rankings", "ลำดับไพ่แบบภาพ", "Page four illustrates poker hand rankings with card images. Read suits and exact example cards from the original PDF; OCR is unreliable for card graphics.", "หน้าสี่แสดงลำดับไพ่ด้วยภาพไพ่ ต้องดูดอกและไพ่ตัวอย่างจาก PDF ต้นฉบับ เพราะ OCR อ่านรูปไพ่ไม่เชื่อถือได้", "Poker Hand Rankings"),
+ ("Session review and resources", "ทบทวนเซสชันและแหล่งเรียนรู้", "Page three prompts bankroll, sleep, note-taking, and post-session review. Its 3,000–5,000 BB bankroll suggestion is a source claim, not a guarantee. Page five lists additional resources. Cash decisions still require effective stack and rake assumptions.", "หน้าสามชวนตรวจเงินทุน การนอน การจดมือ และการทบทวนหลังเล่น คำแนะนำทุน 3,000–5,000 BB เป็นคำกล่าวในต้นฉบับ ไม่รับประกันผล หน้าห้ารวมแหล่งเรียนรู้ การตัดสินใจเกมเงินสดยังต้องระบุเงินกองที่มีผลและเรก", "Things to Focus On"),
+],
+"pokercoaching-tournament-cheat-sheet": [
+ ("Fundamentals and stack depth", "พื้นฐานและขนาดเงินกอง", "The sheet asks players to monitor opponents, value bet when weaker hands call, and alter preflop ranges with effective stack size. Its small-pair 10:1 implied-odds rule is an author heuristic, not a universal threshold.", "ชีตชวนให้สังเกตคู่ต่อสู้ เบตเพื่อมูลค่าเมื่อมือที่อ่อนกว่าคอล และปรับช่วงไพ่ก่อนฟลอปตามเงินกองที่มีผล กฎ implied odds 10:1 สำหรับคู่เล็กเป็นแนวทางของผู้เขียน ไม่ใช่เกณฑ์สากล", "Tournament Fundamentals"),
+ ("Four opponent types", "คู่ต่อสู้สี่ประเภท", "The second page offers different adjustments against splashy passive, overly aggressive, weak tight, and capable players. Some suggestions are strong generalizations; verify a specific opponent's actual frequencies.", "หน้าสองเสนอการปรับตามผู้เล่นหลวมรับ บุกเกินไป แน่นอ่อน และผู้เล่นเก่ง บางคำแนะนำเหมารวมแรง จึงต้องตรวจความถี่จริงของคู่ต่อสู้รายนั้น", "Exploits for Common Player Types"),
+ ("Before, during, and after play", "ก่อน ระหว่าง และหลังแข่ง", "The third page prompts bankroll, sleep, preparation, note-taking, and hand review. Its 50–100 buy-in bankroll figure is a source claim, not a guarantee for any payout or variance structure.", "หน้าสามชวนตรวจเงินทุน การนอน การเตรียมตัว การจดมือ และการทบทวน ตัวเลขเงินทุน 50–100 บายอินเป็นคำแนะนำในต้นฉบับ ไม่รับประกันว่าเหมาะกับโครงสร้างรางวัลและความผันผวนทุกแบบ", "Things to Focus On"),
+ ("Visual hand rankings", "ลำดับไพ่แบบภาพ", "Page four illustrates poker hand rankings with card images. Read suits and exact example cards from the original PDF; OCR is unreliable for card graphics. This page does not provide a tournament push/fold chart.", "หน้าสี่แสดงลำดับไพ่ด้วยภาพไพ่ ต้องดูดอกและไพ่ตัวอย่างจาก PDF ต้นฉบับ เพราะ OCR อ่านรูปไพ่ไม่เชื่อถือได้ หน้านี้ไม่มีตาราง shove/fold ทัวร์นาเมนต์", "Poker Hand Rankings"),
+ ("Resource page label", "ป้ายหน้าทรัพยากร", "The last page lists additional resources but bears a Cash Game Cheat Sheet heading. The preceding four tournament pages and PDF filename establish this document's identity; the final heading appears to be a copy-editing error.", "หน้าสุดท้ายรวมทรัพยากรเพิ่มเติมแต่ใช้หัวว่า Cash Game Cheat Sheet สี่หน้าก่อนหน้าและชื่อไฟล์ระบุชัดว่าเป็นเอกสารทัวร์นาเมนต์ หัวหน้าสุดท้ายจึงดูเป็นข้อผิดพลาดในการจัดทำ", "Additional Resources"),
+],
 "thai-document-915850": [
  ("Short stack tradeoffs", "ข้อได้เปรียบและข้อจำกัดของสแต็กสั้น", "The author discusses 20–60bb cash-game stacks: preflop three-bets can commit a larger share of the stack, while speculative draws have less implied-odds upside.", "ผู้เขียนกล่าวถึงเงินกอง 20–60 บิ๊กบลายด์: การสามเบตกินสัดส่วนเงินกองมากขึ้น แต่ไพ่รอลุ้นมีโอกาสเก็บกำไรต่อเมื่อเข้าไพ่น้อยลง", "จุดแข็งจุดอ่อน"),
  ("Starting hands and three-bets", "ไพ่เริ่มต้นและการรับมือสามเบต", "The text lists premium, broadway, suited connector, and pocket-pair examples, then prefers selective all-in decisions over frequent short-stack calls to three-bets. These are examples, not validated charts.", "เอกสารยกตัวอย่างไพ่พรีเมียม ไพ่บรอดเวย์ ไพ่เรียงดอกเดียวกัน และคู่ในมือ แล้วเสนอให้เลือกจังหวะออลอินมากกว่าคอลสามเบตบ่อย ๆ รายการนี้เป็นตัวอย่าง ไม่ใช่ตารางช่วงไพ่ที่ผ่านการพิสูจน์", "มาถึง hand หลัก"),
@@ -178,6 +191,20 @@ DATA = {
 # Explicit primary chapter maps. Subtopics remain searchable in the page corpus;
 # these maps keep the parent TOC sequence visible in either language.
 OUTLINE = {
+"pokercoaching-cash-game-cheat-sheet": [
+ ("Cash fundamentals", "พื้นฐานเกมเงินสด", 1),
+ ("Player-type adjustments", "ปรับตามชนิดผู้เล่น", 2),
+ ("Cash-game checklist", "รายการทบทวนเกมเงินสด", 3),
+ ("Visual hand rankings", "ลำดับไพ่แบบภาพ", 4),
+ ("Additional resources", "แหล่งเรียนรู้เพิ่มเติม", 5),
+],
+"pokercoaching-tournament-cheat-sheet": [
+ ("Tournament fundamentals", "พื้นฐานทัวร์นาเมนต์", 1),
+ ("Exploits for common player types", "การปรับตามชนิดผู้เล่น", 2),
+ ("Things to focus on", "สิ่งที่ควรใส่ใจ", 3),
+ ("Visual hand rankings", "ลำดับไพ่แบบภาพ", 4),
+ ("Additional resources", "แหล่งเรียนรู้เพิ่มเติม", 5),
+],
 "dn-workbook-9036": [
  ("Introduction", "1 บทนำ",3),
  ("Understanding Position", "2 เข้าใจตำแหน่ง",5),
@@ -649,6 +676,8 @@ PAGE_OVERRIDES = {
     "poker-math-preflop-workbook": {10: 140, 11: 156, 17: 246},
 }
 ROW_PAGE_OVERRIDES = {
+    "pokercoaching-cash-game-cheat-sheet": {1: 1, 2: 2, 3: 4, 4: 3},
+    "pokercoaching-tournament-cheat-sheet": {1: 1, 2: 2, 3: 3, 4: 4, 5: 5},
     "mental-game-of-poker": {2: 66, 3: 169},
     "thai-document-915850": {3: 4},
     "pot-limit-omaha-jeff-hwang": {2: 59, 3: 106, 4: 201},
@@ -662,6 +691,7 @@ ROW_PAGE_OVERRIDES = {
     "super-system-2": {2: 105, 3: 165, 4: 224, 5: 265, 6: 296, 7: 331, 8: 415},
 }
 MULTI_PAGE_EVIDENCE = {
+    "pokercoaching-cash-game-cheat-sheet": {4: (3, 5)},
     "thai-document-915850": {4: (1, 2, 5)},
     "pot-limit-omaha-jeff-hwang": {2: (59, 77), 3: (106, 125), 4: (201, 300)},
     "gripsed-mtt-strategy-guide": {2: (10, 17, 25)},
@@ -764,7 +794,12 @@ def write_guide(lang: str, brief: dict, rows: list, pages: list):
         lines += ["## เส้นทางอ่าน", "", "ใช้แผนที่หัวข้อด้านล่างเพื่อเลือกบท แล้วเปิดหน้า PDF จริงกับข้อความ Markdown ที่สกัดตามหน้า เลขหน้า PDF รวมปกและคำนำ จึงอาจต่างจากเลขหน้าที่พิมพ์ในเล่ม ข้อความสกัดอาจขาดภาพ สัญลักษณ์ดอก ตาราง หรือรูปแบบหน้า ตรวจ [บันทึกคุณภาพต้นฉบับ](../../EN/sources/source-quality.md) เพื่อดูข้อจำกัดการสกัด", ""]
     outline = OUTLINE.get(sid)
     if outline:
-        lines += ["## Original chapter route" if lang == "EN" else "## เส้นทางบทต้นฉบับ", "", (f"{len(outline)} major contents entries mapped; {len(rows)} study themes explained below. **TOC** links point to a detected contents entry; **reference only** means the chapter start is unverified." if lang == "EN" else f"จับคู่หัวข้อสารบัญหลัก {len(outline)} รายการ และอธิบายแก่นเรื่อง {len(rows)} กลุ่มด้านล่าง **สารบัญ** คือหน้ารายการสารบัญที่พบจริง ส่วน **หน้าอ้างถึง** หมายถึงยังยืนยันหน้าเปิดบทไม่ได้"), ""]
+        external = sid.startswith("pokercoaching-")
+        route_intro = (f"{len(outline)} physical page sections mapped; {len(rows)} study themes explained below. This short sheet has no table of contents."
+                       if external and lang == "EN" else f"จับคู่เนื้อหาตามหน้าจริง {len(outline)} หน้า และอธิบายแก่นเรื่อง {len(rows)} กลุ่ม ชีตสั้นนี้ไม่มีสารบัญ"
+                       if external else f"{len(outline)} major contents entries mapped; {len(rows)} study themes explained below. **TOC** links point to a detected contents entry; **reference only** means the chapter start is unverified."
+                       if lang == "EN" else f"จับคู่หัวข้อสารบัญหลัก {len(outline)} รายการ และอธิบายแก่นเรื่อง {len(rows)} กลุ่มด้านล่าง **สารบัญ** คือหน้ารายการสารบัญที่พบจริง ส่วน **หน้าอ้างถึง** หมายถึงยังยืนยันหน้าเปิดบทไม่ได้")
+        lines += ["## Original chapter route" if lang == "EN" else "## เส้นทางบทต้นฉบับ", "", route_intro, ""]
         chapter_notes = CHAPTER_NOTES.get(sid, [])
         assert not chapter_notes or len(chapter_notes) == len(outline), sid
         for i, entry in enumerate(outline):
@@ -805,6 +840,10 @@ def write_guide(lang: str, brief: dict, rows: list, pages: list):
         lines += ["Extraction loses suit glyphs in many exercises and can turn Q into O. Read each hand and answer from the visual PDF before calculating." if lang == "EN" else "การสกัดข้อความทำสัญลักษณ์ดอกหายในโจทย์หลายข้อและอาจอ่าน Q เป็น O ต้องดูมือและคำตอบจาก PDF ที่เห็นภาพก่อนคำนวณ", ""]
     if sid == "getting-the-answer-key":
         lines += ["The PDF hyperlink annotations point to [online Google Sheet](https://splitsuit.pro/preflop-google-sheet) and [downloadable Excel version](https://splitsuit.pro/preflop-excel). These are external pointers; neither asset is included in the archive or verified here." if lang == "EN" else "ลิงก์ที่ฝังใน PDF ชี้ไปยัง [Google Sheet ออนไลน์](https://splitsuit.pro/preflop-google-sheet) และ [ไฟล์ Excel ดาวน์โหลด](https://splitsuit.pro/preflop-excel) ทั้งสองเป็นทรัพยากรภายนอก ไม่อยู่ใน ZIP และยังไม่ได้ตรวจเนื้อหา", ""]
+    if sid == "pokercoaching-cash-game-cheat-sheet":
+        lines += ["Assumed use: NLHE cash, with effective stack and rake supplied by the actual game. The source does not specify a rake schedule. All five pages are image-only; OCR text is unverified, so inspect the cited PDF for exact wording and card illustrations. Tournament payouts do not apply." if lang == "EN" else "การใช้: เกมเงินสด NLHE โดยต้องนำเงินกองที่มีผลและเรกจากเกมจริงมาใส่ ต้นฉบับไม่ระบุเรก ทั้งห้าหน้าเป็นภาพและ OCR ยังไม่ผ่านการตรวจทาน จึงควรดูคำและภาพไพ่จาก PDF ที่อ้างอิง โครงสร้างรางวัลทัวร์นาเมนต์ไม่เกี่ยวกับกรณีนี้", ""]
+    if sid == "pokercoaching-tournament-cheat-sheet":
+        lines += ["Assumed use: NLHE tournament, with effective stack in BB from the actual hand. Antes, payout structure and ICM model are not given, so the sheet's advice is not a calibrated push/fold or prize-EV chart. Page 4 is an illustrated hand-ranking chart; page 5 uses a Cash Game heading on a resource list." if lang == "EN" else "การใช้: ทัวร์นาเมนต์ NLHE โดยใช้เงินกองที่มีผลเป็น BB จากมือจริง ต้นฉบับไม่ระบุ ante โครงสร้างรางวัล หรือแบบจำลอง ICM จึงไม่ใช่ตาราง shove/fold หรือ prize EV ที่คำนวณตามเงื่อนไข หน้า 4 เป็นภาพลำดับไพ่ และหน้า 5 ใช้หัว Cash Game บนหน้ารวมทรัพยากร", ""]
     out.write_text("\n".join(lines))
 
 def main():
@@ -819,7 +858,7 @@ def main():
         out = ROOT / "harnesses" / lang / "guides/index.md"
         mapped = sum(len(OUTLINE[x["id"]]) for x in BRIEFS)
         themes = sum(len(DATA[x["id"]]) for x in BRIEFS)
-        lines = ["# Source-specific guides" if lang == "EN" else "# คู่มือแยกตามต้นฉบับ", "", (f"All 25 unique PDFs have a source-specific map: {mapped} main TOC entries and {themes} explained study themes. The archive contains 26 PDF entries because *Play Optimal Poker* occurs twice; this index lists the identical book once. Each guide links the original PDF and page-faithful corpus." if lang == "EN" else f"PDF ไม่ซ้ำมี 25 เล่ม/เอกสาร จับคู่สารบัญหลัก {mapped} รายการและอธิบายแก่นเรื่อง {themes} กลุ่ม ส่วน ZIP มี 26 รายการเพราะ *Play Optimal Poker* ซ้ำกัน จึงลงรายการครั้งเดียว ทุกคู่มือเชื่อมไปยัง PDF ต้นฉบับและข้อความที่สกัดตามหน้า"), "", "| Source | PDF pages | TOC entries | Study themes | Guide |" if lang == "EN" else "| ต้นฉบับ | หน้า PDF | หัวข้อสารบัญ | กลุ่มคำอธิบาย | คู่มือ |", "|---|---:|---:|---:|---|"]
+        lines = ["# Source-specific guides" if lang == "EN" else "# คู่มือแยกตามต้นฉบับ", "", (f"All {len(BRIEFS)} unique PDFs have a source-specific map: {mapped} main entries and {themes} explained study themes. The ZIP contains 26 entries (25 unique PDFs) because *Play Optimal Poker* occurs twice; two more PDFs come from PokerCoaching. Each guide links the original PDF and page-faithful corpus." if lang == "EN" else f"PDF ไม่ซ้ำทั้งหมด {len(BRIEFS)} เล่ม/เอกสาร จับคู่หัวข้อหลัก {mapped} รายการและอธิบายแก่นเรื่อง {themes} กลุ่ม ZIP มี 26 รายการ (ไม่ซ้ำ 25 ไฟล์) เพราะ *Play Optimal Poker* ซ้ำกัน อีก 2 ไฟล์มาจาก PokerCoaching ทุกคู่มือเชื่อม PDF ต้นฉบับและข้อความสกัดตามหน้า"), "", "| Source | PDF pages | TOC entries | Study themes | Guide |" if lang == "EN" else "| ต้นฉบับ | หน้า PDF | หัวข้อสารบัญ | กลุ่มคำอธิบาย | คู่มือ |", "|---|---:|---:|---:|---|"]
         for x in BRIEFS:
             sid = x["id"]
             title = "Short-stack NLHE cash-game notes (Thai)" if sid == "thai-document-915850" and lang == "EN" else ("บันทึกเกมเงินสด NLHE เงินกองสั้น" if sid == "thai-document-915850" else x["title"])
