@@ -81,6 +81,9 @@ def respond(question: str, language: str, voice: str, silent: bool,
     return first_audio or (time.perf_counter() - began), " ".join(spoken_parts), pages
 
 
+# ตัวถอดเสียงตัวเดียวที่ฟังไมค์เองได้ ตัวอื่นต้องให้ VAD ในเครื่องตัดประโยคให้ก่อน
+STREAMING_ENGINE = "soniox-rt"
+
 ECHO_TAIL_SECONDS = 0.45
 AUDIO_START_TIMEOUT = 30.0
 # ยอมต่อท่อนที่ถูกตัดเพราะยาวเกินได้ถึงเท่านี้ เกินกว่านี้ตอบเท่าที่ได้ยินก่อน
@@ -149,19 +152,29 @@ def live(args: argparse.Namespace) -> int:
         else:
             voice, source = opened
 
-    listener = listen.Listener(device=args.input_device, source=source)
+    # ตัวถอดเสียงทางสตรีมฟังไมค์เองและตัดประโยคเอง จึงไม่ต้องผ่าน VAD ในเครื่อง
+    if args.engine == STREAMING_ENGINE:
+        import soniox_api
+        import soniox_rt
+
+        listener = soniox_rt.LiveListener(soniox_api.load_api_key(),
+                                          device=args.input_device, source=source)
+    else:
+        listener = listen.Listener(device=args.input_device, source=source)
     player: playback.SpeechQueue | None = None
     conversation = brain.Conversation()
     unfinished = ""
     merged = 0.0
 
-    print("กำลังอุ่นเครื่องถอดเสียง โหลดโมเดลครั้งเดียว รอสักครู่")
-    try:
-        journal.note("warm-up", seconds=round(warm_up(args.engine), 2), engine=args.engine)
-    except KeyboardInterrupt:
-        print("\nยกเลิกก่อนเริ่ม")
-        journal.stop()
-        return 0
+    # ตัวถอดเสียงในเครื่องต้องโหลดโมเดลก่อน ส่วนทางสตรีมพร้อมใช้ทันทีที่เปิดสาย
+    if args.engine != STREAMING_ENGINE:
+        print("กำลังอุ่นเครื่องถอดเสียง โหลดโมเดลครั้งเดียว รอสักครู่")
+        try:
+            journal.note("warm-up", seconds=round(warm_up(args.engine), 2), engine=args.engine)
+        except KeyboardInterrupt:
+            print("\nยกเลิกก่อนเริ่ม")
+            journal.stop()
+            return 0
     print("กำลังฟัง พูดได้เลย  หยุดด้วย Ctrl-C")
     if not listener.wait_ready(AUDIO_START_TIMEOUT):
         print("เสียงเข้าไม่เริ่มไหล ตรวจสิทธิ์ไมโครโฟน", file=sys.stderr)
@@ -195,10 +208,14 @@ def live(args: argparse.Namespace) -> int:
             journal.note("utterance", seconds=round(utterance.seconds, 2), peak=round(peak, 4),
                          cut_short=utterance.cut_short, lag=round(lag, 2),
                          silence_before=round(utterance.silence_before, 2))
-            if peak < MIN_SPEECH_PEAK:
+            if utterance.text is None and peak < MIN_SPEECH_PEAK:
                 journal.note("ignored", reason="เสียงเบาเกินกว่าจะเป็นคำพูด", peak=round(peak, 4))
                 continue
-            heard, stt_seconds = transcribe_samples(utterance.samples, args.engine)
+            if utterance.text is None:
+                heard, stt_seconds = transcribe_samples(utterance.samples, args.engine)
+            else:
+                # ถอดเสร็จตั้งแต่ระหว่างพูดแล้ว ไม่มีเวลารอถอดหลังพูดจบ
+                heard, stt_seconds = utterance.text, 0.0
             journal.note("heard", text=heard, stt=round(stt_seconds, 2))
             if not engines_usable(heard, args.language):
                 journal.note("ignored", reason="ถอดเป็นคำที่เชื่อไม่ได้", text=heard)
@@ -342,7 +359,7 @@ def main() -> int:
                         help="ไม่ต้องตัดเสียงสะท้อน เล่นเสียงด้วย afplay แบบผลัดกันพูด")
     parser.add_argument("--headphones", action="store_true",
                         help="ใส่หูฟังอยู่ เปิดให้พูดแทรกได้แม้ไม่มีตัวตัดเสียงสะท้อน")
-    parser.add_argument("--engine", default="whisper-biased", help="ตัวถอดเสียงที่ใช้กับไฟล์เสียง")
+    parser.add_argument("--engine", default=STREAMING_ENGINE, help="ตัวถอดเสียงที่ใช้")
     parser.add_argument("--language", default="TH", choices=["TH", "EN"])
     parser.add_argument("--tts", default=speech.DEFAULT_PROVIDER, choices=speech.PROVIDERS,
                         help="ผู้ให้บริการเสียงพูด")

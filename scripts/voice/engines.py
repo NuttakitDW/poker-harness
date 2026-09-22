@@ -128,9 +128,18 @@ def soniox(path, device: str = "auto", language: str | None = "th") -> Transcrip
     return Transcript(result.text, result.seconds, result.audio_seconds)
 
 
+def soniox_realtime(path, device: str = "auto", language: str | None = "th") -> Transcript:
+    """Soniox ทางสตรีม ซึ่งเป็นทางที่เร็วพอจะใช้คุยสด ต่างจากทาง async ที่ต้องเข้าคิว"""
+    import soniox_rt
+
+    result = soniox_rt.transcribe(path)
+    return Transcript(result.text, result.seconds, result.audio_seconds)
+
+
 ENGINES: dict[str, Callable[..., Transcript]] = {
     "typhoon": typhoon,
     "whisper": whisper,
     "whisper-biased": whisper_biased,
     "soniox": soniox,
+    "soniox-rt": soniox_realtime,
 }

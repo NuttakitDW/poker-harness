@@ -48,6 +48,8 @@ class Utterance:
     closed_at: float = 0.0
     silence_before: float = 0.0
     cut_short: bool = False
+    # ตัวฟังที่ถอดเสียงให้เสร็จมาในตัวจะใส่คำพูดมาด้วย ผู้เรียกจึงไม่ต้องถอดซ้ำ
+    text: str | None = None
 
 
 class Endpointer:
