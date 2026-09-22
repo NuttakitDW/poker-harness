@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import re
 
+from loanwords import prefer_english
+
 _LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _CODE_FENCE = re.compile(r"```.*?```", re.DOTALL)
 _INLINE_CODE = re.compile(r"`([^`]+)`")
@@ -82,6 +84,6 @@ def _expand_symbols(text: str) -> str:
 
 def to_speech(text: str) -> str:
     """ข้อความพร้อมส่งเข้า TTS"""
-    cleaned = _expand_symbols(_expand_cards(_strip_markdown(text)))
+    cleaned = prefer_english(_expand_symbols(_expand_cards(_strip_markdown(text))))
     cleaned = _BLANKS.sub(" ", cleaned).replace("\n", " ")
     return _SPACES.sub(" ", cleaned).strip()

@@ -47,3 +47,28 @@ class PlayingCardTests(unittest.TestCase):
 
     def test_letters_without_a_suit_are_left_alone(self):
         self.assertEqual(to_speech("range ของ A high"), "range ของ A high")
+
+
+class LoanwordTests(unittest.TestCase):
+    """Paxa mispronounces poker jargon spelled in Thai letters, so it goes out in English."""
+
+    def test_the_name_of_the_game_goes_out_in_english(self):
+        self.assertEqual(to_speech("เล่นโป๊กเกอร์มานาน"), "เล่น poker มานาน")
+
+    def test_tournament_is_spelled_in_english(self):
+        self.assertEqual(to_speech("ลงทัวร์นาเมนต์วันอาทิตย์"), "ลง tournament วันอาทิตย์")
+
+    def test_street_names_are_spelled_in_english(self):
+        self.assertEqual(to_speech("ฟลอปมาแล้วเทิร์นกับริเวอร์"), "flop มาแล้ว turn กับ river")
+
+    def test_a_spelling_variant_is_converted_too(self):
+        self.assertEqual(to_speech("โปกเกอร์ออนไลน์"), "poker ออนไลน์")
+
+    def test_english_already_in_the_answer_is_left_alone(self):
+        self.assertEqual(to_speech("c-bet บน flop แห้ง"), "c-bet บน flop แห้ง")
+
+    def test_converted_words_do_not_run_into_the_thai_around_them(self):
+        self.assertEqual(to_speech("เรนจ์แคบ"), "range แคบ")
+
+    def test_a_longer_word_wins_over_a_shorter_one_inside_it(self):
+        self.assertEqual(to_speech("แบดบีทติดกัน"), "bad beat ติดกัน")

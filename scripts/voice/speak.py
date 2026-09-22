@@ -26,10 +26,16 @@ import urllib.request
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 import journal  # noqa: E402
+import keys  # noqa: E402
 
 ENDPOINT = "https://api.paxalabs.com/v1/audio/speech"
 MODEL = "paxa-tts-flash-v1"
 DEFAULT_VOICE = "lukchup"
+# เร็วกว่าปกตินิดหน่อย จังหวะพูดปริยายฟังแล้วอืดเกินกว่าบทสนทนาจริง
+DEFAULT_SPEED = 1.15
+# ฝั่ง Paxa ปฏิเสธค่านอกช่วงนี้ด้วย 400 จึงกันไว้ก่อนยิงเพื่อไม่ให้เสียรอบ
+MIN_SPEED = 0.5
+MAX_SPEED = 1.5
 MAX_CHARS = 5000
 RETRIES = 3
 RETRY_BACKOFF_SECONDS = 0.6
@@ -42,19 +48,11 @@ class SpeechError(RuntimeError):
 
 def load_api_key() -> str:
     """อ่านคีย์จาก environment ก่อน แล้วค่อยถอยไปอ่าน .env"""
-    key = os.environ.get("PAXA_API_KEY")
-    if key:
-        return key
-    env_file = ROOT / ".env"
-    if env_file.exists():
-        for line in env_file.read_text(encoding="utf-8").splitlines():
-            name, _, value = line.partition("=")
-            if name.strip() == "PAXA_API_KEY":
-                return value.strip().strip("'\"")
-    raise SystemExit("ไม่พบ PAXA_API_KEY ใน environment หรือ .env")
+    return keys.require("PAXA_API_KEY")
 
 
-def synthesize(text: str, voice: str, key: str) -> tuple[bytes, float]:
+def synthesize(text: str, voice: str, key: str,
+               speed: float = DEFAULT_SPEED) -> tuple[bytes, float]:
     """คืนข้อมูลเสียงและเวลาที่ใช้เป็นวินาที
 
     เครือข่ายสะดุดเป็นครั้งคราวเป็นเรื่องปกติ จึงลองซ้ำก่อนยอมแพ้
@@ -62,7 +60,10 @@ def synthesize(text: str, voice: str, key: str) -> tuple[bytes, float]:
     """
     if len(text) > MAX_CHARS:
         raise SpeechError(f"ข้อความยาว {len(text)} ตัวอักษร เกินขีดจำกัด {MAX_CHARS}")
-    payload = json.dumps({"model": MODEL, "input": text, "voice": voice}).encode("utf-8")
+    if not MIN_SPEED <= speed <= MAX_SPEED:
+        raise SpeechError(f"ความเร็ว {speed} อยู่นอกช่วง {MIN_SPEED} ถึง {MAX_SPEED}")
+    payload = json.dumps({"model": MODEL, "input": text, "voice": voice,
+                          "speed": speed}).encode("utf-8")
     started = time.perf_counter()
 
     last = ""
@@ -226,6 +227,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="พูดข้อความไทยผ่าน Paxa TTS")
     parser.add_argument("text", nargs="?", help="ข้อความ (ถ้าไม่ใส่จะอ่านจาก stdin)")
     parser.add_argument("--voice", default=os.environ.get("PAXA_DEFAULT_VOICE", DEFAULT_VOICE))
+    parser.add_argument("--speed", type=float, default=DEFAULT_SPEED,
+                        help=f"ความเร็วการพูด {MIN_SPEED} ถึง {MAX_SPEED}")
     parser.add_argument("--out", type=pathlib.Path, help="บันทึกไฟล์เสียงไว้ด้วย")
     parser.add_argument("--no-play", action="store_true", help="ไม่ต้องเล่นออกลำโพง")
     args = parser.parse_args()
@@ -236,7 +239,7 @@ def main() -> int:
         return 1
 
     try:
-        audio, elapsed = synthesize(text, args.voice, load_api_key())
+        audio, elapsed = synthesize(text, args.voice, load_api_key(), args.speed)
     except SpeechError as error:
         print(error, file=sys.stderr)
         return 1

@@ -86,7 +86,13 @@ def main() -> int:
         print("--reference ใช้ได้กับไฟล์เดียวเท่านั้น", file=sys.stderr)
         return 1
 
-    rows = [score(path, args.engine, args.device, args.reference) for path in sorted(args.audio)]
+    try:
+        rows = [score(path, args.engine, args.device, args.reference)
+                for path in sorted(args.audio)]
+    except RuntimeError as error:
+        # บริการบนคลาวด์ปฏิเสธ เช่นคีย์หมดอายุหรือเครดิตหมด ไม่ต้องพ่น traceback ใส่หน้า
+        print(f"{args.engine} ถอดเสียงไม่สำเร็จ: {error}", file=sys.stderr)
+        return 1
     report(rows)
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)

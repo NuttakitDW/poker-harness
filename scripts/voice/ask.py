@@ -19,10 +19,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import brain  # noqa: E402
 import journal  # noqa: E402
 from engines import usable_text as engines_usable  # noqa: E402
+import speech  # noqa: E402
 import spoken  # noqa: E402
 import streaming  # noqa: E402
-
-DEFAULT_VOICE = "lukchup"
 
 
 def transcribe(audio: pathlib.Path, engine: str) -> tuple[str, float]:
@@ -43,9 +42,10 @@ def transcribe_samples(samples, engine: str) -> tuple[str, float]:
 
 def respond(question: str, language: str, voice: str, silent: bool,
             history: brain.Conversation | None = None,
-            reasoning: bool = True) -> tuple[float, str, tuple[str, ...]]:
+            reasoning: bool = True,
+            provider: str = speech.DEFAULT_PROVIDER) -> tuple[float, str, tuple[str, ...]]:
     """ตอบหนึ่งคำถาม คืนเวลาถึงเสียงแรก คำตอบที่พูดไป และหน้าต้นฉบับที่ส่งเข้าโมเดล"""
-    import speak as tts
+    import speak as player
 
     began = time.perf_counter()
     (cards, pages), pieces = brain.stream_answer(question, language=language,
@@ -53,8 +53,8 @@ def respond(question: str, language: str, voice: str, silent: bool,
     if reasoning:
         pieces = _speech_only(pieces, brain.SAY_MARKER, [])
 
-    key = None if silent else tts.load_api_key()
-    player = None if silent else tts.SpeechQueue()
+    say = None if silent else speech.synthesizer(provider, voice)
+    queue = None if silent else player.SpeechQueue()
     first_audio = 0.0
     spoken_parts: list[str] = []
 
@@ -64,13 +64,13 @@ def respond(question: str, language: str, voice: str, silent: bool,
             print(sentence)
             if silent:
                 continue
-            audio, _ = tts.synthesize(spoken.to_speech(sentence), voice, key)
+            audio, _ = say(spoken.to_speech(sentence))
             if not first_audio:
                 first_audio = time.perf_counter() - began
-            player.add(audio)
+            queue.add(audio)
     finally:
-        if player:
-            player.close()
+        if queue:
+            queue.close()
 
     if not spoken_parts:
         print("ไม่มีคำตอบ", file=sys.stderr)
@@ -131,9 +131,9 @@ def live(args: argparse.Namespace) -> int:
     """
     import duplex
     import listen
-    import speak as tts
+    import speak as playback
 
-    key = None if args.no_speak else tts.load_api_key()
+    say = None if args.no_speak else speech.synthesizer(args.tts, args.voice)
     log = journal.start(None if args.no_log_file else (args.log or journal.default_path()),
                         echo=not args.quiet)
     if log.path:
@@ -150,7 +150,7 @@ def live(args: argparse.Namespace) -> int:
             voice, source = opened
 
     listener = listen.Listener(device=args.input_device, source=source)
-    player: tts.SpeechQueue | None = None
+    player: playback.SpeechQueue | None = None
     conversation = brain.Conversation()
     unfinished = ""
     merged = 0.0
@@ -169,7 +169,7 @@ def live(args: argparse.Namespace) -> int:
     # ตัดเสียงสะท้อนได้ หรือใส่หูฟังอยู่ เสียงตอบก็ไม่วนกลับเข้าไมค์ จึงพูดแทรกได้
     full_duplex = voice is not None or args.headphones
     journal.note("start", full_duplex=full_duplex, echo_cancel=voice is not None,
-                 engine=args.engine, language=args.language, voice=args.voice,
+                 engine=args.engine, language=args.language, tts=args.tts, voice=args.voice,
                  speaking=not args.no_speak, device=args.input_device)
     if voice is not None:
         print("โหมด: พูดแทรกได้ (ตัดเสียงสะท้อนแล้ว)")
@@ -234,7 +234,7 @@ def live(args: argparse.Namespace) -> int:
                     question, language=args.language, history=conversation,
                     reasoning=not args.no_reasoning)
                 opened = time.perf_counter() - began
-                player = None if args.no_speak else tts.SpeechQueue(voice)
+                player = None if args.no_speak else playback.SpeechQueue(voice)
                 if not args.no_reasoning:
                     pieces = _speech_only(pieces, brain.SAY_MARKER, thoughts)
                 stream = streaming.sentences(_mark_first(pieces, marks))
@@ -249,14 +249,14 @@ def live(args: argparse.Namespace) -> int:
                     if not player:
                         continue
                     try:
-                        audio, synth = tts.synthesize(spoken.to_speech(sentence), args.voice, key)
-                    except tts.SpeechError as error:
+                        chunk, synth = say(spoken.to_speech(sentence))
+                    except speech.SpeechError as error:
                         journal.note("sentence-skipped", detail=str(error))
                         continue
                     if not first:
                         first = time.perf_counter() - began
                         synth_first = synth
-                    player.add(audio)
+                    player.add(chunk)
             except brain.BrainError as error:
                 journal.note("brain-error", detail=str(error))
             finally:
@@ -325,7 +325,7 @@ def repl(args: argparse.Namespace) -> int:
             print(f"ได้ยินว่า: {question}\n")
         first, answer, pages = respond(question, args.language, args.voice, args.no_speak,
                                        history=conversation,
-                                       reasoning=not args.no_reasoning)
+                                       reasoning=not args.no_reasoning, provider=args.tts)
         conversation = conversation.with_turn("user", question)
         conversation = conversation.with_turn("assistant", answer).with_pages(pages)
         print(f"\nstt {stt_seconds:.2f}s | ถึงเสียงแรก {first:.2f}s")
@@ -344,7 +344,9 @@ def main() -> int:
                         help="ใส่หูฟังอยู่ เปิดให้พูดแทรกได้แม้ไม่มีตัวตัดเสียงสะท้อน")
     parser.add_argument("--engine", default="whisper-biased", help="ตัวถอดเสียงที่ใช้กับไฟล์เสียง")
     parser.add_argument("--language", default="TH", choices=["TH", "EN"])
-    parser.add_argument("--voice", default=DEFAULT_VOICE)
+    parser.add_argument("--tts", default=speech.DEFAULT_PROVIDER, choices=speech.PROVIDERS,
+                        help="ผู้ให้บริการเสียงพูด")
+    parser.add_argument("--voice", help="ชื่อเสียง ค่าเริ่มต้นขึ้นกับผู้ให้บริการ")
     parser.add_argument("--no-speak", action="store_true", help="แสดงข้อความอย่างเดียว")
     parser.add_argument("--log", type=pathlib.Path,
                         help="ที่เก็บบันทึกเหตุการณ์ ค่าเริ่มต้นคือ tmp/logs/live-<เวลา>.jsonl")
@@ -355,6 +357,8 @@ def main() -> int:
     parser.add_argument("--no-reasoning", action="store_true",
                         help="ไม่ต้องให้คิดก่อนตอบ ตอบทันทีแบบเดิม")
     args = parser.parse_args()
+    if not args.voice:
+        args.voice = speech.default_voice(args.tts)
 
     if args.live:
         return live(args)
@@ -379,7 +383,7 @@ def main() -> int:
         return 1
 
     first, _, _ = respond(question, args.language, args.voice, args.no_speak,
-                          reasoning=not args.no_reasoning)
+                          reasoning=not args.no_reasoning, provider=args.tts)
     print(f"\nstt {stt_seconds:.2f}s | ถึงเสียงแรก {first:.2f}s")
     return 0
 

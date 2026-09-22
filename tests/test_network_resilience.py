@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from unittest import mock
+import json
 import sys
 import unittest
 import urllib.error
@@ -80,4 +81,25 @@ class SynthesisRetryTests(unittest.TestCase):
         with mock.patch.object(speak.urllib.request, "urlopen") as opened:
             with self.assertRaises(speak.SpeechError):
                 speak.synthesize("ก" * (speak.MAX_CHARS + 1), "lukchup", "key")
+        opened.assert_not_called()
+
+
+class SpeechSpeedTests(unittest.TestCase):
+    def test_the_default_speed_travels_with_every_request(self):
+        with mock.patch.object(speak.urllib.request, "urlopen",
+                               return_value=FakeResponse(b"audio")) as opened:
+            speak.synthesize("ทดสอบ", "lukchup", "key")
+        sent = json.loads(opened.call_args.args[0].data)
+        self.assertEqual(sent["speed"], speak.DEFAULT_SPEED)
+
+    def test_a_caller_can_ask_for_another_speed(self):
+        with mock.patch.object(speak.urllib.request, "urlopen",
+                               return_value=FakeResponse(b"audio")) as opened:
+            speak.synthesize("ทดสอบ", "lukchup", "key", speed=0.8)
+        self.assertEqual(json.loads(opened.call_args.args[0].data)["speed"], 0.8)
+
+    def test_a_speed_the_service_would_refuse_never_leaves_the_machine(self):
+        with mock.patch.object(speak.urllib.request, "urlopen") as opened:
+            with self.assertRaises(speak.SpeechError):
+                speak.synthesize("ทดสอบ", "lukchup", "key", speed=2.0)
         opened.assert_not_called()

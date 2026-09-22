@@ -19,6 +19,7 @@ from typing import Iterator
 
 import corpus
 import journal
+import keys
 import preflop
 import retrieval
 
@@ -88,17 +89,7 @@ def system_prompt() -> str:
 
 def load_api_key() -> str:
     """อ่านคีย์ DeepSeek จาก environment ก่อน แล้วค่อยถอยไปอ่าน .env"""
-    for name in ("DEEPSEEK_API_KEY", "DEEPSEEK_API"):
-        value = os.environ.get(name)
-        if value:
-            return value
-    env_file = ROOT / ".env"
-    if env_file.exists():
-        for line in env_file.read_text(encoding="utf-8").splitlines():
-            key, _, value = line.partition("=")
-            if key.strip() in ("DEEPSEEK_API_KEY", "DEEPSEEK_API"):
-                return value.strip().strip("'\"")
-    raise SystemExit("ไม่พบ DEEPSEEK_API ใน environment หรือ .env")
+    return keys.require("DEEPSEEK_API", "DEEPSEEK_API_KEY")
 
 
 def gather(question: str, language: str = "TH",

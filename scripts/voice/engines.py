@@ -120,8 +120,17 @@ def whisper_biased(path: str, device: str = "auto", language: str | None = "th")
     return Transcript(str(result.get("text", "")).strip(), wall, audio_seconds)
 
 
+def soniox(path, device: str = "auto", language: str | None = "th") -> Transcript:
+    """Soniox บนคลาวด์ รับศัพท์จาก glossary เป็นรายการแทนการยัดใส่ประโยคชี้นำ"""
+    import soniox_api
+
+    result = soniox_api.transcribe(path)
+    return Transcript(result.text, result.seconds, result.audio_seconds)
+
+
 ENGINES: dict[str, Callable[..., Transcript]] = {
     "typhoon": typhoon,
     "whisper": whisper,
     "whisper-biased": whisper_biased,
+    "soniox": soniox,
 }
