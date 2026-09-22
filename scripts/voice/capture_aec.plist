@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>local.pokerharness.capture-aec</string>
+  <key>CFBundleName</key>
+  <string>Poker Harness Voice Capture</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>ใช้ไมโครโฟนเพื่อรับคำถามโป๊กเกอร์ และตัดเสียงสะท้อนจากลำโพงออก</string>
+</dict>
+</plist>

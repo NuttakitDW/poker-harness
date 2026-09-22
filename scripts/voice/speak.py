@@ -20,6 +20,7 @@ import sys
 import tempfile
 import threading
 import time
+import time
 import urllib.error
 import urllib.request
 
@@ -27,7 +28,13 @@ ENDPOINT = "https://api.paxalabs.com/v1/audio/speech"
 MODEL = "paxa-tts-flash-v1"
 DEFAULT_VOICE = "lukchup"
 MAX_CHARS = 5000
+RETRIES = 3
+RETRY_BACKOFF_SECONDS = 0.6
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+
+class SpeechError(RuntimeError):
+    """สังเคราะห์เสียงไม่สำเร็จ ผู้เรียกตัดสินเองว่าจะเลิกหรือไปต่อ"""
 
 
 def load_api_key() -> str:
@@ -45,34 +52,54 @@ def load_api_key() -> str:
 
 
 def synthesize(text: str, voice: str, key: str) -> tuple[bytes, float]:
-    """คืนข้อมูลเสียงและเวลาที่ใช้เป็นวินาที"""
+    """คืนข้อมูลเสียงและเวลาที่ใช้เป็นวินาที
+
+    เครือข่ายสะดุดเป็นครั้งคราวเป็นเรื่องปกติ จึงลองซ้ำก่อนยอมแพ้
+    และโยนข้อผิดพลาดของตัวเองแทนการสั่งจบโปรแกรม เพื่อให้ลูปสนทนาไปต่อได้
+    """
     if len(text) > MAX_CHARS:
-        raise SystemExit(f"ข้อความยาว {len(text)} ตัวอักษร เกินขีดจำกัด {MAX_CHARS}")
+        raise SpeechError(f"ข้อความยาว {len(text)} ตัวอักษร เกินขีดจำกัด {MAX_CHARS}")
     payload = json.dumps({"model": MODEL, "input": text, "voice": voice}).encode("utf-8")
-    request = urllib.request.Request(
-        ENDPOINT,
-        data=payload,
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-    )
     started = time.perf_counter()
-    try:
-        with urllib.request.urlopen(request, timeout=90) as response:
-            audio = response.read()
-    except urllib.error.HTTPError as error:
-        raise SystemExit(f"Paxa ตอบ {error.code}: {error.read().decode('utf-8', 'replace')[:300]}")
-    except urllib.error.URLError as error:
-        raise SystemExit(f"เรียก Paxa ไม่สำเร็จ: {error.reason}")
-    return audio, time.perf_counter() - started
+
+    last = ""
+    for attempt in range(RETRIES):
+        request = urllib.request.Request(
+            ENDPOINT,
+            data=payload,
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response:
+                return response.read(), time.perf_counter() - started
+        except urllib.error.HTTPError as error:
+            detail = error.read().decode("utf-8", "replace")[:200]
+            last = f"Paxa ตอบ {error.code}: {detail}"
+            if error.code < 500 and error.code != 429:
+                break
+        except (urllib.error.URLError, OSError) as error:
+            last = f"เรียก Paxa ไม่สำเร็จ: {error}"
+        if attempt < RETRIES - 1:
+            time.sleep(RETRY_BACKOFF_SECONDS * (attempt + 1))
+    raise SpeechError(last or "สังเคราะห์เสียงไม่สำเร็จ")
 
 
-def play(audio: bytes) -> None:
-    """เล่นเสียงผ่าน afplay โดยไม่ทิ้งไฟล์ค้าง"""
+def play(audio: bytes, register=None) -> None:
+    """เล่นเสียงผ่าน afplay โดยไม่ทิ้งไฟล์ค้าง
+
+    register รับตัวกระบวนการไว้ให้ผู้เรียกสั่งหยุดกลางคันได้ ใช้ตอนผู้ใช้พูดแทรก
+    """
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as handle:
         handle.write(audio)
         temp_path = handle.name
     try:
-        subprocess.run(["afplay", temp_path], check=True)
+        process = subprocess.Popen(["afplay", temp_path])
+        if register:
+            register(process)
+        process.wait()
     finally:
+        if register:
+            register(None)
         os.unlink(temp_path)
 
 
@@ -83,22 +110,62 @@ class SpeechQueue:
 
     def __init__(self) -> None:
         self._items: queue.Queue = queue.Queue()
+        self._lock = threading.Lock()
+        self._current: subprocess.Popen | None = None
+        self._interrupted = threading.Event()
         self._worker = threading.Thread(target=self._run, daemon=True)
         self._worker.start()
+
+    def _register(self, process: subprocess.Popen | None) -> None:
+        with self._lock:
+            self._current = process
 
     def _run(self) -> None:
         while True:
             item = self._items.get()
             if item is self._STOP:
                 return
+            if self._interrupted.is_set():
+                continue
             try:
-                play(item)
+                play(item, register=self._register)
             except (OSError, subprocess.SubprocessError) as error:
                 print(f"เล่นเสียงไม่สำเร็จ: {error}", file=sys.stderr)
 
     def add(self, audio: bytes) -> None:
         """ต่อคิวเสียงหนึ่งชิ้น"""
-        self._items.put(audio)
+        if not self._interrupted.is_set():
+            self._items.put(audio)
+
+    @property
+    def busy(self) -> bool:
+        """ยังมีเสียงรออยู่หรือกำลังเล่นอยู่หรือไม่"""
+        if not self._items.empty():
+            return True
+        with self._lock:
+            process = self._current
+        return bool(process and process.poll() is None)
+
+    @property
+    def interrupted(self) -> bool:
+        """ถูกสั่งหยุดไปแล้วหรือยัง ใช้เลิกสังเคราะห์ชิ้นที่เหลือ"""
+        return self._interrupted.is_set()
+
+    def interrupt(self) -> None:
+        """หยุดเสียงที่กำลังเล่นและทิ้งคิวที่เหลือ ใช้เมื่อผู้ใช้พูดแทรก"""
+        self._interrupted.set()
+        with self._lock:
+            process = self._current
+        if process and process.poll() is None:
+            process.terminate()
+        while True:
+            try:
+                item = self._items.get_nowait()
+            except queue.Empty:
+                break
+            if item is self._STOP:
+                self._items.put(self._STOP)
+                break
 
     def close(self) -> None:
         """รอให้เล่นจนหมดคิวแล้วปิดเธรด"""
@@ -119,7 +186,11 @@ def main() -> int:
         print("ไม่มีข้อความให้พูด", file=sys.stderr)
         return 1
 
-    audio, elapsed = synthesize(text, args.voice, load_api_key())
+    try:
+        audio, elapsed = synthesize(text, args.voice, load_api_key())
+    except SpeechError as error:
+        print(error, file=sys.stderr)
+        return 1
     print(f"{args.voice}  {len(text)} ตัวอักษร  {elapsed:.3f}s  {len(audio)} bytes", file=sys.stderr)
 
     if args.out:
