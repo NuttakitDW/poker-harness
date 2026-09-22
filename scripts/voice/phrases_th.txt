@@ -1,0 +1,12 @@
+# ประโยคทดสอบ STT ไทยสลับอังกฤษ ศัพท์จาก harnesses/TH/glossary.md
+# หนึ่งบรรทัดหนึ่งประโยค บรรทัดขึ้นต้น # คือคอมเมนต์
+เจอ c-bet บน dry flop ควร check-raise ด้วย range ไหน
+SPR เท่าไหร่ถึงควรเล่น stack off กับ top pair
+ICM ตอน bubble ทำให้ range ที่ shove แคบลงแค่ไหน
+pot odds ยี่สิบห้าเปอร์เซ็นต์ แต่ implied odds ดีกว่านั้นเยอะ
+เปิด raise จาก cutoff สองจุดห้า big blind แล้วโดน three-bet
+มือนี้เป็น bluff catcher ล้วน ๆ ไม่มี value เลย
+Omaha แบบ double-suited ต่างจาก Hold'em ยังไง
+fold equity หายไปหมดเพราะ effective stack สั้นเกิน
+GTO บอกให้ mix แต่ exploit บอกให้ fold ทุกครั้ง
+bankroll ควรมีกี่ buy-in สำหรับ micro stakes หกคน
