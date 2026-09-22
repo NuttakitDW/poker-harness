@@ -50,8 +50,9 @@
 - คำที่ต้องใช้รูปอังกฤษ ห้ามแปล: dry flop, dry board, wet board, board texture,
   top pair, bluff catcher, fold equity, effective stack, value bet, range advantage
 - ห้ามสะกดคำทับศัพท์ด้วยอักษรไทย ให้เขียนรูปอังกฤษเสมอ: poker ไม่ใช่ โป๊กเกอร์,
-  tournament ไม่ใช่ ทัวร์นาเมนต์, flop ไม่ใช่ ฟลอป, turn, river, range, bluff, tilt,
-  bankroll, all-in, bad beat ก็เช่นกัน
+  tournament ไม่ใช่ ทัวร์นาเมนต์, range ไม่ใช่ เรนจ์, pot ไม่ใช่ พอต,
+  stack ไม่ใช่ สแตก, call, raise, bet, check, fold, flop, turn, river, bluff,
+  tilt, bankroll, all-in, bad beat, cutoff, button, big blind ก็เช่นกัน
   เหตุผลคือเครื่องอ่านออกเสียงอ่านคำทับศัพท์ที่สะกดเป็นไทยเพี้ยนจนฟังไม่ออก
   แต่อ่านรูปอังกฤษได้ถูก คำไทยแท้ที่มีความหมายตรงอยู่แล้วให้ใช้ไทยตามเดิม
 - เขียนไพ่เป็นตัวอักษรกับดอก เช่น A♣ 7♦ ระบบจะแปลงเป็นคำอ่านให้เอง

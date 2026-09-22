@@ -72,3 +72,17 @@ class LoanwordTests(unittest.TestCase):
 
     def test_a_longer_word_wins_over_a_shorter_one_inside_it(self):
         self.assertEqual(to_speech("แบดบีทติดกัน"), "bad beat ติดกัน")
+
+    def test_pot_is_spelled_in_english(self):
+        self.assertEqual(to_speech("พอตเท่าไหร่"), "pot เท่าไหร่")
+
+    def test_table_actions_are_spelled_in_english(self):
+        self.assertEqual(to_speech("จะคอลหรือเรสดี ถ้าไม่ไหวก็โฟลด์"),
+                         "จะ call หรือ raise ดี ถ้าไม่ไหวก็ fold")
+
+    def test_check_raise_still_wins_over_the_bare_check(self):
+        self.assertEqual(to_speech("เช็คเรสได้เลย"), "check-raise ได้เลย")
+
+    def test_positions_are_spelled_in_english(self):
+        self.assertEqual(to_speech("เปิดจากคัตออฟแล้วโดนทรีเบต"),
+                         "เปิดจาก cutoff แล้วโดน three-bet")
