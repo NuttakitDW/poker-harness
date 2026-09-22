@@ -26,6 +26,11 @@ if #available(macOS 14.0, *) {
 }
 
 let inputFormat = input.outputFormat(forBus: 0)
+
+// Voice processing เป็นยูนิตสองทาง ถ้าขาออกไม่ทำงานมันจะไม่ส่งเสียงเข้ามาให้เลย
+// จึงส่งไมค์ผ่าน mixer ไปขาออกแล้วปิดเสียง เพื่อให้ยูนิตทำงานครบวงจรโดยไม่ได้ยินอะไร
+engine.connect(input, to: engine.mainMixerNode, format: inputFormat)
+engine.mainMixerNode.outputVolume = 0
 guard let outputFormat = AVAudioFormat(
     commonFormat: .pcmFormatFloat32,
     sampleRate: targetRate,

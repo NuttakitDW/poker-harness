@@ -5,7 +5,13 @@
   <key>CFBundleIdentifier</key>
   <string>local.pokerharness.capture-aec</string>
   <key>CFBundleName</key>
-  <string>Poker Harness Voice Capture</string>
+  <string>PokerHarnessVoice</string>
+  <key>CFBundleExecutable</key>
+  <string>PokerHarnessVoice</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>LSUIElement</key>
+  <true/>
   <key>NSMicrophoneUsageDescription</key>
   <string>ใช้ไมโครโฟนเพื่อรับคำถามโป๊กเกอร์ และตัดเสียงสะท้อนจากลำโพงออก</string>
 </dict>

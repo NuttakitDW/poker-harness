@@ -97,7 +97,7 @@ def live(args: argparse.Namespace) -> int:
     print("กำลังฟัง พูดได้เลย  หยุดด้วย Ctrl-C")
     try:
         for frame in listen.frames(device=args.input_device,
-                                   echo_cancel=not args.no_echo_cancel):
+                                   echo_cancel=args.echo_cancel):
             if full_duplex is None:
                 full_duplex = listen.echo_cancel_active()
                 print("โหมด: พูดแทรกได้" if full_duplex
@@ -186,8 +186,8 @@ def main() -> int:
     parser.add_argument("--repl", action="store_true", help="ถามต่อเนื่อง โหลดโมเดลครั้งเดียว")
     parser.add_argument("--live", action="store_true", help="สนทนาสดผ่านไมโครโฟน")
     parser.add_argument("--input-device", type=int, help="หมายเลขอุปกรณ์เสียงเข้า")
-    parser.add_argument("--no-echo-cancel", action="store_true",
-                        help="ไม่ใช้ตัวตัดเสียงสะท้อน ต้องใส่หูฟัง")
+    parser.add_argument("--echo-cancel", action="store_true",
+                        help="ลองใช้ตัวตัดเสียงสะท้อนของระบบ ยังใช้ไม่ได้บน macOS 26")
     parser.add_argument("--engine", default="whisper-biased", help="ตัวถอดเสียงที่ใช้กับไฟล์เสียง")
     parser.add_argument("--language", default="TH", choices=["TH", "EN"])
     parser.add_argument("--voice", default=DEFAULT_VOICE)

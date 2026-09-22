@@ -29,7 +29,8 @@ MIN_UTTERANCE_SECONDS = 0.4
 MAX_UTTERANCE_SECONDS = 30.0
 
 AEC_SOURCE = pathlib.Path(__file__).with_name("capture_aec.swift")
-AEC_BINARY = pathlib.Path(__file__).resolve().parents[2] / "tmp" / "bin" / "capture_aec"
+AEC_BUNDLE = pathlib.Path(__file__).resolve().parents[2] / "tmp" / "bin" / "PokerHarnessVoice.app"
+AEC_BINARY = AEC_BUNDLE / "Contents" / "MacOS" / "PokerHarnessVoice"
 AEC_PLIST = pathlib.Path(__file__).with_name("capture_aec.plist")
 SILENCE_PROBE_FRAMES = 24
 
@@ -150,24 +151,25 @@ def build_aec() -> pathlib.Path | None:
         return None
     if AEC_BINARY.exists() and AEC_BINARY.stat().st_mtime >= AEC_SOURCE.stat().st_mtime:
         return AEC_BINARY
+    # ต้องเป็น .app จริง ไม่ใช่ไฟล์ executable เปล่า ไม่งั้นระบบไม่ถามขอสิทธิ์ไมโครโฟน
+    # แต่ส่งความเงียบมาให้แทน ซึ่งแยกจากกรณีไมค์ปิดไม่ได้เลย
     AEC_BINARY.parent.mkdir(parents=True, exist_ok=True)
-
-    # ต้องฝัง Info.plist เข้าไปในไบนารี ไม่งั้น macOS จะส่งความเงียบแทนการขอสิทธิ์
-    command = ["swiftc", "-O", "-o", str(AEC_BINARY), str(AEC_SOURCE)]
     if AEC_PLIST.exists():
-        command += ["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT",
-                    "-Xlinker", "__info_plist", "-Xlinker", str(AEC_PLIST)]
-    built = subprocess.run(command, capture_output=True, text=True)
+        shutil.copyfile(AEC_PLIST, AEC_BUNDLE / "Contents" / "Info.plist")
+
+    built = subprocess.run(
+        ["swiftc", "-O", "-o", str(AEC_BINARY), str(AEC_SOURCE)],
+        capture_output=True, text=True)
     if built.returncode != 0:
         print(f"คอมไพล์ตัวตัดเสียงสะท้อนไม่สำเร็จ: {built.stderr.strip()[:200]}", file=sys.stderr)
         return None
 
-    # เซ็นแบบ ad-hoc เพื่อให้ระบบจดจำสิทธิ์ที่ผู้ใช้อนุญาตไว้ข้ามการรันแต่ละครั้ง
+    # เซ็นทั้ง bundle เพื่อให้ระบบจดจำสิทธิ์ที่อนุญาตไว้ข้ามการรันแต่ละครั้ง
     signed = subprocess.run(
-        ["codesign", "--force", "--sign", "-", str(AEC_BINARY)],
+        ["codesign", "--force", "--sign", "-", str(AEC_BUNDLE)],
         capture_output=True, text=True)
     if signed.returncode != 0:
-        print(f"เซ็นไบนารีไม่สำเร็จ: {signed.stderr.strip()[:200]}", file=sys.stderr)
+        print(f"เซ็น bundle ไม่สำเร็จ: {signed.stderr.strip()[:200]}", file=sys.stderr)
     return AEC_BINARY
 
 
@@ -224,11 +226,12 @@ def echo_cancel_active() -> bool:
     return _echo_cancelled
 
 
-def frames(device: int | None = None, echo_cancel: bool = True) -> Iterator["object"]:
-    """เฟรมเสียงจากไมโครโฟน ใช้ตัวตัดเสียงสะท้อนถ้าใช้การได้จริง
+def frames(device: int | None = None, echo_cancel: bool = False) -> Iterator["object"]:
+    """เฟรมเสียงจากไมโครโฟน
 
-    macOS ไม่แจ้งข้อผิดพลาดเมื่อไม่ได้รับสิทธิ์ไมโครโฟน แต่ส่งความเงียบมาแทน
-    จึงต้องลองอ่านจริงก่อนแล้วค่อยตัดสินว่าใช้ทางไหน
+    ตัวตัดเสียงสะท้อนเป็นทางเลือกเพราะ Voice Processing ของ macOS 26
+    เริ่มขาออกเสียงไม่สำเร็จ (-10875) จึงยังใช้การไม่ได้ ค่าเริ่มต้นจึงใช้ไมค์ปกติ
+    และถ้าเปิดไว้แต่ใช้ไม่ได้ ก็ตรวจพบเองแล้วถอยกลับ
     """
     global _echo_cancelled
     _echo_cancelled = False
@@ -249,7 +252,7 @@ def frames(device: int | None = None, echo_cancel: bool = True) -> Iterator["obj
     yield from _portaudio_frames(device)
 
 
-def utterances(device: int | None = None, echo_cancel: bool = True) -> Iterator[Utterance]:
+def utterances(device: int | None = None, echo_cancel: bool = False) -> Iterator[Utterance]:
     """คายช่วงเสียงพูดทีละช่วงจากไมโครโฟน จนกว่าจะถูกหยุด"""
     detector = Detector()
     for frame in frames(device=device, echo_cancel=echo_cancel):
