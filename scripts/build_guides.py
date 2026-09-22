@@ -31,7 +31,7 @@ DATA = {
 "two-plus-two-nl-six-max": [
  ("Table and preflop positions", "เลือกโต๊ะและเล่นก่อนฟลอปตามตำแหน่ง", "Ryan Fee moves from table selection to UTG, middle position, cutoff, button, and blinds. The opening and isolation choices change with opponent looseness and stack depth; position is a central input.", "ไรอัน ฟีเริ่มจากการเลือกโต๊ะแล้วไล่ตำแหน่ง UTG ตำแหน่งกลาง คัตออฟ บัตตัน และบลายด์ การเปิดและไอโซเลตขึ้นกับความหลวมของคู่ต่อสู้และขนาดเงินกอง โดยตำแหน่งเป็นข้อมูลหลัก", "Preflop"),
  ("Three-bets and squeezes", "สามเบตและสควีซ", "The guide treats three-betting and squeezing as ways to attack opens and callers, especially in position, while considering who can continue and whether stacks permit later play.", "คู่มือใช้สามเบตและสควีซโจมตีคนเปิดกับคนคอล โดยเฉพาะเมื่อมีตำแหน่ง พร้อมพิจารณาว่าใครจะเล่นต่อและเงินกองพอสำหรับการเล่นสตรีตถัดไปหรือไม่", "Squeezing"),
- ("Flop decisions", "การตัดสินใจบนฟลอป", "Separate sections cover leading, continuation bets, check-raises, floats, value raises, bluffs, unraised pots, and wet versus dry boards. The reason for betting changes with opponent type and board texture.", "มีหัวข้อแยกเรื่องดองก์เบต ซีเบต เช็กเรส โฟลต เรสเพื่อมูลค่า บลัฟ พอตที่ไม่มีการเรส และบอร์ดแห้งหรือชุ่มน้ำ เหตุผลที่ลงเดิมพันเปลี่ยนตามคู่ต่อสู้และพื้นผิวบอร์ด", "Flop Play"),
+ ("Flop decisions", "การตัดสินใจบนฟลอป", "Separate sections cover leading, continuation bets, check-raises, floats, value raises, bluffs, unraised pots, and wet versus dry boards. The reason for betting changes with opponent type and board texture.", "มีหัวข้อแยกเรื่องดองก์เบต ซีเบต เช็กเรส โฟลต เรสเพื่อมูลค่า บลัฟ พอตที่ไม่มีการเรส และ dry board หรือ wet board เหตุผลที่ลงเดิมพันเปลี่ยนตามคู่ต่อสู้และพื้นผิวบอร์ด", "Flop Play"),
  ("Turn and river", "เทิร์นและริเวอร์", "Turn material distinguishes double barrels, made-hand strength, position, check-raises, and floats. River material treats triple barrels, bluffs, and value raises; review the hand's full line before copying a bet size.", "เนื้อหาเทิร์นแยกการยิงสองสตรีต ความแข็งของไพ่ ตำแหน่ง เช็กเรส และโฟลต ส่วนริเวอร์ว่าด้วยยิงสามสตรีต บลัฟ และเรสเพื่อมูลค่า ควรทบทวนลำดับการเล่นทั้งมือก่อนนำขนาดเดิมพันไปใช้", "Turn Play"),
  ("Session management", "การดูแลเซสชัน", "Closing pages address mentality, health, upswings, session length, and multitabling as factors in decision quality.", "หน้าท้ายกล่าวถึงสภาพจิต สุขภาพ ช่วงชนะ ความยาวเซสชัน และการเล่นหลายโต๊ะซึ่งส่งผลต่อคุณภาพการตัดสินใจ", "Mentality"),
 ],
@@ -163,7 +163,7 @@ DATA = {
 "decide-to-play-great-poker": [
  ("Decision framework and position", "กรอบการตัดสินใจและตำแหน่ง", "Annie Duke begins with deliberate decisions, position, raising, and playing ranges rather than becoming attached to one's own cards.", "แอนนี ดุ๊กเริ่มจากการตัดสินใจอย่างมีเหตุผล ตำแหน่ง การเรส และการคิดเป็นช่วงไพ่แทนการยึดติดกับไพ่ตนเอง", "Decide to Decide"),
  ("Bluffs, adjustments, and raises", "บลัฟ ปรับตัว และรับมือเรส", "The middle chapters distinguish bluff frequency and opponent adaptation, then ask how to respond when a prior plan meets a raise.", "บทกลางแยกความถี่บลัฟกับการปรับตามคู่ต่อสู้ แล้วถามว่าจะรับมืออย่างไรเมื่อแผนเดิมเจอการเรส", "The Art of Adjustment"),
- ("Flop texture and hand classes", "พื้นผิวฟลอปและชนิดไพ่", "Separate chapters analyze huge flops, bad position, multiway monsters, textured boards, draws, and top pair on dry versus textured boards. Relative strength matters more than hand name alone.", "บทแยกวิเคราะห์ฟลอปที่เข้าแรง ตำแหน่งเสีย พอตหลายคน บอร์ดชุ่มน้ำ ไพ่รอ และท็อปแพร์บนบอร์ดแห้งหรือชุ่มน้ำ ความแข็งสัมพัทธ์สำคัญกว่าชื่อมือ", "Flopping Huge"),
+ ("Flop texture and hand classes", "พื้นผิวฟลอปและชนิดไพ่", "Separate chapters analyze huge flops, bad position, multiway monsters, textured boards, draws, and top pair on dry versus textured boards. Relative strength matters more than hand name alone.", "บทแยกวิเคราะห์ฟลอปที่เข้าแรง ตำแหน่งเสีย พอตหลายคน wet board ไพ่รอ และท็อปแพร์บน dry board หรือ wet board ความแข็งสัมพัทธ์สำคัญกว่าชื่อมือ", "Flopping Huge"),
  ("River and management", "ริเวอร์และการจัดการ", "River chapters split in-position from out-of-position play; management closes with the practical context needed to keep making good decisions.", "บทริเวอร์แยกการเล่นเมื่อมีตำแหน่งกับเสียตำแหน่ง ส่วนบทจัดการปิดท้ายด้วยบริบทที่ช่วยรักษาคุณภาพการตัดสินใจ", "River Play In Position"),
 ],
 "grinders-manual": [
@@ -432,10 +432,10 @@ OUTLINE = {
  ("Chapter 9 Flopping Huge", "บท 9 ฟลอปที่เข้าแรง"),
  ("Chapter 10 Big Flop, Bad Position", "บท 10 ฟลอปใหญ่ในตำแหน่งเสีย"),
  ("Chapter 11 Monsters of the Multi-Way", "บท 11 ไพ่ใหญ่ในพอตหลายคน"),
- ("Chapter 12 Flopping Big on a Textured Board", "บท 12 ฟลอปใหญ่บนบอร์ดชุ่มน้ำ"),
+ ("Chapter 12 Flopping Big on a Textured Board", "บท 12 ฟลอปใหญ่บน wet board"),
  ("Chapter 13 Quick on the Draws", "บท 13 ไพ่รอ"),
- ("Chapter 14 Top Pair, Untextured Board", "บท 14 ท็อปแพร์บนบอร์ดแห้ง"),
- ("Chapter 15 Top Pair, Textured Board", "บท 15 ท็อปแพร์บนบอร์ดชุ่มน้ำ"),
+ ("Chapter 14 Top Pair, Untextured Board", "บท 14 ท็อปแพร์บน dry board"),
+ ("Chapter 15 Top Pair, Textured Board", "บท 15 ท็อปแพร์บน wet board"),
  ("Chapter 16 Bluffing", "บท 16 การบลัฟ"),
  ("Chapter 17 River Play In Position", "บท 17 ริเวอร์เมื่อมีตำแหน่ง"),
  ("Chapter 18 River Play Out of Position", "บท 18 ริเวอร์เมื่อเสียตำแหน่ง"),
@@ -534,7 +534,7 @@ CHAPTER_NOTES = {
 "dn-workbook-9036": [
  ("Introduces the course and learning process.", "แนะนำคอร์สและวิธีเรียน"),
  ("Uses acting order to distinguish attack from defense.", "ใช้ลำดับการเล่นแยกฝ่ายบุกและรับ"),
- ("Compares range advantage across dry and connected boards.", "เทียบความได้เปรียบช่วงไพ่บนบอร์ดแห้งและต่อเนื่อง"),
+ ("Compares range advantage across dry and connected boards.", "เทียบความได้เปรียบช่วงไพ่บน dry board และบอร์ดต่อเนื่อง"),
  ("Reads a hand by revising ranges after bet sizes.", "ปรับช่วงไพ่หลังเห็นขนาดเบตในมือจริง"),
  ("Practices GTO baselines, odds, and mathematical checks.", "ฝึกกลยุทธ์ฐานแบบ GTO ออดส์ และคณิตศาสตร์"),
  ("Plans continuation bets by board and opponent count.", "วางแผนซีเบตตามบอร์ดและจำนวนคู่ต่อสู้"),

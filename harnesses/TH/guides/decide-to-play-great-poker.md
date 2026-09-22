@@ -21,10 +21,10 @@
 - [บท 9 ฟลอปที่เข้าแรง](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
 - [บท 10 ฟลอปใหญ่ในตำแหน่งเสีย](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
 - [บท 11 ไพ่ใหญ่ในพอตหลายคน](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
-- [บท 12 ฟลอปใหญ่บนบอร์ดชุ่มน้ำ](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
+- [บท 12 ฟลอปใหญ่บน wet board](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
 - [บท 13 ไพ่รอ](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
-- [บท 14 ท็อปแพร์บนบอร์ดแห้ง](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
-- [บท 15 ท็อปแพร์บนบอร์ดชุ่มน้ำ](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
+- [บท 14 ท็อปแพร์บน dry board](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
+- [บท 15 ท็อปแพร์บน wet board](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
 - [บท 16 การบลัฟ](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=9) **สารบัญ**
 - [บท 17 ริเวอร์เมื่อมีตำแหน่ง](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=104)
 - [บท 18 ริเวอร์เมื่อเสียตำแหน่ง](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=110)
@@ -47,7 +47,7 @@
 
 ### พื้นผิวฟลอปและชนิดไพ่
 
-บทแยกวิเคราะห์ฟลอปที่เข้าแรง ตำแหน่งเสีย พอตหลายคน บอร์ดชุ่มน้ำ ไพ่รอ และท็อปแพร์บนบอร์ดแห้งหรือชุ่มน้ำ ความแข็งสัมพัทธ์สำคัญกว่าชื่อมือ
+บทแยกวิเคราะห์ฟลอปที่เข้าแรง ตำแหน่งเสีย พอตหลายคน wet board ไพ่รอ และท็อปแพร์บน dry board หรือ wet board ความแข็งสัมพัทธ์สำคัญกว่าชื่อมือ
 
 หลักฐาน: [PDF หน้า 41](../../../sources/pdf/Annie_Duke_Decide_to_Play_Great_Poker.pdf#page=41) · [ข้อความที่สกัด](../../EN/sources/decide-to-play-great-poker/pages-0041-0048.md#pdf-page-41)
 
