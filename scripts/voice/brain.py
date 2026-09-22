@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import json
 import os
 import pathlib
@@ -19,12 +18,18 @@ import corpus
 import retrieval
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+
+class BrainError(RuntimeError):
+    """เรียกโมเดลไม่สำเร็จ ผู้เรียกตัดสินเองว่าจะเลิกหรือไปต่อ"""
 ENDPOINT = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-chat"
 MAX_PAGES = 4
 MAX_PAGE_CHARS = 2200
 MAX_ANSWER_TOKENS = 260
 TIMEOUT_SECONDS = 90
+RETRIES = 3
+RETRY_BACKOFF_SECONDS = 0.6
 
 SOUL = ROOT / "SOUL.md"
 PRIVATE_HEADING = "## (ไม่ส่ง)"
@@ -47,17 +52,6 @@ def system_prompt() -> str:
             kept.append(line)
     body = "\n".join(kept).strip()
     return body or FALLBACK_PROMPT
-
-
-@dataclasses.dataclass(frozen=True)
-class Answer:
-    """คำตอบหนึ่งครั้งพร้อมข้อมูลว่าใช้แหล่งใดและใช้เวลาเท่าไร"""
-
-    text: str
-    cards: tuple[str, ...]
-    pages: tuple[str, ...]
-    retrieval_seconds: float
-    model_seconds: float
 
 
 def load_api_key() -> str:
@@ -109,8 +103,8 @@ def gather(question: str, language: str = "TH") -> tuple[str, tuple[str, ...], t
     return "\n".join(blocks), tuple(h.card.identifier for h in hits), tuple(labels)
 
 
-def _request(question: str, context: str, key: str, stream: bool) -> urllib.request.Request:
-    """คำขอไปยังโมเดล ใช้ร่วมกันทั้งแบบรอทั้งก้อนและแบบสตรีม"""
+def _request(question: str, context: str, key: str) -> urllib.request.Request:
+    """คำขอแบบสตรีมไปยังโมเดล"""
     payload = json.dumps({
         "model": MODEL,
         "messages": [
@@ -119,7 +113,7 @@ def _request(question: str, context: str, key: str, stream: bool) -> urllib.requ
         ],
         "temperature": 0.3,
         "max_tokens": MAX_ANSWER_TOKENS,
-        "stream": stream,
+        "stream": True,
     }).encode("utf-8")
     return urllib.request.Request(
         ENDPOINT,
@@ -128,32 +122,28 @@ def _request(question: str, context: str, key: str, stream: bool) -> urllib.requ
     )
 
 
-def call_model(question: str, context: str, key: str) -> tuple[str, float]:
-    """เรียกโมเดลครั้งเดียวแล้วคืนคำตอบกับเวลาที่ใช้"""
-    request = _request(question, context, key, stream=False)
-    started = time.perf_counter()
-    try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-            body = json.loads(response.read())
-    except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", "replace")[:300]
-        raise SystemExit(f"DeepSeek ตอบ {error.code}: {detail}")
-    except urllib.error.URLError as error:
-        raise SystemExit(f"เรียก DeepSeek ไม่สำเร็จ: {error.reason}")
-    elapsed = time.perf_counter() - started
-    return body["choices"][0]["message"]["content"].strip(), elapsed
+def _open_stream(question: str, context: str, key: str):
+    """เปิดการเชื่อมต่อแบบสตรีม ลองซ้ำเมื่อเครือข่ายสะดุด"""
+    last = ""
+    for attempt in range(RETRIES):
+        try:
+            return urllib.request.urlopen(
+                _request(question, context, key), timeout=TIMEOUT_SECONDS)
+        except urllib.error.HTTPError as error:
+            detail = error.read().decode("utf-8", "replace")[:200]
+            last = f"DeepSeek ตอบ {error.code}: {detail}"
+            if error.code < 500 and error.code != 429:
+                break
+        except (urllib.error.URLError, OSError) as error:
+            last = f"เรียก DeepSeek ไม่สำเร็จ: {error}"
+        if attempt < RETRIES - 1:
+            time.sleep(RETRY_BACKOFF_SECONDS * (attempt + 1))
+    raise BrainError(last or "เรียกโมเดลไม่สำเร็จ")
 
 
 def stream_model(question: str, context: str, key: str) -> Iterator[str]:
     """คายข้อความทีละชิ้นระหว่างที่โมเดลยังเขียนไม่จบ"""
-    request = _request(question, context, key, stream=True)
-    try:
-        response = urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS)
-    except urllib.error.HTTPError as error:
-        detail = error.read().decode("utf-8", "replace")[:300]
-        raise SystemExit(f"DeepSeek ตอบ {error.code}: {detail}")
-    except urllib.error.URLError as error:
-        raise SystemExit(f"เรียก DeepSeek ไม่สำเร็จ: {error.reason}")
+    response = _open_stream(question, context, key)
 
     with response:
         for raw in response:
@@ -178,14 +168,3 @@ def stream_answer(question: str, language: str = "TH"):
     if not context:
         return (cards, pages), iter(("ไม่พบหัวข้อที่ตรงกับคำถามนี้ในคลัง",))
     return (cards, pages), stream_model(question, context, load_api_key())
-
-
-def answer(question: str, language: str = "TH") -> Answer:
-    """ตอบคำถามหนึ่งข้อจากคลังความรู้"""
-    started = time.perf_counter()
-    context, cards, pages = gather(question, language=language)
-    retrieval_seconds = time.perf_counter() - started
-    if not context:
-        return Answer("ไม่พบหัวข้อที่ตรงกับคำถามนี้ในคลัง", (), (), retrieval_seconds, 0.0)
-    text, model_seconds = call_model(question, context, load_api_key())
-    return Answer(text, cards, pages, retrieval_seconds, model_seconds)
