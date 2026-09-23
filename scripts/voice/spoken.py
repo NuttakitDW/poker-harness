@@ -40,6 +40,15 @@ BOARD_MIN_DIGITS = 3
 # มือที่เขียนติดกันอย่าง JJ63 หรือ KKQJ ต้องมีตัวอักษรอย่างน้อยหนึ่งตัว ตัวเลขล้วนอย่าง 65 แยกจากจำนวนไม่ได้
 _HAND = re.compile(r"(?<![\w-])(?=[AKQJT2-9]*[AKQJT])[AKQJT2-9]{2,4}(?![\w-])")
 
+# มือ Hold'em ตัวย่ออย่าง A9o KQs AJs+ TT+ ถ้าปล่อยไว้เครื่องอ่านว่า "เอ เก้า โอ"
+# suited กับ offsuit ส่งเป็นคำอังกฤษเพราะคนโป๊กเกอร์พูดทับศัพท์ และเครื่องอ่านคำอังกฤษได้ถูก
+# ขอบเขตดูแค่อักษรอังกฤษกับตัวเลข เพราะโมเดลเขียนติดคำไทยอย่าง "มือA9oเป็น" ได้
+_COMBO = re.compile(r"(?<![A-Za-z0-9])([AKQJT2-9])([AKQJT2-9])([so])(\+?)(?![A-Za-z0-9])")
+_PAIR_UP = re.compile(r"(?<![A-Za-z0-9])([AKQJT2-9])\1\+(?![A-Za-z0-9])")
+# ช่วงของมืออย่าง ATo-A8o หลังแปลงแล้วเหลือขีดคั่น ต้องอ่านว่า "ถึง"
+_COMBO_RANGE = re.compile(r"(suited|offsuit) -")
+COMBO_SHAPES = {"s": "suited", "o": "offsuit"}
+
 CURRENCY = re.compile(r"\$\s*(\d[\d,]*(?:\.\d+)?)")
 
 SYMBOLS = (
@@ -79,8 +88,20 @@ def _read_board(match: re.Match) -> str:
     return " ".join(RANKS.get(card, card) for card in cards)
 
 
+def _card(rank: str) -> str:
+    return RANKS.get(rank, rank)
+
+
+def _read_combo(match: re.Match) -> str:
+    high, low, form, plus = match.groups()
+    return f" {_card(high)} {_card(low)} {COMBO_SHAPES[form]}{' ขึ้นไป' if plus else ''} "
+
+
 def _expand_cards(text: str) -> str:
     """แปลงไพ่อย่าง A♣ เป็นคำอ่านไทย เพราะเครื่องอ่านออกเสียงข้ามสัญลักษณ์ดอก"""
+    text = _COMBO.sub(_read_combo, text)
+    text = _COMBO_RANGE.sub(r"\1 ถึง ", text)
+    text = _PAIR_UP.sub(lambda m: f" {_card(m.group(1))} {_card(m.group(1))} ขึ้นไป ", text)
     text = _BOARD.sub(_read_board, text)
     text = _HAND.sub(lambda m: " ".join(RANKS.get(card, card) for card in m.group(0)), text)
     text = _CARD.sub(lambda m: RANKS.get(m.group(1), m.group(1)), text)

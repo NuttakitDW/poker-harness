@@ -59,6 +59,20 @@ class PlayingCardTests(unittest.TestCase):
         self.assertEqual(to_speech("มือ JJ63 เป็น Marginal"), "มือ แจ็ค แจ็ค 6 3 เป็น Marginal")
         self.assertEqual(to_speech("KKQJ"), "เค เค คิว แจ็ค")
 
+    def test_offsuit_and_suited_shorthand_are_spoken_in_full(self):
+        # "A9o" เคยถูกอ่านว่า "เอ เก้า โอ"
+        self.assertEqual(to_speech("A9o เป็นมือ fold"), "เอซ 9 offsuit เป็นมือ fold")
+        self.assertEqual(to_speech("KQs"), "เค คิว suited")
+        self.assertEqual(to_speech("เปิดด้วย AJs+ กับ ATo+"),
+                         "เปิดด้วย เอซ แจ็ค suited ขึ้นไป กับ เอซ สิบ offsuit ขึ้นไป")
+
+    def test_shorthand_next_to_thai_or_in_a_range_is_spoken_in_full(self):
+        self.assertEqual(to_speech("มือA9oเป็นมือ fold"), "มือ เอซ 9 offsuit เป็นมือ fold")
+        self.assertEqual(to_speech("ATo-A8o"), "เอซ สิบ offsuit ถึง เอซ 8 offsuit")
+
+    def test_pair_with_plus_is_read_as_that_pair_and_up(self):
+        self.assertEqual(to_speech("shove TT+ กับ 22+"), "shove สิบ สิบ ขึ้นไป กับ 2 2 ขึ้นไป")
+
     def test_plain_numbers_stay_numbers(self):
         self.assertEqual(to_speech("ติด nuts 65 ครั้ง"), "ติด nuts 65 ครั้ง")
 
