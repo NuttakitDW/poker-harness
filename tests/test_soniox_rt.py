@@ -48,6 +48,20 @@ class AssemblerTests(unittest.TestCase):
         self.assembler.push(message(("เดา", False), ("แน่", True)))
         self.assertEqual(self.assembler.push(message(("<end>", False))), ["แน่"])
 
+    def test_partial_shows_final_words_then_the_guess_still_forming(self):
+        self.assembler.push(message(("สวัสดี", True), ("ลูก", False)))
+        self.assertEqual(self.assembler.partial, "สวัสดีลูก")
+
+    def test_a_newer_guess_replaces_the_older_one(self):
+        self.assembler.push(message(("ลูก", False)))
+        self.assembler.push(message(("ลูกชุบ", False)))
+        self.assertEqual(self.assembler.partial, "ลูกชุบ")
+
+    def test_partial_empties_once_the_sentence_closes(self):
+        self.assembler.push(message(("แน่", True), ("เดา", False)))
+        self.assembler.push(message(("<end>", False)))
+        self.assertEqual(self.assembler.partial, "")
+
     def test_flush_returns_what_was_left_when_the_line_closes_early(self):
         self.assembler.push(message(("ค้างอยู่", True)))
         self.assertEqual(self.assembler.flush(), "ค้างอยู่")

@@ -292,8 +292,9 @@ class Listener:
     """
 
     def __init__(self, device: int | None = None, echo_cancel: bool = False,
-                 source: Iterator["object"] | None = None) -> None:
+                 source: Iterator["object"] | None = None, meter=None) -> None:
         self._device = device
+        self._meter = meter
         self._echo_cancel = echo_cancel
         self._source = source
         self._utterances: queue.Queue = queue.Queue()
@@ -320,6 +321,8 @@ class Listener:
                 continue
 
             since_last += 1
+            if self._meter is not None:
+                self._meter.feed(frame)
             found = detector.push(frame)
             if detector.speaking:
                 self._speaking.set()

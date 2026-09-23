@@ -16,6 +16,7 @@ import threading
 import time
 from typing import Iterator, NamedTuple
 
+import costs
 import soniox_api
 
 WEBSOCKET_URL = "wss://stt-rt.soniox.com/transcribe-websocket"
@@ -98,6 +99,8 @@ def transcribe_pcm(audio: bytes, key: str) -> Result:
         raise soniox_api.SonioxError(f"สตรีมเสียงเข้า Soniox ไม่สำเร็จ: {error}") from error
 
     audio_seconds = len(audio) / 2 / SAMPLE_RATE
+    costs.record("soniox-stt-rt", costs.soniox_stt_usd(audio_seconds),
+                 seconds=round(audio_seconds, 2))
     return Result(clean("".join(pieces)), time.perf_counter() - started, audio_seconds)
 
 
@@ -122,6 +125,7 @@ class Assembler:
 
     def __init__(self) -> None:
         self._words: list[str] = []
+        self._pending = ""
         self._speaking = False
 
     @property
@@ -129,14 +133,22 @@ class Assembler:
         """มีคำพูดกำลังทยอยเข้ามาอยู่ตอนนี้"""
         return self._speaking
 
+    @property
+    def partial(self) -> str:
+        """คำของประโยคที่ยังพูดไม่จบ รวมคำที่ฝั่งบริการยังอาจแก้ ใช้แสดงผลเท่านั้น"""
+        return clean("".join(self._words) + self._pending)
+
     def push(self, message: dict) -> list[str]:
         """ป้อนข้อความหนึ่งก้อนจากสาย คืนประโยคที่ปิดแล้วเท่าที่มี"""
         closed: list[str] = []
+        # คำที่ยังไม่ final ถูกส่งมาใหม่ทั้งชุดทุกก้อน ชุดเก่าจึงทิ้งได้เลย
+        self._pending = ""
         for token in message.get("tokens", []):
             text = token.get("text", "")
             if text == "<end>":
                 sentence = clean("".join(self._words))
                 self._words = []
+                self._pending = ""
                 self._speaking = False
                 if sentence:
                     closed.append(sentence)
@@ -145,12 +157,15 @@ class Assembler:
                 self._speaking = True
             if token.get("is_final"):
                 self._words.append(text)
+            elif text != "<fin>":
+                self._pending += text
         return closed
 
     def flush(self) -> str:
         """คำที่ค้างอยู่โดยยังไม่เจอขอบเขต ใช้ตอนสายปิดกลางประโยค"""
         sentence = clean("".join(self._words))
         self._words = []
+        self._pending = ""
         self._speaking = False
         return sentence
 
@@ -163,10 +178,11 @@ class LiveListener:
     """
 
     def __init__(self, key: str, device: int | None = None, echo_cancel: bool = False,
-                 source=None) -> None:
+                 source=None, meter=None) -> None:
         import listen
 
         self._key = key
+        self._meter = meter
         self._listen = listen
         self._source = source if source is not None else listen.frames(
             device=device, echo_cancel=echo_cancel)
@@ -176,6 +192,7 @@ class LiveListener:
         self._muted = threading.Event()
         self._echo_cancelled = False
         self._collected: list = []
+        self._streamed = 0.0
         self._assembler = Assembler()
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
@@ -189,6 +206,9 @@ class LiveListener:
             if self._muted.is_set():
                 continue
             self._collected.append(frame)
+            if self._meter is not None:
+                self._meter.feed(frame)
+            self._streamed += len(frame) / SAMPLE_RATE
             socket.send((frame * soniox_api.FULL_SCALE).astype("<i2").tobytes())
 
     def _close_utterance(self, text: str) -> None:
@@ -217,6 +237,8 @@ class LiveListener:
                         return
                     for sentence in self._assembler.push(message):
                         self._close_utterance(sentence)
+                    if self._meter is not None:
+                        self._meter.hear(self._assembler.partial)
                     if self._assembler.speaking:
                         self._speaking.set()
                     else:
@@ -227,6 +249,11 @@ class LiveListener:
             print(f"[ถอดเสียง] สายขาด: {error}", file=sys.stderr)
         finally:
             self._ready.set()
+
+    @property
+    def streamed_seconds(self) -> float:
+        """วินาทีเสียงที่ส่งเข้าสายไปแล้ว ทางสตรีมคิดเงินทุกวินาทีนี้ รวมช่วงที่ไม่มีใครพูด"""
+        return self._streamed
 
     def wait_ready(self, timeout: float | None = None) -> bool:
         """รอจนสายเสียงเริ่มไหล"""

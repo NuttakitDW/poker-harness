@@ -17,6 +17,7 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 import brain  # noqa: E402
+import costs  # noqa: E402
 import journal  # noqa: E402
 from engines import usable_text as engines_usable  # noqa: E402
 import speech  # noqa: E402
@@ -134,9 +135,11 @@ def live(args: argparse.Namespace) -> int:
     """
     import duplex
     import listen
+    import meter as wave
     import speak as playback
 
     say = None if args.no_speak else speech.synthesizer(args.tts, args.voice)
+    costs.reset()
     log = journal.start(None if args.no_log_file else (args.log or journal.default_path()),
                         echo=not args.quiet)
     if log.path:
@@ -152,15 +155,18 @@ def live(args: argparse.Namespace) -> int:
         else:
             voice, source = opened
 
+    # คลื่นตอนพูดบอกผู้ใช้ว่าเสียงเข้าแล้ว จะได้ไม่พูดซ้ำเพราะคิดว่าไมค์ไม่ติด
+    meter = None if args.no_meter else wave.Meter()
     # ตัวถอดเสียงทางสตรีมฟังไมค์เองและตัดประโยคเอง จึงไม่ต้องผ่าน VAD ในเครื่อง
     if args.engine == STREAMING_ENGINE:
         import soniox_api
         import soniox_rt
 
         listener = soniox_rt.LiveListener(soniox_api.load_api_key(),
-                                          device=args.input_device, source=source)
+                                          device=args.input_device, source=source,
+                                          meter=meter)
     else:
-        listener = listen.Listener(device=args.input_device, source=source)
+        listener = listen.Listener(device=args.input_device, source=source, meter=meter)
     player: playback.SpeechQueue | None = None
     conversation = brain.Conversation()
     unfinished = ""
@@ -190,6 +196,8 @@ def live(args: argparse.Namespace) -> int:
         print("โหมด: พูดแทรกได้" if full_duplex
               else "โหมด: ผลัดกันพูด (เปิดลำโพงได้ ไม่คุยกับตัวเอง)")
 
+    if meter is not None:
+        meter.start()
     try:
         while True:
             utterance = listener.take()
@@ -312,6 +320,13 @@ def live(args: argparse.Namespace) -> int:
         print("\nจบการสนทนา")
         journal.note("stopped", reason="ผู้ใช้กด Ctrl-C")
     finally:
+        if meter is not None:
+            meter.stop()
+        streamed = getattr(listener, "streamed_seconds", 0.0)
+        if streamed:
+            costs.record("soniox-stt-rt", costs.soniox_stt_usd(streamed),
+                         seconds=round(streamed, 1))
+        journal.note("cost", **costs.summary())
         journal.note("end")
         journal.stop()
         if player:
@@ -371,6 +386,8 @@ def main() -> int:
                         help="โชว์เหตุการณ์บนจอแต่ไม่เขียนไฟล์")
     parser.add_argument("--quiet", action="store_true",
                         help="ไม่ต้องโชว์เหตุการณ์บนจอ")
+    parser.add_argument("--no-meter", action="store_true",
+                        help="ไม่แสดงคลื่นเสียงระหว่างพูด")
     parser.add_argument("--no-reasoning", action="store_true",
                         help="ไม่ต้องให้คิดก่อนตอบ ตอบทันทีแบบเดิม")
     args = parser.parse_args()
