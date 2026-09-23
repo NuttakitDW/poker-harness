@@ -20,6 +20,7 @@ import uuid
 import wave
 from typing import NamedTuple
 
+import costs
 import keys
 import lexicon
 
@@ -183,6 +184,9 @@ def transcribe_bytes(audio: bytes, key: str, filename: str = "utterance.wav") ->
 
     text = "".join(token.get("text", "") for token in transcript.get("tokens", []))
     milliseconds = status.get("audio_duration_ms")
+    if milliseconds:
+        costs.record("soniox-stt-async", costs.soniox_stt_usd(milliseconds / 1000, realtime=False),
+                     seconds=round(milliseconds / 1000, 2))
     return Result(text.strip(), time.perf_counter() - started,
                   milliseconds / 1000 if milliseconds else None)
 

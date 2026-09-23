@@ -77,6 +77,15 @@ def describe(kind: str, fields: dict) -> str:
         return f"ตัวช่วยเสียง: {fields.get('message')}"
     if kind == "duplex-ended":
         return f"ตัวช่วยเสียงหยุดทำงาน (รหัสจบ {fields.get('code')})"
+    if kind == "usage":
+        guess = " (ประมาณ)" if fields.get("estimated") else ""
+        return f"ค่าใช้จ่าย {fields.get('api')} ${float(fields.get('usd') or 0):.5f}{guess}"
+    if kind == "cost":
+        usd = float(fields.get("total_usd") or 0)
+        baht = float(fields.get("total_thb") or 0)
+        parts = ", ".join(f"{name} ${value:.4f}"
+                          for name, value in (fields.get("by_api") or {}).items())
+        return f"ค่าใช้จ่ายรอบนี้ ${usd:.4f} (ราว ฿{baht:.2f}) | {parts or '-'}"
     if kind == "stopped":
         return f"หยุด: {fields.get('reason')}"
     if kind == "end":

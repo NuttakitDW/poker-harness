@@ -25,6 +25,7 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
+import costs  # noqa: E402
 import journal  # noqa: E402
 import keys  # noqa: E402
 
@@ -75,7 +76,9 @@ def synthesize(text: str, voice: str, key: str,
         )
         try:
             with urllib.request.urlopen(request, timeout=90) as response:
-                return response.read(), time.perf_counter() - started
+                audio = response.read()
+            costs.record("paxa-tts", costs.paxa_usd(len(text)), chars=len(text))
+            return audio, time.perf_counter() - started
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", "replace")[:200]
             last = f"Paxa ตอบ {error.code}: {detail}"

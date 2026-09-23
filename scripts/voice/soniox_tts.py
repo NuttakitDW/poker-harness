@@ -22,6 +22,7 @@ from typing import Iterator
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
+import costs  # noqa: E402
 import keys  # noqa: E402
 
 ENDPOINT = "https://tts-rt.soniox.com/tts"
@@ -48,6 +49,12 @@ def load_api_key() -> str:
     return keys.require("SONIOX_API", "SONIOX_API_KEY")
 
 
+def _charge(text: str) -> None:
+    """คิดเงินหนึ่งประโยค ความยาวเสียงเดาจากข้อความเพราะได้ mp3 กลับมา ไม่ใช่เสียงดิบ"""
+    costs.record("soniox-tts", costs.soniox_tts_usd(len(text)), chars=len(text),
+                 estimated=True)
+
+
 def synthesize(text: str, voice: str, key: str, language: str = LANGUAGE) -> tuple[bytes, float]:
     """คืนข้อมูลเสียงและเวลาที่ใช้เป็นวินาที ลองซ้ำเมื่อเครือข่ายสะดุด"""
     payload = json.dumps({
@@ -69,7 +76,9 @@ def synthesize(text: str, voice: str, key: str, language: str = LANGUAGE) -> tup
         )
         try:
             with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-                return response.read(), time.perf_counter() - started
+                audio = response.read()
+            _charge(text)
+            return audio, time.perf_counter() - started
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", "replace")[:200]
             last = f"Soniox ตอบ {error.code}: {detail}"
@@ -129,6 +138,7 @@ def stream_synthesize(text: str, voice: str, key: str,
         raise
     except Exception as error:  # สายขาดกลางคัน ผู้เรียกควรได้ข้อผิดพลาดชนิดเดียวกันเสมอ
         raise SpeechError(f"สตรีมเสียงจาก Soniox ไม่สำเร็จ: {error}") from error
+    _charge(text)
     return b"".join(chunks), time.perf_counter() - started
 
 
