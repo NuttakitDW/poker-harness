@@ -75,6 +75,27 @@ class MessageBuildingTests(unittest.TestCase):
         messages = brain.build_messages("ถามใหม่", "", reasoning=False)
         self.assertEqual(messages[-1]["content"], "ถามใหม่")
 
+    def test_a_greeting_with_no_matching_card_still_reaches_the_model(self):
+        sent = {}
+
+        def fake_model(question, context, key, history=None, reasoning=True):
+            sent.update(question=question, context=context)
+            yield "สวัสดีครับ"
+
+        originals = (brain.gather, brain.preflop.context_block,
+                     brain.load_api_key, brain.stream_model)
+        brain.gather = lambda *a, **k: ("", [], [])
+        brain.preflop.context_block = lambda wanted: ""
+        brain.load_api_key = lambda: "key"
+        brain.stream_model = fake_model
+        try:
+            _, pieces = brain.stream_answer("สวัสดีลูกชุบ")
+            self.assertEqual("".join(pieces), "สวัสดีครับ")
+        finally:
+            (brain.gather, brain.preflop.context_block,
+             brain.load_api_key, brain.stream_model) = originals
+        self.assertEqual(sent, {"question": "สวัสดีลูกชุบ", "context": ""})
+
     def test_the_format_is_repeated_every_turn_so_it_keeps_thinking(self):
         messages = brain.build_messages("ถามใหม่", "")
         self.assertIn(brain.REASONING_REMINDER, messages[-1]["content"])

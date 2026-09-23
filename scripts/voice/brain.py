@@ -18,6 +18,7 @@ import urllib.request
 from typing import Iterator
 
 import corpus
+import costs
 import journal
 import keys
 import preflop
@@ -229,6 +230,8 @@ def _request(question: str, context: str, key: str,
         "temperature": 0.3,
         "max_tokens": MAX_ANSWER_TOKENS,
         "stream": True,
+        # ขอให้ท้ายสตรีมแนบยอด token มาด้วย ไม่งั้นรู้ต้นทุนจริงของแต่ละคำตอบไม่ได้
+        "stream_options": {"include_usage": True},
     }).encode("utf-8")
     return urllib.request.Request(
         ENDPOINT,
@@ -262,27 +265,58 @@ def _open_stream(question: str, context: str, key: str,
     raise BrainError(last or "เรียกโมเดลไม่สำเร็จ")
 
 
+def _charge(usage: dict | None, prompt_chars: int, answer_chars: int) -> None:
+    """คิดเงินคำขอนี้ ถ้าสตรีมถูกตัดก่อนได้ยอดจริง ให้เดาจากความยาวข้อความ
+
+    คำตอบที่ถูกพูดแทรกกลางทางก็ยังถูกเก็บเงินเต็มส่วน input จึงต้องนับด้วย
+    """
+    if usage:
+        hit = int(usage.get("prompt_cache_hit_tokens") or 0)
+        miss = int(usage.get("prompt_cache_miss_tokens",
+                             int(usage.get("prompt_tokens") or 0) - hit))
+        output = int(usage.get("completion_tokens") or 0)
+    else:
+        hit = 0
+        miss = costs.estimate_tokens(prompt_chars, costs.PROMPT_CHARS_PER_TOKEN)
+        output = costs.estimate_tokens(answer_chars, costs.OUTPUT_CHARS_PER_TOKEN)
+    peak = costs.is_peak()
+    costs.record("deepseek", costs.deepseek_usd(hit, miss, output, peak),
+                 model=MODEL, hit=hit, miss=miss, output=output, peak=peak,
+                 estimated=not usage)
+
+
 def stream_model(question: str, context: str, key: str,
                  history: "Conversation | None" = None,
                  reasoning: bool = True) -> Iterator[str]:
     """คายข้อความทีละชิ้นระหว่างที่โมเดลยังเขียนไม่จบ"""
     response = _open_stream(question, context, key, history, reasoning)
+    usage: dict | None = None
+    answer_chars = 0
 
-    with response:
-        for raw in response:
-            line = raw.decode("utf-8", "replace").strip()
-            if not line.startswith("data:"):
-                continue
-            body = line[5:].strip()
-            if body == "[DONE]":
-                return
-            try:
-                delta = json.loads(body)["choices"][0].get("delta", {})
-            except (json.JSONDecodeError, KeyError, IndexError):
-                continue
-            piece = delta.get("content")
-            if piece:
-                yield piece
+    try:
+        with response:
+            for raw in response:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                body = line[5:].strip()
+                if body == "[DONE]":
+                    return
+                try:
+                    chunk = json.loads(body)
+                except json.JSONDecodeError:
+                    continue
+                # ชิ้นสุดท้ายมีแต่ยอด token และ choices ว่าง
+                usage = chunk.get("usage") or usage
+                choices = chunk.get("choices") or [{}]
+                piece = choices[0].get("delta", {}).get("content")
+                if piece:
+                    answer_chars += len(piece)
+                    yield piece
+    finally:
+        prompt_chars = sum(len(message["content"]) for message in
+                           build_messages(question, context, history, reasoning))
+        _charge(usage, prompt_chars, answer_chars)
 
 
 def stream_answer(question: str, language: str = "TH",
@@ -294,7 +328,6 @@ def stream_answer(question: str, language: str = "TH",
     # ตารางเรนจ์วางไว้ก่อนเนื้อหาอื่น เพราะเป็นตัวเลขจริงที่ต้องใช้แทนการเดาของโมเดล
     chart = preflop.context_block(wanted)
     context = "\n\n".join(part for part in (chart, context) if part)
-    # ไม่มีการ์ดที่ตรง แต่ถ้ากำลังคุยกันอยู่ ให้ตอบต่อจากที่คุยไปแล้วได้ ดีกว่าตัดบทว่าไม่พบ
-    if not context and not (history and history.turns):
-        return (cards, pages), iter(("ไม่พบหัวข้อที่ตรงกับคำถามนี้ในคลัง",))
+    # ไม่มีการ์ดที่ตรงก็ยังส่งให้โมเดล คำทักทายหรือคุยเล่นไม่มีทางตรงกับคลังอยู่แล้ว
+    # ถ้าตัดบทว่าไม่พบ ผู้ใช้ทักมาแล้วได้คำตอบเหมือนเครื่องค้นหาแทนคนคุยด้วย
     return (cards, pages), stream_model(question, context, load_api_key(), history, reasoning)
