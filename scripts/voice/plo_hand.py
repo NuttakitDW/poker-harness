@@ -290,7 +290,7 @@ def suited_ace(text: str) -> bool:
     for clause in _CLAUSE.split(latin):
         # ดอกในท่อนนี้ต้องเป็นดอกที่ซ้ำ "A เป็นไดมอนด์" ใบเดียวไม่ใช่ suited ace
         repeated = any(counts[suit] >= 2 for suit in _suit_counts(clause))
-        if (repeated or re.search(r"ซูต|สูท|suited", clause)) and \
+        if (repeated or re.search(r"ซูต|สูท|suited", clause, re.IGNORECASE)) and \
                 re.search(r"(?<![A-Za-z])A(?![A-Za-z])", clause):
             return True
     return False

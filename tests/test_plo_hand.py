@@ -15,6 +15,16 @@ class SpokenHandTests(unittest.TestCase):
         self.assertEqual(retrieval.hands("แจ็ค แจ็ค 6 3"), ("JJ63",))
         self.assertEqual(retrieval.hands("คิง คิง ควีน แจ็ค"), ("KKQJ",))
 
+    def test_english_rank_words_become_a_hand(self):
+        # "A Jack Ten Ten" เคยอ่านไม่ออก โมเดลจึงเดาระดับเองโดยไม่มีข้อเท็จจริงจากโค้ด
+        question = "เพียโล A Jack Ten Ten Single Suited A Jack โพดํา อันนี้ประเภทแฮนด์อะไรครับ"
+        self.assertEqual(retrieval.hands(question), ("AJTT",))
+        self.assertEqual(retrieval.hands("Ace King Queen Jack"), ("AKQJ",))
+        self.assertEqual(retrieval.hands("two pair four bet"), ())
+
+    def test_capitalised_suited_marks_a_suited_ace(self):
+        self.assertTrue(plo_hand.suited_ace("A Jack Ten Ten Single Suited A Jack โพดํา"))
+
     def test_repeat_mark_doubles_the_card(self):
         self.assertEqual(retrieval.hands("อยากรู้ว่าคิงๆ ควีน แจ็ค ดับเบิลซูต"), ("KKQJ",))
 

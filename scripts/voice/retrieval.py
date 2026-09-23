@@ -38,6 +38,11 @@ _THAI_RANKS = (
 )
 _THAI_RANK = re.compile(
     r"(เอซ|เอส|เอ(?=[\sๆ,\-]|$)|คิง|ควีน|แจ็ค|แจ๊ค|แจ็ก|เท็น|เทน)(\s*ๆ)?")
+# ตัวถอดเสียงบางทีเขียนชื่อไพ่เป็นคำอังกฤษ เช่น "A Jack Ten Ten" ไม่รับ two ถึง nine
+# เพราะชนกับ "two pair" "four bet" และตัวถอดเสียงเขียนไพ่เลขเป็นตัวเลขอยู่แล้ว
+_ENGLISH_RANKS = {"ace": "A", "king": "K", "queen": "Q", "jack": "J", "ten": "T"}
+_ENGLISH_RANK = re.compile(r"(?<![A-Za-z])(" + "|".join(_ENGLISH_RANKS) + r")s?(?![A-Za-z])",
+                           re.IGNORECASE)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -71,7 +76,8 @@ def latin_ranks(text: str) -> str:
     def swap(match: re.Match) -> str:
         rank = next(letter for letter, words in _THAI_RANKS if match.group(1) in words)
         return f" {rank} {rank} " if match.group(2) else f" {rank} "
-    return _THAI_RANK.sub(swap, text)
+    english = _ENGLISH_RANK.sub(lambda match: f" {_ENGLISH_RANKS[match.group(1).lower()]} ", text)
+    return _THAI_RANK.sub(swap, english)
 
 
 def hands(text: str) -> tuple[str, ...]:
