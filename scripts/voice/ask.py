@@ -53,7 +53,7 @@ def respond(question: str, language: str, voice: str, silent: bool,
 
     began = time.perf_counter()
     if show_chart:
-        show_grid(brain.search_text(question, history), None)
+        show_grid(brain.chart_question(question, history), None)
     (cards, pages), pieces = brain.stream_answer(question, language=language,
                                                  history=history, reasoning=reasoning,
                                                  chart_on_screen=show_chart)
@@ -95,6 +95,8 @@ ECHO_TAIL_SECONDS = 0.45
 AUDIO_START_TIMEOUT = 30.0
 # ยอมต่อท่อนที่ถูกตัดเพราะยาวเกินได้ถึงเท่านี้ เกินกว่านี้ตอบเท่าที่ได้ยินก่อน
 MAX_MERGED_SECONDS = 120.0
+# ลูกชุบเลือกเงียบฟังต่อแล้ว ถ้าผู้ใช้เงียบนานเท่านี้ถือว่าพูดจบ ถึงตาตอบ
+LISTEN_PATIENCE_SECONDS = 4.0
 # เบากว่านี้เป็นเสียงลมหรือเสียงพิมพ์ ส่งให้ถอดเสียงมีแต่จะได้คำที่ไม่มีใครพูด
 MIN_SPEECH_PEAK = 0.02
 WARM_UP_SECONDS = 0.5
@@ -105,6 +107,8 @@ def show_grid(wanted: str, shown: tuple | None) -> tuple | None:
 
     ถามต่อเรื่องเดิมจะได้ชาร์ตใบเดิม ไม่ต้องพิมพ์ซ้ำให้จอรก
     """
+    if not wanted:
+        return shown
     found = chart_grid.for_question(wanted, color=sys.stdout.isatty())
     if found is None:
         return shown
@@ -194,6 +198,10 @@ def live(args: argparse.Namespace) -> int:
     unfinished = ""
     merged = 0.0
     shown_chart: tuple | None = None
+    # ผู้ใช้เพิ่งพูดแทรกลูกชุบ ตาถัดไปต้องตอบสั้นแล้วฟังต่อ
+    interrupted = False
+    # ลูกชุบกำลังเงียบฟังคนที่ยังพูดไม่จบ
+    awaiting = False
 
     # ตัวถอดเสียงในเครื่องต้องโหลดโมเดลก่อน ส่วนทางสตรีมพร้อมใช้ทันทีที่เปิดสาย
     if args.engine != STREAMING_ENGINE:
@@ -223,55 +231,72 @@ def live(args: argparse.Namespace) -> int:
         meter.start()
     try:
         while True:
-            utterance = listener.take()
+            utterance = listener.take(LISTEN_PATIENCE_SECONDS if awaiting else None)
             if utterance is None:
-                continue
-
-            if watch:
-                watch.stop()
-                if watch.fired:
-                    journal.note("barge-in", during="playback")
-                watch = None
-            if player:
-                if full_duplex and player.busy:
-                    player.interrupt()
-                    journal.note("barge-in", during="playback")
-                player.close()
-                player = None
-
-            lag = time.monotonic() - utterance.closed_at
-            peak = float(abs(utterance.samples).max())
-            journal.note("utterance", seconds=round(utterance.seconds, 2), peak=round(peak, 4),
-                         cut_short=utterance.cut_short, lag=round(lag, 2),
-                         silence_before=round(utterance.silence_before, 2))
-            if utterance.text is None and peak < MIN_SPEECH_PEAK:
-                journal.note("ignored", reason="เสียงเบาเกินกว่าจะเป็นคำพูด", peak=round(peak, 4))
-                continue
-            if utterance.text is None:
-                heard, stt_seconds = transcribe_samples(utterance.samples, args.engine)
+                # เงียบฟังอยู่แล้วเขาก็เงียบตาม ถือว่าพูดจบ เอาที่ได้ยินมาตอบ
+                if not awaiting or listener.speaking or listener.waiting:
+                    continue
+                awaiting = False
+                question, unfinished, merged = unfinished, "", 0.0
+                heard_at = 0.0
+                journal.note("listen-timeout", text=question)
             else:
-                # ถอดเสร็จตั้งแต่ระหว่างพูดแล้ว ไม่มีเวลารอถอดหลังพูดจบ
-                heard, stt_seconds = utterance.text, 0.0
-            journal.note("heard", text=heard, stt=round(stt_seconds, 2))
-            if not engines_usable(heard, args.language):
-                journal.note("ignored", reason="ถอดเป็นคำที่เชื่อไม่ได้", text=heard)
-                continue
-            question = f"{unfinished} {heard}".strip()
-            unfinished = ""
-            merged += utterance.seconds
-            print(f"\nคุณ: {question}")
-            # ถูกตัดเพราะพูดยาวชนเพดาน ไม่ใช่เพราะพูดจบ จึงรอท่อนต่อไปแล้วตอบทีเดียว
-            if utterance.cut_short and merged < MAX_MERGED_SECONDS:
-                unfinished = question
-                journal.note("continuation", reason="ตัดเพราะยาวชนเพดาน",
-                             merged=round(merged, 1))
-                continue
-            merged = 0.0
+                heard_at = utterance.closed_at
+
+                if watch:
+                    watch.stop()
+                    if watch.fired:
+                        interrupted = True
+                        journal.note("barge-in", during="playback")
+                    watch = None
+                if player:
+                    if full_duplex and player.busy:
+                        player.interrupt()
+                        interrupted = True
+                        journal.note("barge-in", during="playback")
+                    player.close()
+                    player = None
+
+                lag = time.monotonic() - utterance.closed_at
+                peak = float(abs(utterance.samples).max())
+                journal.note("utterance", seconds=round(utterance.seconds, 2), peak=round(peak, 4),
+                             cut_short=utterance.cut_short, lag=round(lag, 2),
+                             silence_before=round(utterance.silence_before, 2))
+                if utterance.text is None and peak < MIN_SPEECH_PEAK:
+                    journal.note("ignored", reason="เสียงเบาเกินกว่าจะเป็นคำพูด", peak=round(peak, 4))
+                    continue
+                if utterance.text is None:
+                    heard, stt_seconds = transcribe_samples(utterance.samples, args.engine)
+                else:
+                    # ถอดเสร็จตั้งแต่ระหว่างพูดแล้ว ไม่มีเวลารอถอดหลังพูดจบ
+                    heard, stt_seconds = utterance.text, 0.0
+                journal.note("heard", text=heard, stt=round(stt_seconds, 2))
+                if not engines_usable(heard, args.language):
+                    journal.note("ignored", reason="ถอดเป็นคำที่เชื่อไม่ได้", text=heard)
+                    continue
+                question = f"{unfinished} {heard}".strip()
+                unfinished = ""
+                awaiting = False
+                merged += utterance.seconds
+                print(f"\nคุณ: {question}")
+                # ถูกตัดเพราะพูดยาวชนเพดาน ไม่ใช่เพราะพูดจบ จึงรอท่อนต่อไปแล้วตอบทีเดียว
+                if utterance.cut_short and merged < MAX_MERGED_SECONDS:
+                    unfinished = question
+                    journal.note("continuation", reason="ตัดเพราะยาวชนเพดาน",
+                                 merged=round(merged, 1))
+                    continue
+                merged = 0.0
             if not full_duplex:
                 listener.mute()
             if not args.no_chart:
-                shown_chart = show_grid(brain.search_text(question, conversation), shown_chart)
+                shown_chart = show_grid(brain.chart_question(question, conversation), shown_chart)
 
+            brief = interrupted
+            interrupted = False
+            may_listen = heard_at > 0.0
+            notes = [brain.BRIEF_REMINDER if brief else "",
+                     "" if may_listen else brain.SILENCE_REMINDER]
+            listening = False
             began = time.perf_counter()
             first = 0.0
             opened = 0.0
@@ -287,7 +312,8 @@ def live(args: argparse.Namespace) -> int:
             try:
                 (cards, pages), pieces = brain.stream_answer(
                     question, language=args.language, history=conversation,
-                    reasoning=not args.no_reasoning, chart_on_screen=not args.no_chart)
+                    reasoning=not args.no_reasoning, chart_on_screen=not args.no_chart,
+                    note="\n".join(n for n in notes if n))
                 opened = time.perf_counter() - began
                 player = None if args.no_speak else playback.SpeechQueue(voice)
                 # หยุดเสียงตั้งแต่ผู้ใช้เปิดปากพูด ไม่ต้องรอให้พูดจบประโยค
@@ -300,6 +326,23 @@ def live(args: argparse.Namespace) -> int:
                     # ถูกแทรกแล้ว ไม่ต้องเสียเวลาสังเคราะห์ประโยคที่เหลือ
                     if full_duplex and (listener.speaking or listener.waiting
                                         or (watch and watch.fired)):
+                        barged = True
+                        break
+                    if brain.LISTEN_MARKER in sentence:
+                        if may_listen and not said:
+                            listening = True
+                            break
+                        sentence = sentence.replace(brain.LISTEN_MARKER, "").strip()
+                        if not sentence and said:
+                            continue
+                        sentence = sentence or brain.LISTEN_NUDGE
+                    if brief and said >= barge.BRIEF_MAX_SENTENCES:
+                        journal.note("brief-cap", sentences=said)
+                        break
+                    if brief:
+                        sentence = barge.clip(sentence)
+                    # คนที่เพิ่งแทรกอาจแค่หยุดคิด รอให้เงียบจริงก่อนค่อยเปิดปาก
+                    if brief and not said and barge.hold_for_more(listener, heard_at):
                         barged = True
                         break
                     print(sentence)
@@ -325,9 +368,20 @@ def live(args: argparse.Namespace) -> int:
             if barged and player:
                 player.interrupt()
                 journal.note("barge-in", during="answer", spoken_sentences=said)
-            if barged and not first:
+            # ถูกแทรกกลางคำตอบ ท่อนถัดไปคือคำแทรกนั้น
+            if barged and first:
+                interrupted = True
+            if listening:
+                # เขายังพูดไม่จบ เงียบไว้แล้วเอาท่อนนี้ไปต่อกับท่อนหน้า
+                unfinished = question
+                awaiting = True
+                interrupted = interrupted or brief
+                journal.note("listening", text=question)
+            elif barged and not first:
                 # ยังไม่ได้เริ่มพูดตอบ แปลว่าคนพูดยังไม่จบ ให้เอาท่อนก่อนไปต่อกับท่อนใหม่
                 unfinished = question
+                # ท่อนนี้ยังเป็นคำแทรกอยู่ ต่อกับท่อนใหม่แล้วก็ยังต้องตอบสั้น
+                interrupted = interrupted or brief
                 journal.note("continuation", reason="ถูกแทรกก่อนเริ่มตอบ",
                              merged=round(merged, 1))
 
@@ -344,7 +398,7 @@ def live(args: argparse.Namespace) -> int:
                          first_token=round((marks[0] - began) if marks else 0.0, 2),
                          first_audio=round(first, 2), synth_first=round(synth_first, 2),
                          total=round(time.perf_counter() - began, 2),
-                         barged=barged, text=" ".join(spoken_parts))
+                         barged=barged, brief=brief, text=" ".join(spoken_parts))
             if not full_duplex:
                 if player:
                     player.wait_idle()

@@ -26,6 +26,9 @@ DRILL_NOTES = ROOT / "harnesses" / "EN" / "sources" / "web"
 DRILL_GLOB = "plo-starting-hands-classify-*.md"
 _DRILL_LINE = re.compile(r"^- มือ \S+ \(([AKQJT2-9]{4}) ([a-z-]+)\) → ระดับ (\w+): (.+)$",
                          re.MULTILINE)
+PREFLOP_GLOB = "plo-starting-hands-preflop-*.md"
+_PREFLOP_LINE = re.compile(
+    r"^- มือ \S+ \(([AKQJT2-9]{4}) ([a-z-]+)\) สถานการณ์: (.+?) → คำตอบ (\w+): (.+)$", re.MULTILINE)
 
 RANKS = retrieval.RANK_ORDER
 VALUE = {rank: 14 - index for index, rank in enumerate(RANKS)}
@@ -127,6 +130,32 @@ def _drills() -> tuple[Drill, ...]:
         for hand, form, tier, reason in _DRILL_LINE.findall(path.read_text(encoding="utf-8")):
             found.append(Drill(hand, form, tier, reason.strip()))
     return tuple(found)
+
+
+@dataclasses.dataclass(frozen=True)
+class Spot:
+    """คำตอบตัดสินใจ preflop หนึ่งข้อจากแบบฝึก มือเดียวกันมีได้หลายสถานการณ์"""
+
+    hand: str
+    shape: str
+    situation: str
+    action: str
+    reason: str
+
+
+@functools.lru_cache(maxsize=1)
+def _spots() -> tuple[Spot, ...]:
+    found: list[Spot] = []
+    for path in sorted(DRILL_NOTES.glob(PREFLOP_GLOB)):
+        for hand, form, situation, action, reason in _PREFLOP_LINE.findall(
+                path.read_text(encoding="utf-8")):
+            found.append(Spot(hand, form, situation.strip(), action, reason.strip()))
+    return tuple(found)
+
+
+def spots(hand: str) -> tuple[Spot, ...]:
+    """ข้อในแบบฝึก preflop ที่เป็นมือนี้"""
+    return tuple(item for item in _spots() if item.hand == hand)
 
 
 def drill(hand: str, form: str | None = None) -> Drill | None:
@@ -323,6 +352,7 @@ def context_block(question: str, earlier: str = "", hilo: bool = False) -> str:
     lines = [
         "# มือ PLO ที่ถาม (โค้ดคำนวณให้ ใช้ตัวเลขนี้แทนการเดา)",
         f"มือ {'-'.join(hand)} ดอก: {form or 'ไม่ได้บอก'}",
+        "ไพ่ในมือมีแค่สี่ใบนี้ ตัวเลขอื่นในคำถามเป็นเสียงที่ถอดเพี้ยน ห้ามพูดถึงเป็นไพ่",
         "ระดับมือ Premium Speculative Marginal Trash ไม่ขึ้นกับตำแหน่งหรือ stack ห้ามถามตำแหน่งตอนจัดระดับ",
     ]
     answer = drill(hand, form)
@@ -339,10 +369,24 @@ def context_block(question: str, earlier: str = "", hilo: bool = False) -> str:
             lines.append(f"โครงสร้าง: Hold'em สองมือแยกกัน ไม่มีไพ่สามใบอยู่ใน straight เดียวกันเลย "
                          f"แบบเดียวกับ {'-'.join(twin.hand)} ที่แบบฝึกจัดเป็น {twin.tier}")
             lines.append(f"ระดับที่ควรเป็น: {twin.tier} ถึงเป็น double-suited ก็ช่วยไม่มาก เพราะไม่มี A flush ที่ได้จึงไม่ใช่ nut flush เสมอไป")
+    lines.extend(_spot_lines(hand, form))
     lines.append("miracle flop (นับจากอันดับไพ่ ไม่นับ flush):")
     lines.extend(_study_lines(study(hand)))
     lines.append(_suit_note(hand, form, ace_suited))
     return "\n".join(lines)
+
+
+def _spot_lines(hand: str, form: str | None) -> list[str]:
+    """คำตอบ preflop จากแบบฝึกของมือนี้ ยึดคำตอบนี้ก่อนการเดาจาก miracle flop"""
+    found = spots(hand)
+    if not found:
+        return []
+    lines = ["แบบฝึก preflop ของมือนี้ (ยึดคำตอบนี้ถ้าสถานการณ์ตรงกัน ห้ามแนะนำสวนทาง):"]
+    lines.extend(f"- {'-'.join(item.hand)} {item.shape} {item.situation} → {item.action}: {item.reason}"
+                 for item in found)
+    if form not in (None, *(item.shape for item in found)):
+        lines.append(f"คำตอบนี้เป็นของแบบ {found[0].shape} ดอกที่ถามต่างไป ให้บอกว่าต่างกันอย่างไร")
+    return lines
 
 
 def _hilo_block(hand: str, form: str | None, ace_suited: bool) -> str:

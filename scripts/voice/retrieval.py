@@ -25,6 +25,9 @@ _LATIN = re.compile(r"^[a-z0-9][a-z0-9'-]*$")
 # ก้อนที่เป็นตัวเลขล้วนต้องเป็นไพ่ใบเดียว ไม่อย่างนั้น "blinds 5 10 25" จะกลายเป็นมือ
 _RANK_WORD = re.compile(r"^(?:[akqjt2-9]+|10)$", re.IGNORECASE)
 _TEN_THEN_RANK = re.compile(r"^1[2-9]$")
+# ตัวถอดเสียงเขียนมือ PLO "AA95" เป็น "AA9500" มีศูนย์ติดท้าย ไพ่ไม่มีเลขศูนย์
+# ต้องมีตัวอักษรไพ่อย่างน้อยหนึ่งตัว ไม่งั้นสแตกอย่าง "9500" จะกลายเป็นมือ
+_ZERO_TAIL = re.compile(r"^((?=[2-9]*[akqjt])[akqjt2-9]{4})0+$", re.IGNORECASE)
 HAND_CARDS = 4
 RANK_ORDER = "AKQJT98765432"
 # ชื่อไพ่ที่ถอดจากเสียงภาษาไทย "เอ" ต้องเป็นคำโดด ไม่อย่างนั้น "เอา" "เอง" จะกลายเป็นไพ่
@@ -85,6 +88,7 @@ def hands(text: str) -> tuple[str, ...]:
     found: list[str] = []
     run = ""
     for word in [*re.split(r"[^\w]+", latin_ranks(text)), ""]:
+        word = _ZERO_TAIL.sub(r"\1", word)
         ranks = _ranks(word) if word else None
         # มือที่เขียนติดกันเป็นคำเดียวอย่าง A299 ครบในตัว ไม่ต่อกับไพ่ที่พูดตามหลังเพื่อบอกดอก
         if ranks is not None and len(ranks) == HAND_CARDS and len(word) >= HAND_CARDS:

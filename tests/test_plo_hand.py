@@ -142,6 +142,21 @@ class ContextTests(unittest.TestCase):
         block = plo_hand.context_block("คิงแจ็ค 7-6", earlier="คิงแจ็ค 10 9")
         self.assertIn("ห้ามลอกระดับ", block)
 
+    def test_preflop_drill_answer_is_in_block(self):
+        # AA87 ไม่มีในแบบฝึกจัดระดับ โมเดลเคยเดาว่า Speculative แล้วบอกให้ limp จาก UTG
+        # ทั้งที่แบบฝึก preflop ตอบว่า raise ได้จากทุกตำแหน่ง
+        block = plo_hand.context_block("แฮนด์นี้ AA8700 ตําแหน่งที่ UTG คนแรก")
+        self.assertIn("UTG", block)
+        self.assertIn("→ Raise", block)
+
+    def test_preflop_drills_of_other_hands_stay_out(self):
+        self.assertNotIn("→ Raise", plo_hand.context_block("คิง คิง ควีน แจ็ค"))
+
+    def test_block_says_hand_is_only_four_cards(self):
+        # ถอดเสียงได้ AA8700 โมเดลเคยพูดถึงไพ่ 0 ที่ไม่มีอยู่จริง
+        block = plo_hand.context_block("แฮนด์นี้ AA8700")
+        self.assertIn("มีแค่สี่ใบนี้", block)
+
     def test_no_hand_no_block(self):
         self.assertEqual(plo_hand.context_block("สวัสดีค่ะ"), "")
 

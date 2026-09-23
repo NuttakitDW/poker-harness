@@ -29,7 +29,11 @@ class SymbolTests(unittest.TestCase):
         self.assertEqual(to_speech("25%"), "25 เปอร์เซ็นต์")
 
     def test_currency_moves_after_the_amount(self):
-        self.assertEqual(to_speech("$150"), "150 ดอลลาร์")
+        # paxa อ่าน "ดอลลาร์" เพี้ยนเป็น "ดอลลาห์" แต่อ่านคำอังกฤษถูก
+        self.assertEqual(to_speech("$150"), "150 dollar")
+
+    def test_thai_spelled_dollar_is_spoken_in_english(self):
+        self.assertEqual(to_speech("ราว 665 ดอลลาร์ ก็พอ"), "ราว 665 dollar ก็พอ")
 
     def test_digit_range_uses_thai_word(self):
         self.assertEqual(to_speech("3-5 ครั้ง"), "3 ถึง 5 ครั้ง")

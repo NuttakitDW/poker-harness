@@ -78,7 +78,7 @@ class MessageBuildingTests(unittest.TestCase):
     def test_a_greeting_with_no_matching_card_still_reaches_the_model(self):
         sent = {}
 
-        def fake_model(question, context, key, history=None, reasoning=True):
+        def fake_model(question, context, key, history=None, reasoning=True, **_):
             sent.update(question=question, context=context)
             yield "สวัสดีครับ"
 
@@ -100,6 +100,20 @@ class MessageBuildingTests(unittest.TestCase):
         messages = brain.build_messages("ถามใหม่", "")
         self.assertIn(brain.REASONING_REMINDER, messages[-1]["content"])
         self.assertTrue(messages[-1]["content"].startswith("ถามใหม่"))
+
+    def test_a_reply_to_an_interruption_is_asked_to_stay_short(self):
+        brief = brain.build_messages("เดี๋ยวนะ", "", note=brain.BRIEF_REMINDER)[-1]["content"]
+        normal = brain.build_messages("เดี๋ยวนะ", "")[-1]["content"]
+        self.assertIn(brain.BRIEF_REMINDER, brief)
+        self.assertNotIn(brain.BRIEF_REMINDER, normal)
+
+    def test_brief_mode_keeps_the_system_prompt_cacheable(self):
+        brief = brain.build_messages("เดี๋ยวนะ", "", note=brain.BRIEF_REMINDER)[0]["content"]
+        self.assertEqual(brief, brain.build_messages("เดี๋ยวนะ", "")[0]["content"])
+
+    def test_the_model_is_told_it_may_stay_quiet_and_listen(self):
+        system = brain.build_messages("แป๊บ", "", reasoning=False)[0]["content"]
+        self.assertIn(brain.LISTEN_MARKER, system)
 
 
 class FollowUpChartTests(unittest.TestCase):

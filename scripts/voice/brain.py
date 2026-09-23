@@ -72,6 +72,25 @@ REASONING_RULES = f"""# วิธีคิดก่อนตอบ
 
 REASONING_REMINDER = f"ตอบตามรูปแบบสองส่วน {THINK_MARKER} แล้ว {SAY_MARKER}"
 
+# ตอบด้วยคำนี้คำเดียวแปลว่าเลือกเงียบฟังต่อ โค้ดจะไม่พูดอะไรและเอาท่อนนี้ไปต่อกับท่อนถัดไป
+LISTEN_MARKER = "[ฟังต่อ]"
+LISTEN_RULES = f"""# จังหวะคุย
+
+ถ้าผู้ใช้ยังพูดไม่จบ เช่น แค่เกริ่น ขอเวลา พูดค้างกลางประโยค หรือกำลังเล่าไพ่ยังไม่ครบ
+ให้ส่วนพูดมีแค่ {LISTEN_MARKER} คำเดียว ลูกชุบจะเงียบฟังต่อ แล้วได้คำถามเต็มเมื่อเขาพูดจบ
+อย่าตอบรับซ้ำ ๆ หรือเร่งให้เล่า เพราะจะพูดทับเขา ถ้าเขาถามครบแล้วให้ตอบตามปกติ"""
+
+# ผู้ใช้เพิ่งพูดแทรก มักพูดยังไม่จบแค่เว้นจังหวะคิด ถ้าตอบยาวจะกลายเป็นพูดสวนกันไปมา
+# ใส่ไว้ท้ายคำถาม ไม่ใส่ในคำสั่งระบบ เพื่อไม่ให้ส่วนหัวที่ถูกแคชไว้เปลี่ยน
+BRIEF_REMINDER = (
+    f"ผู้ใช้เพิ่งพูดแทรกลูกชุบ เขาอาจยังพูดไม่จบ ถ้ายังไม่จบให้ตอบ {LISTEN_MARKER} "
+    "ถ้าจบแล้วให้ตอบสั้นไม่เกินสิบคำ เช่น ตอบแก่น หรือถามกลับคำเดียวว่าหมายถึงอะไร ห้ามอธิบายยาว"
+)
+# ลูกชุบเงียบฟังแล้ว แต่เขาก็เงียบตามไปนาน ถ้าเลือกฟังต่ออีกจะเงียบใส่กันไม่จบ
+SILENCE_REMINDER = f"ผู้ใช้เงียบไปแล้ว ถึงตาลูกชุบพูด ห้ามตอบ {LISTEN_MARKER}"
+# โมเดลยังดื้อตอบว่าฟังต่อทั้งที่ถึงตาพูดแล้ว ต้องมีเสียงออกไปบ้าง ไม่งั้นเงียบใส่กันทั้งคู่
+LISTEN_NUDGE = "ค่ะ ว่ามาได้เลย"
+
 SOUL = ROOT / "SOUL.md"
 PRIVATE_HEADING = "## (ไม่ส่ง)"
 FALLBACK_PROMPT = (
@@ -229,14 +248,16 @@ def search_text(question: str, history: Conversation | None) -> str:
 
 def build_messages(question: str, context: str,
                    history: Conversation | None = None,
-                   reasoning: bool = True) -> list[dict]:
+                   reasoning: bool = True, note: str = "") -> list[dict]:
     """ประกอบข้อความทั้งชุดที่ส่งให้โมเดล ระบบ ตาเก่า แล้วค่อยคำถามใหม่"""
     body = f"{context}\n\n# คำถาม\n\n{question}" if context else question
-    system = system_prompt()
+    system = f"{system_prompt()}\n\n{LISTEN_RULES}"
     if reasoning:
         system = f"{system}\n\n{REASONING_RULES}"
         # ประวัติที่เก็บไว้มีแต่ส่วนพูด ถ้าไม่เตือน ตาหลัง ๆ โมเดลจะเลิกคิดตามรูปแบบ
         body = f"{body}\n\n{REASONING_REMINDER}"
+    if note:
+        body = f"{body}\n\n{note}"
     return [
         {"role": "system", "content": system},
         *(history.messages if history else []),
@@ -246,11 +267,11 @@ def build_messages(question: str, context: str,
 
 def _request(question: str, context: str, key: str,
              history: Conversation | None = None,
-             reasoning: bool = True) -> urllib.request.Request:
+             reasoning: bool = True, note: str = "") -> urllib.request.Request:
     """คำขอแบบสตรีมไปยังโมเดล"""
     payload = json.dumps({
         "model": MODEL,
-        "messages": build_messages(question, context, history, reasoning),
+        "messages": build_messages(question, context, history, reasoning, note),
         "temperature": 0.3,
         "max_tokens": MAX_ANSWER_TOKENS,
         "stream": True,
@@ -265,13 +286,14 @@ def _request(question: str, context: str, key: str,
 
 
 def _open_stream(question: str, context: str, key: str,
-                 history: "Conversation | None" = None, reasoning: bool = True):
+                 history: "Conversation | None" = None, reasoning: bool = True,
+                 note: str = ""):
     """เปิดการเชื่อมต่อแบบสตรีม ลองซ้ำเมื่อเครือข่ายสะดุด"""
     last = ""
     for attempt in range(RETRIES):
         try:
             return urllib.request.urlopen(
-                _request(question, context, key, history, reasoning),
+                _request(question, context, key, history, reasoning, note),
                 timeout=TIMEOUT_SECONDS)
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", "replace")[:200]
@@ -311,9 +333,9 @@ def _charge(usage: dict | None, prompt_chars: int, answer_chars: int) -> None:
 
 def stream_model(question: str, context: str, key: str,
                  history: "Conversation | None" = None,
-                 reasoning: bool = True) -> Iterator[str]:
+                 reasoning: bool = True, note: str = "") -> Iterator[str]:
     """คายข้อความทีละชิ้นระหว่างที่โมเดลยังเขียนไม่จบ"""
-    response = _open_stream(question, context, key, history, reasoning)
+    response = _open_stream(question, context, key, history, reasoning, note)
     usage: dict | None = None
     answer_chars = 0
 
@@ -339,14 +361,30 @@ def stream_model(question: str, context: str, key: str,
                     yield piece
     finally:
         prompt_chars = sum(len(message["content"]) for message in
-                           build_messages(question, context, history, reasoning))
+                           build_messages(question, context, history, reasoning, note))
         _charge(usage, prompt_chars, answer_chars)
+
+
+def chart_question(question: str, history: Conversation | None) -> str:
+    """ข้อความที่ใช้หาชาร์ตเรนจ์ Hold'em คืนค่าว่างถ้ากำลังคุยมือ PLO
+
+    มือ PLO อย่าง "AA แจ็ค 10" มี AA อยู่ข้างใน ถ้าไม่กันไว้จะได้ชาร์ต NLH ของ AA ขึ้นจอ
+    คำถามก่อนหน้าเป็นมือ PLO สี่ใบ ถ้ายืมมาทำตาราง จะถูกอ่านเป็นมือ Hold'em สองใบ
+    ที่ผู้ใช้ไม่ได้ถาม แล้วโมเดลเชื่อตารางมากกว่าบทสนทนาของตัวเอง
+    """
+    if plo_context(question, history):
+        return ""
+    borrowed_plo = history is not None and bool(retrieval.hands(history.last_question))
+    return question if borrowed_plo else search_text(question, history)
 
 
 def stream_answer(question: str, language: str = "TH",
                   history: Conversation | None = None, reasoning: bool = True,
-                  chart_on_screen: bool = False):
-    """คายคำตอบทีละชิ้นพร้อมข้อมูลแหล่งอ้างอิง คืนค่าเป็น (แหล่ง, ตัววนชิ้นข้อความ)"""
+                  chart_on_screen: bool = False, note: str = ""):
+    """คายคำตอบทีละชิ้นพร้อมข้อมูลแหล่งอ้างอิง คืนค่าเป็น (แหล่ง, ตัววนชิ้นข้อความ)
+
+    note คือคำกำกับจังหวะคุยของตานี้ เช่น ผู้ใช้เพิ่งพูดแทรกหรือเพิ่งเงียบไป
+    """
     wanted = search_text(question, history)
     hand = plo_context(question, history)
     # มืออย่าง "แจ็ค แจ็ค 6 3" ไม่มีคำไหนตรงการ์ด เคยพาไปการ์ด lowball จึงชี้ไปการ์ดมือเริ่มต้น PLO
@@ -355,12 +393,10 @@ def stream_answer(question: str, language: str = "TH",
     context, cards, pages = gather(searched, language=language,
                                    seen_pages=history.sent_pages if history else ())
     # ตารางเรนจ์และมือ PLO วางไว้ก่อนเนื้อหาอื่น เพราะเป็นตัวเลขจริงที่ต้องใช้แทนการเดาของโมเดล
-    # คำถามก่อนหน้าเป็นมือ PLO สี่ใบ ถ้ายืมมาทำตาราง จะถูกอ่านเป็นมือ Hold'em สองใบ
-    # ที่ผู้ใช้ไม่ได้ถาม แล้วโมเดลเชื่อตารางมากกว่าบทสนทนาของตัวเอง
-    borrowed_plo = history is not None and bool(retrieval.hands(history.last_question))
-    charted = question if borrowed_plo else wanted
-    chart = "" if hand else preflop.context_block(charted, on_screen=chart_on_screen)
+    charted = "" if hand else chart_question(question, history)
+    chart = preflop.context_block(charted, on_screen=chart_on_screen) if charted else ""
     context = "\n\n".join(part for part in (hand, chart, context) if part)
     # ไม่มีการ์ดที่ตรงก็ยังส่งให้โมเดล คำทักทายหรือคุยเล่นไม่มีทางตรงกับคลังอยู่แล้ว
     # ถ้าตัดบทว่าไม่พบ ผู้ใช้ทักมาแล้วได้คำตอบเหมือนเครื่องค้นหาแทนคนคุยด้วย
-    return (cards, pages), stream_model(question, context, load_api_key(), history, reasoning)
+    return (cards, pages), stream_model(question, context, load_api_key(), history, reasoning,
+                                          note=note)

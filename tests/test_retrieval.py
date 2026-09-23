@@ -129,6 +129,12 @@ class RoutingTests(unittest.TestCase):
         self.assertIn("K♠K♦Q♦J♠ (KKQJ double-suited)", context)
         self.assertTrue(pages)
 
+    def test_system_prompt_never_tells_lukchup_to_mention_her_store(self):
+        # เคยตอบว่า "ในคลังมีชื่อไทย... แต่ไม่มีชื่อ..." ฟังเป็นเครื่องค้นหา ไม่ใช่คน
+        prompt = brain.system_prompt()
+        self.assertNotIn("บอกตรง ๆ ว่าไม่มีในคลัง", prompt)
+        self.assertIn("ห้ามพูดถึงที่เก็บความรู้ของตัวเอง", prompt)
+
     def test_system_prompt_forbids_claiming_no_plo_knowledge(self):
         self.assertIn("ห้ามอ้างว่าไม่มีความรู้เรื่อง PLO", brain.system_prompt())
 
@@ -140,6 +146,15 @@ class RoutingTests(unittest.TestCase):
         self.assertNotIn("27-plo-hi-lo", [hit.card.slug for hit in hits])
         context, _, _ = brain.gather(question)
         self.assertIn("KKQJ double-suited", context)
+
+    def test_plo_hand_gets_no_holdem_chart_on_screen(self):
+        # "AA แจ็ค 10 ... button raise" เคยเปิดชาร์ต NLH ของ AA บนจอ ทั้งที่ถามมือ PLO
+        question = ("AA แจ็ค 10 มีซิงเกิลซูต อยู่ตําแหน่งสมอลไบน์ด์ ผู้เล่นลิ้มมา 3 คน "
+                    "แล้วก็บัตตันโคเรสต์มาก่อนเลย เราต้องคอลหรือเราจะรีเรสกลับไป")
+        self.assertEqual(brain.chart_question(question, None), "")
+
+    def test_holdem_hand_still_gets_its_chart_question(self):
+        self.assertTrue(brain.chart_question("AKo UTG เจอ 3-bet ทำไงดี", None))
 
     def test_hi_lo_cards_need_a_hi_lo_cue(self):
         for question in ("PLO Hi Lo ควรเล่นมือแบบไหน", "โอมาฮาไฮโลเล่นยังไง", "Omaha eight or better คืออะไร"):
@@ -156,6 +171,14 @@ class HandSpottingTests(unittest.TestCase):
         self.assertEqual(retrieval.hands("มี KK QJ Suit"), ("KKQJ",))
         self.assertEqual(retrieval.hands("ถือ A A K K double"), ("AAKK",))
         self.assertEqual(retrieval.hands("มือ JT98 เล่นยังไง"), ("JT98",))
+
+    def test_a_zero_tail_from_the_transcriber_is_dropped(self):
+        question = "เป็นแฮนด์ของ Pierrot นะ AA9500 ครับ อยู่ Small Blind"
+        self.assertEqual(retrieval.hands(question), ("AA95",))
+
+    def test_a_stack_size_is_not_read_as_a_hand(self):
+        self.assertEqual(retrieval.hands("สแตก 9500 อยู่ button"), ())
+        self.assertEqual(retrieval.hands("AA สแตก 2500"), ())
         self.assertEqual(retrieval.hands("hand 10 9 8 7"), ("T987",))
 
     def test_a_ten_transcribed_as_one_joins_the_next_rank(self):

@@ -5,7 +5,7 @@
     echo "ข้อความ" | python scripts/voice/speak.py --voice massaman
     python scripts/voice/speak.py "ข้อความ" --out tmp/tts/out.mp3 --no-play
 
-ต้องมี PAXA_API_KEY ใน .env หรือใน environment
+ต้องมี PAXA_API ใน .env หรือใน environment
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ class SpeechError(RuntimeError):
 
 def load_api_key() -> str:
     """อ่านคีย์จาก environment ก่อน แล้วค่อยถอยไปอ่าน .env"""
-    return keys.require("PAXA_API_KEY")
+    return keys.require("PAXA_API")
 
 
 def synthesize(text: str, voice: str, key: str,

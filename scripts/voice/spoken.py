@@ -55,7 +55,7 @@ SYMBOLS = (
     ("%", " เปอร์เซ็นต์ "),
     ("−", " ลบ "),
     ("–", " ถึง "),
-    ("$", " ดอลลาร์ "),
+    ("$", " dollar "),
     ("×", " คูณ "),
     ("÷", " หารด้วย "),
     ("≥", " มากกว่าหรือเท่ากับ "),
@@ -112,7 +112,7 @@ def _expand_cards(text: str) -> str:
 
 def _expand_symbols(text: str) -> str:
     """แทนสัญลักษณ์ด้วยคำอ่าน โดยเว้นเครื่องหมายลบที่ติดกับตัวเลข"""
-    text = CURRENCY.sub(r"\1 ดอลลาร์ ", text)
+    text = CURRENCY.sub(r"\1 dollar ", text)
     text = re.sub(r"(?<=\d)-(?=\d)", " ถึง ", text)
     for symbol, spoken in SYMBOLS:
         text = text.replace(symbol, spoken)
