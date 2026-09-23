@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import datetime
 import threading
+import time
+from typing import NamedTuple
 
 import journal
 
@@ -41,8 +43,33 @@ OUTPUT_CHARS_PER_TOKEN = 2.3
 # เสียงไทยที่ความเร็ว 1.15 ราว ๆ นี้ ใช้เดาความยาวเสียงของ Soniox ซึ่งคืน mp3
 SPOKEN_CHARS_PER_SECOND = 13.0
 
+# หน่วยที่แต่ละบริการคิดเงิน ทุกบันทึกใช้ quantity ในหน่วยนี้ จะได้คูณราคาเองได้ทันที
+UNITS = {
+    "deepseek": "token",
+    "paxa-tts": "char",
+    "soniox-tts": "char",
+    "soniox-stt-rt": "second",
+    "soniox-stt-async": "second",
+}
+UNKNOWN_UNIT = "call"
+
+
+class Tally(NamedTuple):
+    """ยอดสะสมของบริการหนึ่งในรอบนี้"""
+
+    usd: float = 0.0
+    calls: int = 0
+    quantity: float = 0.0
+    seconds: float = 0.0
+
+    def add(self, usd: float, quantity: float, seconds: float) -> "Tally":
+        return Tally(round(self.usd + usd, 8), self.calls + 1,
+                     self.quantity + quantity, self.seconds + seconds)
+
+
 _lock = threading.Lock()
-_spent: dict[str, float] = {}
+_tallies: dict[str, Tally] = {}
+_began = time.monotonic()
 
 
 def is_peak(moment: datetime.datetime | None = None) -> bool:
@@ -84,29 +111,62 @@ def estimate_tokens(chars: int, per_token: float) -> int:
     return max(0, round(chars / per_token))
 
 
-def record(api: str, usd: float, **fields) -> None:
-    """จดค่าใช้จ่ายหนึ่งครั้งลงบันทึก และบวกเข้ายอดของรอบนี้"""
+def record(api: str, usd: float, *, quantity: float, seconds: float, **fields) -> None:
+    """จดค่าใช้จ่ายหนึ่งครั้งลงบันทึก และบวกเข้ายอดของรอบนี้
+
+    ทุกบริการจดรูปเดียวกัน: เงิน หน่วยที่คิดเงิน จำนวนในหน่วยนั้น และเวลาที่ใช้
+    """
     with _lock:
-        _spent[api] = round(_spent.get(api, 0.0) + usd, 8)
-    journal.note("usage", api=api, usd=round(usd, 6), **fields)
+        _tallies[api] = _tallies.get(api, Tally()).add(usd, quantity, seconds)
+    journal.note("usage", api=api, usd=round(usd, 6), unit=UNITS.get(api, UNKNOWN_UNIT),
+                 quantity=round(quantity, 2), seconds=round(seconds, 2), **fields)
+
+
+def charge_stream(api: str, streamed: float, charged: float) -> float:
+    """คิดเงินวินาทีเสียงที่ส่งเข้าสายเพิ่มจากที่คิดไปแล้ว คืนยอดวินาทีที่คิดแล้วใหม่
+
+    สายถอดเสียงเปิดค้างทั้งรอบ จึงคิดเป็นช่วง ๆ ระหว่างคุย ถ้าโปรแกรมตายกลางทาง
+    ยอดที่คิดไปแล้วยังอยู่ในบันทึก
+    """
+    fresh = streamed - charged
+    if fresh <= 0:
+        return charged
+    record(api, soniox_stt_usd(fresh), quantity=fresh, seconds=fresh)
+    return streamed
 
 
 def spent() -> dict[str, float]:
     """ยอดใช้จ่ายของรอบนี้แยกตามบริการ คืนสำเนาเพื่อไม่ให้ผู้เรียกแก้ยอดจริงได้"""
     with _lock:
-        return dict(_spent)
+        return {api: tally.usd for api, tally in _tallies.items()}
 
 
-def summary() -> dict:
-    """ยอดรวมสำหรับจดตอนจบรอบ"""
-    by_api = {name: round(usd, 6) for name, usd in spent().items()}
+def tallies() -> dict[str, Tally]:
+    """ยอดสะสมเต็มของรอบนี้แยกตามบริการ"""
+    with _lock:
+        return dict(_tallies)
+
+
+def summary(final: bool = True) -> dict:
+    """ยอดรวมของรอบนี้ จดทั้งระหว่างคุยและตอนจบ พร้อมเวลาที่เปิดคุยและราคาต่อชั่วโมง"""
+    current = tallies()
+    by_api = {api: round(tally.usd, 6) for api, tally in current.items()}
     total = sum(by_api.values())
-    return {"total_usd": round(total, 6), "total_thb": round(total * THB_PER_USD, 4),
-            "by_api": by_api,
+    session = time.monotonic() - _began
+    usage = {api: {"unit": UNITS.get(api, UNKNOWN_UNIT), "quantity": round(tally.quantity, 2),
+                   "calls": tally.calls, "seconds": round(tally.seconds, 2),
+                   "usd": round(tally.usd, 6)}
+             for api, tally in current.items()}
+    per_hour = total / session * 3600 if session > 0 else 0.0
+    return {"final": final, "session_seconds": round(session, 1),
+            "total_usd": round(total, 6), "total_thb": round(total * THB_PER_USD, 4),
+            "usd_per_hour": round(per_hour, 6), "by_api": by_api, "usage": usage,
             "prices_checked": PRICES_CHECKED}
 
 
 def reset() -> None:
-    """ล้างยอดของรอบก่อน ใช้ตอนเริ่มรอบใหม่และในเทสต์"""
+    """ล้างยอดของรอบก่อนและเริ่มจับเวลาใหม่ ใช้ตอนเริ่มรอบใหม่และในเทสต์"""
+    global _began
     with _lock:
-        _spent.clear()
+        _tallies.clear()
+        _began = time.monotonic()

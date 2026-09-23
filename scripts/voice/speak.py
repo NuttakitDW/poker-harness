@@ -77,7 +77,8 @@ def synthesize(text: str, voice: str, key: str,
         try:
             with urllib.request.urlopen(request, timeout=90) as response:
                 audio = response.read()
-            costs.record("paxa-tts", costs.paxa_usd(len(text)), chars=len(text))
+            costs.record("paxa-tts", costs.paxa_usd(len(text)), quantity=len(text),
+                         seconds=time.perf_counter() - started)
             return audio, time.perf_counter() - started
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", "replace")[:200]

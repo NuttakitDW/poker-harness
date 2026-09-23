@@ -311,7 +311,7 @@ def _open_stream(question: str, context: str, key: str,
     raise BrainError(last or "เรียกโมเดลไม่สำเร็จ")
 
 
-def _charge(usage: dict | None, prompt_chars: int, answer_chars: int) -> None:
+def _charge(usage: dict | None, prompt_chars: int, answer_chars: int, seconds: float) -> None:
     """คิดเงินคำขอนี้ ถ้าสตรีมถูกตัดก่อนได้ยอดจริง ให้เดาจากความยาวข้อความ
 
     คำตอบที่ถูกพูดแทรกกลางทางก็ยังถูกเก็บเงินเต็มส่วน input จึงต้องนับด้วย
@@ -327,14 +327,15 @@ def _charge(usage: dict | None, prompt_chars: int, answer_chars: int) -> None:
         output = costs.estimate_tokens(answer_chars, costs.OUTPUT_CHARS_PER_TOKEN)
     peak = costs.is_peak()
     costs.record("deepseek", costs.deepseek_usd(hit, miss, output, peak),
-                 model=MODEL, hit=hit, miss=miss, output=output, peak=peak,
-                 estimated=not usage)
+                 quantity=hit + miss + output, seconds=seconds, model=MODEL,
+                 hit=hit, miss=miss, output=output, peak=peak, estimated=not usage)
 
 
 def stream_model(question: str, context: str, key: str,
                  history: "Conversation | None" = None,
                  reasoning: bool = True, note: str = "") -> Iterator[str]:
     """คายข้อความทีละชิ้นระหว่างที่โมเดลยังเขียนไม่จบ"""
+    started = time.perf_counter()
     response = _open_stream(question, context, key, history, reasoning, note)
     usage: dict | None = None
     answer_chars = 0
@@ -362,7 +363,7 @@ def stream_model(question: str, context: str, key: str,
     finally:
         prompt_chars = sum(len(message["content"]) for message in
                            build_messages(question, context, history, reasoning, note))
-        _charge(usage, prompt_chars, answer_chars)
+        _charge(usage, prompt_chars, answer_chars, time.perf_counter() - started)
 
 
 def chart_question(question: str, history: Conversation | None) -> str:

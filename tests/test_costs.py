@@ -62,17 +62,47 @@ class RecordTests(unittest.TestCase):
         return [json.loads(line) for line in self.path.read_text().splitlines()]
 
     def test_each_call_is_logged_and_added_to_the_session_total(self):
-        costs.record("paxa-tts", 0.01, chars=20)
-        costs.record("paxa-tts", 0.02, chars=40)
-        costs.record("deepseek", 0.005, prompt_tokens=7000)
+        costs.record("paxa-tts", 0.01, quantity=20, seconds=0.5)
+        costs.record("paxa-tts", 0.02, quantity=40, seconds=0.7)
+        costs.record("deepseek", 0.005, quantity=7000, seconds=1.2)
         self.assertEqual(costs.spent(), {"paxa-tts": 0.03, "deepseek": 0.005})
         self.assertEqual([r["api"] for r in self.records()],
                          ["paxa-tts", "paxa-tts", "deepseek"])
 
     def test_the_summary_is_a_copy_the_caller_cannot_change(self):
-        costs.record("deepseek", 0.001)
+        costs.record("deepseek", 0.001, quantity=10, seconds=1)
         costs.spent()["deepseek"] = 99
         self.assertEqual(costs.spent(), {"deepseek": 0.001})
+
+    def test_every_service_logs_the_same_fields(self):
+        costs.record("paxa-tts", 0.01, quantity=20, seconds=0.5)
+        costs.record("deepseek", 0.005, quantity=7000, seconds=1.2, hit=100)
+        costs.record("soniox-stt-rt", 0.001, quantity=30, seconds=30)
+        records = self.records()
+        self.assertEqual([r["unit"] for r in records], ["char", "token", "second"])
+        for record in records:
+            self.assertLessEqual({"api", "usd", "unit", "quantity", "seconds"}, set(record))
+
+    def test_the_open_stream_is_charged_only_for_new_seconds(self):
+        billed = costs.charge_stream("soniox-stt-rt", 60.0, 0.0)
+        billed = costs.charge_stream("soniox-stt-rt", 90.0, billed)
+        billed = costs.charge_stream("soniox-stt-rt", 90.0, billed)
+        self.assertEqual(billed, 90.0)
+        tally = costs.tallies()["soniox-stt-rt"]
+        self.assertEqual((tally.calls, tally.quantity), (2, 90.0))
+        self.assertAlmostEqual(tally.usd, costs.soniox_stt_usd(90))
+
+    def test_the_summary_carries_quantities_duration_and_hourly_rate(self):
+        costs.record("paxa-tts", 0.01, quantity=20, seconds=0.5)
+        costs.record("paxa-tts", 0.02, quantity=40, seconds=0.7)
+        with mock.patch.object(costs.time, "monotonic", return_value=costs._began + 1800):
+            summary = costs.summary(final=False)
+        self.assertFalse(summary["final"])
+        self.assertEqual(summary["session_seconds"], 1800)
+        self.assertAlmostEqual(summary["usd_per_hour"], 0.06)
+        self.assertEqual(summary["usage"]["paxa-tts"],
+                         {"unit": "char", "quantity": 60, "calls": 2, "seconds": 1.2,
+                          "usd": 0.03})
 
     def test_a_successful_speech_call_is_priced_by_characters(self):
         response = mock.MagicMock()
@@ -80,7 +110,8 @@ class RecordTests(unittest.TestCase):
         with mock.patch.object(speak.urllib.request, "urlopen", return_value=response):
             speak.synthesize("สวัสดี", "lukchup", "key")
         usage = self.records()[0]
-        self.assertEqual((usage["api"], usage["chars"]), ("paxa-tts", 6))
+        self.assertEqual((usage["api"], usage["quantity"], usage["unit"]),
+                         ("paxa-tts", 6, "char"))
         self.assertGreater(usage["usd"], 0)
 
 
@@ -127,9 +158,18 @@ class ModelUsageTests(unittest.TestCase):
 class DescribeTests(unittest.TestCase):
     def test_the_session_total_is_shown_in_dollars_and_baht(self):
         line = journal.describe("cost", {"total_usd": 0.1, "total_thb": 3.3,
-                                         "by_api": {"deepseek": 0.1}})
+                                         "by_api": {"deepseek": 0.1},
+                                         "session_seconds": 90.0, "usd_per_hour": 4.0})
         self.assertIn("$0.1000", line)
         self.assertIn("฿3.30", line)
+        self.assertIn("90.00s", line)
+        self.assertIn("$4.000/ชม.", line)
+
+    def test_a_usage_line_shows_amount_and_time(self):
+        line = journal.describe("usage", {"api": "deepseek", "usd": 0.002, "unit": "token",
+                                          "quantity": 7250, "seconds": 1.4})
+        self.assertIn("7250 token", line)
+        self.assertIn("1.40s", line)
 
 
 class ReportTests(unittest.TestCase):

@@ -99,9 +99,10 @@ def transcribe_pcm(audio: bytes, key: str) -> Result:
         raise soniox_api.SonioxError(f"สตรีมเสียงเข้า Soniox ไม่สำเร็จ: {error}") from error
 
     audio_seconds = len(audio) / 2 / SAMPLE_RATE
+    elapsed = time.perf_counter() - started
     costs.record("soniox-stt-rt", costs.soniox_stt_usd(audio_seconds),
-                 seconds=round(audio_seconds, 2))
-    return Result(clean("".join(pieces)), time.perf_counter() - started, audio_seconds)
+                 quantity=audio_seconds, seconds=elapsed)
+    return Result(clean("".join(pieces)), elapsed, audio_seconds)
 
 
 def transcribe(audio, key: str | None = None) -> Result:

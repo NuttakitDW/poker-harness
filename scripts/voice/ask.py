@@ -151,6 +151,14 @@ def warm_up(engine: str) -> float:
     return time.perf_counter() - began
 
 
+def _bill_turn(listener, billed: float, final: bool) -> float:
+    """คิดเงินสายถอดเสียงที่เปิดค้างถึงตอนนี้ แล้วจดยอดรวม คืนวินาทีที่คิดแล้ว"""
+    streamed = getattr(listener, "streamed_seconds", 0.0)
+    billed = costs.charge_stream("soniox-stt-rt", streamed, billed)
+    journal.note("cost", **costs.summary(final=final))
+    return billed
+
+
 def live(args: argparse.Namespace) -> int:
     """สนทนาสดผ่านไมโครโฟน
 
@@ -202,6 +210,8 @@ def live(args: argparse.Namespace) -> int:
     interrupted = False
     # ลูกชุบกำลังเงียบฟังคนที่ยังพูดไม่จบ
     awaiting = False
+    # วินาทีเสียงที่ส่งเข้าสายถอดเสียงและคิดเงินไปแล้ว
+    billed = 0.0
 
     # ตัวถอดเสียงในเครื่องต้องโหลดโมเดลก่อน ส่วนทางสตรีมพร้อมใช้ทันทีที่เปิดสาย
     if args.engine != STREAMING_ENGINE:
@@ -399,6 +409,7 @@ def live(args: argparse.Namespace) -> int:
                          first_audio=round(first, 2), synth_first=round(synth_first, 2),
                          total=round(time.perf_counter() - began, 2),
                          barged=barged, brief=brief, text=" ".join(spoken_parts))
+            billed = _bill_turn(listener, billed, final=False)
             if not full_duplex:
                 if player:
                     player.wait_idle()
@@ -410,11 +421,7 @@ def live(args: argparse.Namespace) -> int:
     finally:
         if meter is not None:
             meter.stop()
-        streamed = getattr(listener, "streamed_seconds", 0.0)
-        if streamed:
-            costs.record("soniox-stt-rt", costs.soniox_stt_usd(streamed),
-                         seconds=round(streamed, 1))
-        journal.note("cost", **costs.summary())
+        _bill_turn(listener, billed, final=True)
         journal.note("end")
         journal.stop()
         if watch:

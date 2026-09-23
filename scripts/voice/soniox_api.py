@@ -186,7 +186,7 @@ def transcribe_bytes(audio: bytes, key: str, filename: str = "utterance.wav") ->
     milliseconds = status.get("audio_duration_ms")
     if milliseconds:
         costs.record("soniox-stt-async", costs.soniox_stt_usd(milliseconds / 1000, realtime=False),
-                     seconds=round(milliseconds / 1000, 2))
+                     quantity=milliseconds / 1000, seconds=time.perf_counter() - started)
     return Result(text.strip(), time.perf_counter() - started,
                   milliseconds / 1000 if milliseconds else None)
 

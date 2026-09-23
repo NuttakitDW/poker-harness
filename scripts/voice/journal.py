@@ -79,13 +79,18 @@ def describe(kind: str, fields: dict) -> str:
         return f"ตัวช่วยเสียงหยุดทำงาน (รหัสจบ {fields.get('code')})"
     if kind == "usage":
         guess = " (ประมาณ)" if fields.get("estimated") else ""
-        return f"ค่าใช้จ่าย {fields.get('api')} ${float(fields.get('usd') or 0):.5f}{guess}"
+        amount = f"{float(fields.get('quantity') or 0):g} {fields.get('unit') or '-'}"
+        return (f"ค่าใช้จ่าย {fields.get('api')} ${float(fields.get('usd') or 0):.5f}{guess} | "
+                f"{amount} | ใช้เวลา {_seconds(fields, 'seconds')}")
     if kind == "cost":
         usd = float(fields.get("total_usd") or 0)
         baht = float(fields.get("total_thb") or 0)
+        label = "ค่าใช้จ่ายรอบนี้" if fields.get("final", True) else "ค่าใช้จ่ายสะสม"
         parts = ", ".join(f"{name} ${value:.4f}"
                           for name, value in (fields.get("by_api") or {}).items())
-        return f"ค่าใช้จ่ายรอบนี้ ${usd:.4f} (ราว ฿{baht:.2f}) | {parts or '-'}"
+        return (f"{label} ${usd:.4f} (ราว ฿{baht:.2f}) | "
+                f"เปิดคุย {_seconds(fields, 'session_seconds')} | "
+                f"${float(fields.get('usd_per_hour') or 0):.3f}/ชม. | {parts or '-'}")
     if kind == "stopped":
         return f"หยุด: {fields.get('reason')}"
     if kind == "end":
