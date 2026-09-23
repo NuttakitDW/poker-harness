@@ -1,7 +1,7 @@
 """เทียบคุณภาพ STT ไทยสลับอังกฤษระหว่างหลาย engine
 
 ใช้:
-    .venv-whisper/bin/python scripts/voice/stt_bakeoff.py --engine whisper-biased \
+    .venv/bin/python scripts/voice/stt_bakeoff.py --engine whisper-biased \
         tests/fixtures/voice/real/*.wav --json tmp/stt/whisper-biased.json
 
 engine typhoon ต้องติดตั้ง typhoon-asr ใน virtualenv แยก เพราะ dependency ชนกับ mlx

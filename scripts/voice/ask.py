@@ -1,10 +1,10 @@
 """ถามคลังความรู้โป๊กเกอร์แล้วให้ตอบเป็นเสียง
 
 ใช้:
-    .venv-whisper/bin/python scripts/voice/ask.py "ICM ตอน bubble ทำอะไร"
-    .venv-whisper/bin/python scripts/voice/ask.py --audio tests/fixtures/voice/real/03.wav
-    .venv-whisper/bin/python scripts/voice/ask.py --live
-    .venv-whisper/bin/python scripts/voice/ask.py --live --trace
+    .venv/bin/python scripts/voice/ask.py "ICM ตอน bubble ทำอะไร"
+    .venv/bin/python scripts/voice/ask.py --audio tests/fixtures/voice/real/03.wav
+    .venv/bin/python scripts/voice/ask.py --live
+    .venv/bin/python scripts/voice/ask.py --live --trace
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
+import barge  # noqa: E402
 import brain  # noqa: E402
 import chart_grid  # noqa: E402
 import costs  # noqa: E402
@@ -188,6 +189,7 @@ def live(args: argparse.Namespace) -> int:
     else:
         listener = listen.Listener(device=args.input_device, source=source, meter=meter)
     player: playback.SpeechQueue | None = None
+    watch: barge.BargeWatch | None = None
     conversation = brain.Conversation()
     unfinished = ""
     merged = 0.0
@@ -225,6 +227,11 @@ def live(args: argparse.Namespace) -> int:
             if utterance is None:
                 continue
 
+            if watch:
+                watch.stop()
+                if watch.fired:
+                    journal.note("barge-in", during="playback")
+                watch = None
             if player:
                 if full_duplex and player.busy:
                     player.interrupt()
@@ -283,12 +290,16 @@ def live(args: argparse.Namespace) -> int:
                     reasoning=not args.no_reasoning, chart_on_screen=not args.no_chart)
                 opened = time.perf_counter() - began
                 player = None if args.no_speak else playback.SpeechQueue(voice)
+                # หยุดเสียงตั้งแต่ผู้ใช้เปิดปากพูด ไม่ต้องรอให้พูดจบประโยค
+                if player and full_duplex:
+                    watch = barge.BargeWatch(listener, player)
                 if not args.no_reasoning:
                     pieces = _speech_only(pieces, brain.SAY_MARKER, thoughts)
                 stream = streaming.sentences(_mark_first(pieces, marks))
                 for sentence in stream:
                     # ถูกแทรกแล้ว ไม่ต้องเสียเวลาสังเคราะห์ประโยคที่เหลือ
-                    if full_duplex and listener.waiting:
+                    if full_duplex and (listener.speaking or listener.waiting
+                                        or (watch and watch.fired)):
                         barged = True
                         break
                     print(sentence)
@@ -352,6 +363,8 @@ def live(args: argparse.Namespace) -> int:
         journal.note("cost", **costs.summary())
         journal.note("end")
         journal.stop()
+        if watch:
+            watch.stop()
         if player:
             player.interrupt()
             player.close()

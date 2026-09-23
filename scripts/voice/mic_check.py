@@ -3,7 +3,7 @@
 ใช้ก่อนเปิดโหมดสนทนาสด เพื่อแยกว่าปัญหาอยู่ที่การรับเสียง ที่สิทธิ์ไมโครโฟน
 หรือที่การตัดสินขอบเขตประโยค
 
-ใช้: .venv-whisper/bin/python scripts/voice/mic_check.py [วินาที]
+ใช้: .venv/bin/python scripts/voice/mic_check.py [วินาที]
 """
 
 from __future__ import annotations
