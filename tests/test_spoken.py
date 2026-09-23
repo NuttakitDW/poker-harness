@@ -45,6 +45,27 @@ class PlayingCardTests(unittest.TestCase):
     def test_hearts_and_ten_are_named(self):
         self.assertEqual(to_speech("T♥"), "สิบ โพแดง")
 
+    def test_flop_is_read_card_by_card_not_as_a_range(self):
+        self.assertEqual(to_speech("flop 6-5-4 ได้ nut straight"), "flop 6 5 4 ได้ nut straight")
+        self.assertEqual(to_speech("T-9-8"), "สิบ 9 8")
+
+    def test_two_cards_with_a_letter_are_cards(self):
+        self.assertEqual(to_speech("A-K ใหญ่สุด"), "เอซ เค ใหญ่สุด")
+
+    def test_two_falling_digits_are_cards(self):
+        self.assertEqual(to_speech("มี 7-6 ด้วย"), "มี 7 6 ด้วย")
+
+    def test_hand_with_a_letter_is_read_card_by_card(self):
+        self.assertEqual(to_speech("มือ JJ63 เป็น Marginal"), "มือ แจ็ค แจ็ค 6 3 เป็น Marginal")
+        self.assertEqual(to_speech("KKQJ"), "เค เค คิว แจ็ค")
+
+    def test_plain_numbers_stay_numbers(self):
+        self.assertEqual(to_speech("ติด nuts 65 ครั้ง"), "ติด nuts 65 ครั้ง")
+
+    def test_two_numbers_are_still_a_range(self):
+        self.assertEqual(to_speech("3-5 ครั้ง"), "3 ถึง 5 ครั้ง")
+        self.assertEqual(to_speech("blinds 10-20"), "blinds 10 ถึง 20")
+
     def test_letters_without_a_suit_are_left_alone(self):
         self.assertEqual(to_speech("range ของ A high"), "range ของ A high")
 

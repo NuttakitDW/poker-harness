@@ -158,5 +158,9 @@ class HandSpottingTests(unittest.TestCase):
         self.assertEqual(retrieval.hands("มือ JT98 เล่นยังไง"), ("JT98",))
         self.assertEqual(retrieval.hands("hand 10 9 8 7"), ("T987",))
 
+    def test_a_ten_transcribed_as_one_joins_the_next_rank(self):
+        # ตัวถอดเสียงเขียน "เท็น ไนน์" ติดกันเป็น 19
+        self.assertEqual(retrieval.hands("K J 19 ซุตเดียวครับ"), ("KJT9",))
+
     def test_ordinary_words_are_not_hands(self):
         self.assertEqual(retrieval.hands("pot limit omaha ICM 3 bet"), ())

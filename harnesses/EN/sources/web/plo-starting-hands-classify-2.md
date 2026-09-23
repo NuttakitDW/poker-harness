@@ -5,7 +5,7 @@ URL: https://www.nuttakitkundum.com/plo-starting-hands
 Checked: 2026-09-23
 Evidence: Hand-tier classification drill with explanations.
 
-- มือ A♠2♠9♣9♦ (A299 single-suited) → ระดับ Speculative: Speculative top set พร้อม nut flush draw เป็นต่อมือ draw ที่ใหญ่ที่สุดที่มาสู้ แต่เป็นมือไว้ทำเงินก้อนใหญ่ ไม่ใช่มือไว้ raise เปิด pair ที่ใหญ่กว่านี้อาจ raise ในตำแหน่งหลังได้
+- มือ A♠2♠9♣9♦ (A992 single-suited) → ระดับ Speculative: Speculative top set พร้อม nut flush draw เป็นต่อมือ draw ที่ใหญ่ที่สุดที่มาสู้ แต่เป็นมือไว้ทำเงินก้อนใหญ่ ไม่ใช่มือไว้ raise เปิด pair ที่ใหญ่กว่านี้อาจ raise ในตำแหน่งหลังได้
 - มือ K♦9♦6♣6♠ (K966 single-suited) → ระดับ Trash: Trash pair 6 ติด top set ไม่ได้ถ้า board ยังไม่มีโอกาส straight และการ draw second-nut flush มีแต่เสียเงิน แค่จะติด set พร้อม nut flush draw ก็ยากแล้ว นี่ยิ่งไปกันใหญ่
 - มือ J♠T♣9♠8♣ (JT98 double-suited) → ระดับ Premium: Premium ทำ nut straight draw 13 ใบ, two pair พร้อม open-ender และมีโอกาส freeroll สูงจาก suit ทั้งสอง "มือ PLO ของจริง"
 - มือ A♠A♣8♦2♥ (AA82 rainbow) → ระดับ Speculative: Speculative trash aces เป็นมือทางเดียวที่ต้องติด ace บน flop จึงจะไปต่อได้ เมื่อไม่มี suit หรือ connector ก็ไม่มีศักยภาพเล่นหลายทาง

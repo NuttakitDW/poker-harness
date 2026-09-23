@@ -26,6 +26,7 @@ PREFIX = "plo-"
 # เผื่อหัวโน้ตไว้ราว 400 ตัวอักษร ให้ทั้งโน้ตไม่เกิน MAX_PAGE_CHARS = 2200 ของ brain.py
 BODY_BUDGET = 1750
 
+RANK_ORDER = "AKQJT98765432"
 SUITS = {"s": "♠", "h": "♥", "d": "♦", "c": "♣"}
 
 # ประเมินเฉพาะส่วนประกาศข้อมูลของสคริปต์หน้าเว็บ ตัดก่อนโค้ดที่แตะ DOM
@@ -90,7 +91,9 @@ def hand(cards: str) -> str:
     counts = sorted((sum(1 for _, s in pairs if s == suit) for suit in {s for _, s in pairs}), reverse=True)
     shape = {(2, 2): "double-suited", (4,): "monotone", (1, 1, 1, 1): "rainbow"}.get(
         tuple(counts), "single-suited" if counts[0] >= 2 else "rainbow")
-    return f"{shown} ({''.join(rank for rank, _ in pairs)} {shape})"
+    # ชื่อมือเรียงใหญ่ไปเล็กเสมอ ให้ตรงกับมือที่ค้นจากคำถาม เว็บวาง A-2-9-9 แต่ผู้ใช้พูดแบบไหนก็ได้
+    label = "".join(sorted((rank for rank, _ in pairs), key=RANK_ORDER.index))
+    return f"{shown} ({label} {shape})"
 
 
 def primer_blocks(primer: list[dict]) -> list[str]:

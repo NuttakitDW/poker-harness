@@ -1,7 +1,7 @@
 # PLO Hi/Lo แบ่ง pot สูงต่ำ
 
 - Stable ID: `27-plo-hi-lo`
-- Requires: hi/lo, hilo, hi lo, ไฮโล, ไฮ โล, split, eight or better, eight-or-better, 8 or better, o8, scoop, quarter
+- Requires: hi/lo, hilo, hi lo, ไฮโล, ไฮ โล, ไฮโร, of better, plo8, split, eight or better, eight-or-better, 8 or better, o8, scoop, quarter
 - Scope: Pot-Limit Omaha Hi/Lo eight-or-better: เลือกมือ ตำแหน่ง การ scoop การโดน quarter และ freeroll ตามหลักใน Chapter 9 ของ Jeff Hwang
 - English counterpart: [PLO hi/lo split](../../EN/topics/27-plo-hi-lo.md)
 

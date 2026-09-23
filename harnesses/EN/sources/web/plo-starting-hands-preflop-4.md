@@ -5,7 +5,7 @@ URL: https://www.nuttakitkundum.com/plo-starting-hands
 Checked: 2026-09-23
 Evidence: Preflop decision drill by position and action.
 
-- มือ A♠2♠9♣9♦ (A299 single-suited) สถานการณ์: อยู่ button มีผู้เล่น limp มาก่อนหน้าคุณ 3 คน → คำตอบ Call: Call มีศักยภาพทำเงินก้อนใหญ่แต่เก็งกำไร — top set พร้อม nut flush draw เป็นต่อมือ draw ที่ใหญ่ที่สุดที่มาสู้ เป็นมือไว้ call ไม่ใช่ raise
+- มือ A♠2♠9♣9♦ (A992 single-suited) สถานการณ์: อยู่ button มีผู้เล่น limp มาก่อนหน้าคุณ 3 คน → คำตอบ Call: Call มีศักยภาพทำเงินก้อนใหญ่แต่เก็งกำไร — top set พร้อม nut flush draw เป็นต่อมือ draw ที่ใหญ่ที่สุดที่มาสู้ เป็นมือไว้ call ไม่ใช่ raise
 - มือ 8♠7♦6♠5♦ (8765 double-suited) สถานการณ์: อยู่ button มีผู้เล่น limp 3 คน → คำตอบ Raise: Raise rundown แบบ double-suited โครงสร้าง premium — มือ draw แบบ premium เป็นมือไว้ raise จากตำแหน่งหลัง โดยเฉพาะ pot หลายทาง
 - มือ 8♦7♣5♦3♠ (8753 single-suited) สถานการณ์: อยู่ button มีผู้เล่น limp 3 คน → คำตอบ Call: Call อีกหนึ่งมือเก็งกำไรที่มีศักยภาพทำเงินก้อนใหญ่ — ตามเข้าไปได้ แต่ยังไม่แข็งพอจะ raise
 - มือ Q♠J♣T♠T♦ (QJTT single-suited) สถานการณ์: อยู่ button มีผู้เล่น limp 3 คน → คำตอบ Raise: Raise มือนี้มีคุณค่ามากพอที่จะ raise จากตำแหน่งหลัง

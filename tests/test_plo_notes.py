@@ -19,6 +19,9 @@ class HandTests(unittest.TestCase):
         self.assertEqual(plo.hand("AcAdTc6s"), "A♣A♦T♣6♠ (AAT6 single-suited)")
         self.assertEqual(plo.hand("9s7d5c3h"), "9♠7♦5♣3♥ (9753 rainbow)")
 
+    def test_hand_label_is_sorted_high_to_low(self):
+        self.assertEqual(plo.hand("As2s9c9d"), "A♠2♠9♣9♦ (A992 single-suited)")
+
     def test_board_keeps_plain_cards(self):
         self.assertEqual(plo.hand("As4d3s"), "A♠4♦3♠")
 

@@ -1,7 +1,7 @@
 # PLO hi/lo split
 
 - Stable ID: `27-plo-hi-lo`
-- Requires: hi/lo, hilo, hi lo, ไฮโล, ไฮ โล, split, eight or better, eight-or-better, 8 or better, o8, scoop, quarter
+- Requires: hi/lo, hilo, hi lo, ไฮโล, ไฮ โล, ไฮโร, of better, plo8, split, eight or better, eight-or-better, 8 or better, o8, scoop, quarter
 - Scope: Pot-Limit Omaha hi/lo eight-or-better hand selection, position, scooping, quartering and freerolls, from Jeff Hwang's Chapter 9 principles.
 - Thai counterpart: [PLO Hi/Lo แบ่ง pot สูงต่ำ](../../TH/topics/27-plo-hi-lo.md)
 

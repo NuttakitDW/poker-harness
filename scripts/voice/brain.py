@@ -21,6 +21,8 @@ import corpus
 import costs
 import journal
 import keys
+import plo_hand
+import plo_low
 import preflop
 import retrieval
 
@@ -37,6 +39,11 @@ MAX_ANSWER_TOKENS = 520
 MAX_HISTORY_TURNS = 8
 MAX_HISTORY_CHARS = 4000
 MAX_FOLLOW_UP_CHARS = 200
+PLO_HAND_HINT = "PLO มือเริ่มต้น starting hands Premium Marginal"
+PLO_HILO_HINT = "PLO Hi/Lo ไฮโล scoop nut low"
+# คำถามที่ชี้กลับไปมือเดิม เช่น "แฮนด์นี้ยังดีอยู่ไหม"
+_THIS_HAND = re.compile(r"(?:มือ|แฮนด์|hand)\s*(?:นี้|นั้น|เดิม|ตะกี้|เมื่อกี้|เมื่อกี๊|this)",
+                        re.IGNORECASE)
 # ปกติชิ้นแรกมาภายในสองวินาที ถ้าเงียบเกินนี้คือสายเสีย รอต่อไม่มีประโยชน์
 # เคยตั้งไว้ 90 วินาที เวลาสายค้างจึงเงียบยาวก่อนลองใหม่ ซึ่งผู้ใช้เห็นเป็นอาการค้าง
 TIMEOUT_SECONDS = 20
@@ -198,6 +205,21 @@ class Conversation:
         return ""
 
 
+def plo_context(question: str, history: Conversation | None) -> str:
+    """ข้อเท็จจริงของมือ PLO ที่คุยกันอยู่
+
+    คำถามต่อเนื่องอย่าง "ดับเบิลซูต" หรือ "ถ้าเล่นไฮโลล่ะ" ยืมมือล่าสุดที่เคยพูดถึง
+    ส่วนคำอื่นไม่ยืมมือเก่ามา ไม่อย่างนั้นคำขอบคุณก็จะได้ข้อมูลมือเก่าติดไปด้วย
+    """
+    turns = [turn.text for turn in (history.turns if history else ()) if turn.role == "user"]
+    follow_up = bool(plo_hand.shape(question) or plo_low.is_hilo(question) or _THIS_HAND.search(question))
+    earlier = next((text for text in reversed(turns) if retrieval.hands(text)), "") if follow_up else ""
+    # ถามไฮโลไปแล้วหนึ่งตา ตาถัดไปที่ถามต่อเรื่องมือเดิมยังเป็นเกมไฮโลอยู่
+    hilo = plo_low.is_hilo(question) or (
+        not retrieval.hands(question) and bool(turns) and plo_low.is_hilo(turns[-1]))
+    return plo_hand.context_block(question, earlier=earlier, hilo=hilo)
+
+
 def search_text(question: str, history: Conversation | None) -> str:
     """ข้อความที่ใช้ค้นคลัง คำถามต่อเนื่องสั้น ๆ ต้องยืมบริบทจากคำถามก่อนหน้า"""
     if history is None or not history.last_question:
@@ -326,11 +348,19 @@ def stream_answer(question: str, language: str = "TH",
                   chart_on_screen: bool = False):
     """คายคำตอบทีละชิ้นพร้อมข้อมูลแหล่งอ้างอิง คืนค่าเป็น (แหล่ง, ตัววนชิ้นข้อความ)"""
     wanted = search_text(question, history)
-    context, cards, pages = gather(wanted, language=language,
+    hand = plo_context(question, history)
+    # มืออย่าง "แจ็ค แจ็ค 6 3" ไม่มีคำไหนตรงการ์ด เคยพาไปการ์ด lowball จึงชี้ไปการ์ดมือเริ่มต้น PLO
+    hint = PLO_HILO_HINT if plo_hand.HILO_HEADING in hand else PLO_HAND_HINT
+    searched = f"{wanted} {hint}" if hand else wanted
+    context, cards, pages = gather(searched, language=language,
                                    seen_pages=history.sent_pages if history else ())
-    # ตารางเรนจ์วางไว้ก่อนเนื้อหาอื่น เพราะเป็นตัวเลขจริงที่ต้องใช้แทนการเดาของโมเดล
-    chart = preflop.context_block(wanted, on_screen=chart_on_screen)
-    context = "\n\n".join(part for part in (chart, context) if part)
+    # ตารางเรนจ์และมือ PLO วางไว้ก่อนเนื้อหาอื่น เพราะเป็นตัวเลขจริงที่ต้องใช้แทนการเดาของโมเดล
+    # คำถามก่อนหน้าเป็นมือ PLO สี่ใบ ถ้ายืมมาทำตาราง จะถูกอ่านเป็นมือ Hold'em สองใบ
+    # ที่ผู้ใช้ไม่ได้ถาม แล้วโมเดลเชื่อตารางมากกว่าบทสนทนาของตัวเอง
+    borrowed_plo = history is not None and bool(retrieval.hands(history.last_question))
+    charted = question if borrowed_plo else wanted
+    chart = "" if hand else preflop.context_block(charted, on_screen=chart_on_screen)
+    context = "\n\n".join(part for part in (hand, chart, context) if part)
     # ไม่มีการ์ดที่ตรงก็ยังส่งให้โมเดล คำทักทายหรือคุยเล่นไม่มีทางตรงกับคลังอยู่แล้ว
     # ถ้าตัดบทว่าไม่พบ ผู้ใช้ทักมาแล้วได้คำตอบเหมือนเครื่องค้นหาแทนคนคุยด้วย
     return (cards, pages), stream_model(question, context, load_api_key(), history, reasoning)

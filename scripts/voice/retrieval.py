@@ -24,7 +24,20 @@ _LATIN = re.compile(r"^[a-z0-9][a-z0-9'-]*$")
 # ไพ่ Omaha ที่ถอดจากเสียงมักแยกเป็นก้อน เช่น "KK QJ" หรือ "A A K K" จึงรวมก้อนอันดับไพ่ที่ติดกัน
 # ก้อนที่เป็นตัวเลขล้วนต้องเป็นไพ่ใบเดียว ไม่อย่างนั้น "blinds 5 10 25" จะกลายเป็นมือ
 _RANK_WORD = re.compile(r"^(?:[akqjt2-9]+|10)$", re.IGNORECASE)
+_TEN_THEN_RANK = re.compile(r"^1[2-9]$")
 HAND_CARDS = 4
+RANK_ORDER = "AKQJT98765432"
+# ชื่อไพ่ที่ถอดจากเสียงภาษาไทย "เอ" ต้องเป็นคำโดด ไม่อย่างนั้น "เอา" "เอง" จะกลายเป็นไพ่
+# ไม่รับตัวเลขภาษาไทยอย่าง "สอง" เพราะชนกับ "สองใบ" ตัวถอดเสียงเขียนไพ่เลขเป็นตัวเลขอยู่แล้ว
+_THAI_RANKS = (
+    ("A", ("เอซ", "เอส", "เอ")),
+    ("K", ("คิง",)),
+    ("Q", ("ควีน",)),
+    ("J", ("แจ็ค", "แจ๊ค", "แจ็ก")),
+    ("T", ("เท็น", "เทน")),
+)
+_THAI_RANK = re.compile(
+    r"(เอซ|เอส|เอ(?=[\sๆ,\-]|$)|คิง|ควีน|แจ็ค|แจ๊ค|แจ็ก|เท็น|เทน)(\s*ๆ)?")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -42,22 +55,43 @@ def _normalize(text: str) -> str:
 
 def _ranks(word: str) -> str | None:
     """อันดับไพ่ในคำหนึ่งคำ หรือ None ถ้าคำนั้นไม่ใช่ไพ่"""
+    # ตัวถอดเสียงเขียน "เท็น ไนน์" ติดกันเป็น 19 เลข 1 ตามด้วยไพ่อีกใบจึงคือไพ่สิบ
+    if _TEN_THEN_RANK.match(word):
+        return f"T{word[1]}"
     if not _RANK_WORD.match(word) or (word.isdigit() and word not in "23456789" and word != "10"):
         return None
     return word.upper().replace("10", "T")
 
 
+def latin_ranks(text: str) -> str:
+    """เปลี่ยนชื่อไพ่ภาษาไทยเป็นตัวอักษร เช่น "คิงๆ ควีน" เป็น " K K  Q "
+
+    ไม้ยมกหลังชื่อไพ่คือไพ่ใบนั้นสองใบ เพราะคนพูด "คิงๆ" หมายถึงคิงคู่
+    """
+    def swap(match: re.Match) -> str:
+        rank = next(letter for letter, words in _THAI_RANKS if match.group(1) in words)
+        return f" {rank} {rank} " if match.group(2) else f" {rank} "
+    return _THAI_RANK.sub(swap, text)
+
+
 def hands(text: str) -> tuple[str, ...]:
-    """มือ Omaha สี่ใบที่พูดถึงในข้อความ เขียนแบบ KKQJ ให้ตรงกับโน้ตในคลัง"""
+    """มือ Omaha สี่ใบที่พูดถึงในข้อความ เขียนแบบ KKQJ เรียงใหญ่ไปเล็กให้ตรงกับโน้ตในคลัง"""
     found: list[str] = []
     run = ""
-    for word in [*re.split(r"[^\w]+", text), ""]:
+    for word in [*re.split(r"[^\w]+", latin_ranks(text)), ""]:
         ranks = _ranks(word) if word else None
+        # มือที่เขียนติดกันเป็นคำเดียวอย่าง A299 ครบในตัว ไม่ต่อกับไพ่ที่พูดตามหลังเพื่อบอกดอก
+        if ranks is not None and len(ranks) == HAND_CARDS and len(word) >= HAND_CARDS:
+            if len(run) == HAND_CARDS:
+                found.append("".join(sorted(run, key=RANK_ORDER.index)))
+            found.append("".join(sorted(ranks, key=RANK_ORDER.index)))
+            run = ""
+            continue
         if ranks is not None:
             run += ranks
             continue
         if len(run) == HAND_CARDS:
-            found.append(run)
+            found.append("".join(sorted(run, key=RANK_ORDER.index)))
         run = ""
     return tuple(dict.fromkeys(found))
 

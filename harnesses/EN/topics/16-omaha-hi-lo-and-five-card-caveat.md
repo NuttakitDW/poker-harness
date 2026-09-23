@@ -1,7 +1,7 @@
 # Omaha eight-or-better and five-card caveat
 
 - Stable ID: `16-omaha-hi-lo-and-five-card-caveat`
-- Requires: hi/lo, hilo, hi lo, ไฮโล, ไฮ โล, split, eight or better, eight-or-better, 8 or better, o8, scoop, quarter, 5 ใบ, ห้าใบ, five card, five-card, big o, 5 card
+- Requires: hi/lo, hilo, hi lo, ไฮโล, ไฮ โล, ไฮโร, of better, plo8, split, eight or better, eight-or-better, 8 or better, o8, scoop, quarter, 5 ใบ, ห้าใบ, five card, five-card, big o, 5 card
 - Scope: Omaha eight-or-better uses exactly two hole cards for each high/low hand; five-card Omaha is a distinct variant and must be checked at the table.
 - Thai counterpart: [Omaha แบ่งสูงต่ำ และข้อควรระวังเกมห้าใบ](../../TH/topics/16-omaha-hi-lo-and-five-card-caveat.md)
 

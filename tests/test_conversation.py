@@ -102,6 +102,42 @@ class MessageBuildingTests(unittest.TestCase):
         self.assertTrue(messages[-1]["content"].startswith("ถามใหม่"))
 
 
+class FollowUpChartTests(unittest.TestCase):
+    """มือ PLO สี่ใบจากตาก่อน ห้ามถูกยืมไปอ่านเป็นมือ Hold'em สองใบในตารางพรีฟล็อป"""
+
+    def charted_text(self, history: brain.Conversation, question: str) -> str:
+        seen = {}
+
+        def fake_chart(wanted, **_):
+            seen["wanted"] = wanted
+            return ""
+
+        originals = (brain.gather, brain.preflop.context_block,
+                     brain.load_api_key, brain.stream_model)
+        brain.gather = lambda *a, **k: ("", [], [])
+        brain.preflop.context_block = fake_chart
+        brain.load_api_key = lambda: "key"
+        brain.stream_model = lambda *a, **k: iter(())
+        try:
+            brain.stream_answer(question, history=history)
+        finally:
+            (brain.gather, brain.preflop.context_block,
+             brain.load_api_key, brain.stream_model) = originals
+        return seen.get("wanted", "")
+
+    def test_a_repeat_request_after_a_plo_hand_does_not_chart_the_old_hand(self):
+        history = (brain.Conversation()
+                   .with_turn("user", "K J 19 ซุตเดียวครับ")
+                   .with_turn("assistant", "K-J-T-9 single-suited ยังอยู่ระดับ Premium ค่ะ"))
+        self.assertNotIn("K J", self.charted_text(history, "ขออีกรอบนึงนะ เป็นอะไรนะ"))
+
+    def test_a_holdem_follow_up_still_borrows_the_previous_hand(self):
+        history = (brain.Conversation()
+                   .with_turn("user", "AJo ตำแหน่ง CO เปิดไหม")
+                   .with_turn("assistant", "เปิดได้ค่ะ"))
+        self.assertIn("AJo", self.charted_text(history, "แล้ว UTG ล่ะ"))
+
+
 class SentPagesTests(unittest.TestCase):
     """หน้าต้นฉบับที่ส่งไปแล้วไม่ต้องส่งซ้ำ ไม่งั้นโมเดลเล่าเนื้อเดิมคำต่อคำ"""
 
