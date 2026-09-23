@@ -34,4 +34,4 @@ PLO เปลี่ยนความแข็งของมือเร็ว�
 
 ## หัวข้อที่เกี่ยวข้อง
 
-[กติกา การเปิดไพ่ และลำดับไพ่](./01-rules-and-rankings.md) · [เอาต์และออดส์จากเงินในอนาคต](./05-outs-draws-implied-odds.md) · [Omaha แบ่งสูงต่ำ และข้อควรระวังเกมห้าใบ](./16-omaha-hi-lo-and-five-card-caveat.md) · [สารบัญหัวข้อ](../INDEX.md)
+[กติกา การเปิดไพ่ และลำดับไพ่](./01-rules-and-rankings.md) · [เอาต์และออดส์จากเงินในอนาคต](./05-outs-draws-implied-odds.md) · [Omaha แบ่งสูงต่ำ และข้อควรระวังเกมห้าใบ](./16-omaha-hi-lo-and-five-card-caveat.md) · [PLO มือเริ่มต้น](./25-plo-starting-hands.md) · [PLO สถานการณ์หลัง flop](./26-plo-postflop-situations.md) · [สารบัญหัวข้อ](../INDEX.md)

@@ -34,4 +34,4 @@ Using one hole card in a PLO showdown; overvaluing non-nut draws in multiway pot
 
 ## Related
 
-[Rules, showdown and hand ranks](./01-rules-and-rankings.md) · [Outs and implied odds](./05-outs-draws-implied-odds.md) · [Omaha eight-or-better and five-card caveat](./16-omaha-hi-lo-and-five-card-caveat.md) · [Topic index](../INDEX.md)
+[Rules, showdown and hand ranks](./01-rules-and-rankings.md) · [Outs and implied odds](./05-outs-draws-implied-odds.md) · [Omaha eight-or-better and five-card caveat](./16-omaha-hi-lo-and-five-card-caveat.md) · [PLO starting hands](./25-plo-starting-hands.md) · [PLO post-flop situations](./26-plo-postflop-situations.md) · [Topic index](../INDEX.md)

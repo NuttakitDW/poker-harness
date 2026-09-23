@@ -37,3 +37,6 @@
 - [นักโป๊กเกอร์และผู้เล่นไทย](topics/22-poker-players-and-thailand.md)
 - [ทัวร์โป๊กเกอร์และประวัติ](topics/23-poker-tours-and-history.md)
 - [อันดับและผลงานโป๊กเกอร์](topics/24-poker-rankings-and-results.md)
+- [PLO มือเริ่มต้นและการตัดสินใจ preflop](topics/25-plo-starting-hands.md)
+- [PLO สถานการณ์หลัง flop](topics/26-plo-postflop-situations.md)
+- [PLO Hi/Lo แบ่ง pot สูงต่ำ](topics/27-plo-hi-lo.md)

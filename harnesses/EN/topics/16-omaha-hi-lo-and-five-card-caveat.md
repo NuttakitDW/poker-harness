@@ -32,4 +32,4 @@ Assuming every board has a low; valuing a shared nut low as though it wins half 
 
 ## Related
 
-[Rules, showdown and hand ranks](./01-rules-and-rankings.md) · [Four-card pot-limit Omaha](./15-omaha-pot-limit.md) · [Limit hold’em and stud family](./17-limit-holdem-and-stud.md) · [Topic index](../INDEX.md)
+[Rules, showdown and hand ranks](./01-rules-and-rankings.md) · [Four-card pot-limit Omaha](./15-omaha-pot-limit.md) · [PLO hi/lo split](./27-plo-hi-lo.md) · [Limit hold’em and stud family](./17-limit-holdem-and-stud.md) · [Topic index](../INDEX.md)

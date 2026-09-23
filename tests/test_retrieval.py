@@ -111,3 +111,23 @@ class RoutingTests(unittest.TestCase):
                 hits = retrieval.search(question, language="EN")
                 self.assertTrue(hits)
                 self.assertTrue(hits[0].card.slug.startswith(prefix))
+
+    def test_plo_questions_route_to_plo_cards(self):
+        for question, prefix in (
+            ("PLO มือเริ่มต้นแบบไหนดี", "25"),
+            ("ไพ่ KKQJ double suited ดีไหม", "25"),
+            ("พีแอลโอ มือ JT98 เล่นยังไง", "25"),
+            ("Omaha flop ได้ second set เจอ bet ควร fold ไหม", "26"),
+            ("wrap 13 ใบ ควร bet ไหม", "26"),
+            ("PLO Hi Lo ควรเล่นมือแบบไหน", "27"),
+        ):
+            with self.subTest(question=question):
+                self.assert_routes_to(question, prefix)
+
+    def test_plo_context_carries_drill_explanations(self):
+        context, _, pages = brain.gather("ไพ่ KKQJ double suited ดีไหม")
+        self.assertIn("K♠K♦Q♦J♠ (KKQJ double-suited)", context)
+        self.assertTrue(pages)
+
+    def test_system_prompt_forbids_claiming_no_plo_knowledge(self):
+        self.assertIn("ห้ามอ้างว่าไม่มีความรู้เรื่อง PLO", brain.system_prompt())

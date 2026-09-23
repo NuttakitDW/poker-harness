@@ -32,4 +32,4 @@ Omaha eight-or-better มีส่วนพอตต่ำต่อเมื่�
 
 ## หัวข้อที่เกี่ยวข้อง
 
-[กติกา การเปิดไพ่ และลำดับไพ่](./01-rules-and-rankings.md) · [Pot-limit Omaha ไพ่ 4 ใบ](./15-omaha-pot-limit.md) · [Limit Hold’em และตระกูล Stud](./17-limit-holdem-and-stud.md) · [สารบัญหัวข้อ](../INDEX.md)
+[กติกา การเปิดไพ่ และลำดับไพ่](./01-rules-and-rankings.md) · [Pot-limit Omaha ไพ่ 4 ใบ](./15-omaha-pot-limit.md) · [PLO Hi/Lo แบ่ง pot สูงต่ำ](./27-plo-hi-lo.md) · [Limit Hold’em และตระกูล Stud](./17-limit-holdem-and-stud.md) · [สารบัญหัวข้อ](../INDEX.md)
