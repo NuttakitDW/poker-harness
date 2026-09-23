@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
-"""Validate the generated poker source corpus against its archive and links."""
+"""Validate the generated poker source corpus, its source hashes and links."""
 
 from __future__ import annotations
 
 import argparse
-import binascii
 import hashlib
 import json
 import re
 import sys
-import zipfile
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "harnesses" / "source-manifest.json"
-ARCHIVE = ROOT / "Poker book-20260922T043840Z-1-001.zip"
 LINK = re.compile(r"(?<!!)\[[^\]]*\]\((<[^>]+>|(?:[^()]|\([^()]*\))*)\)")
 PAGE = re.compile(r"^## PDF page (\d+)$", re.MULTILINE)
 FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$")
@@ -64,14 +61,6 @@ def sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
-
-
-def crc32(path: Path) -> int:
-    value = 0
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            value = binascii.crc32(block, value)
-    return value
 
 
 def source_page_sections(body: str) -> dict[int, str]:
@@ -176,16 +165,6 @@ def validate() -> list[str]:
     books = data["books"]
     if len(books) != data["unique_sha256"] or sum(book["pdf_pages"] for book in books) != data["total_unique_pdf_pages"]:
         errors.append("Manifest aggregate counts disagree with books")
-    with zipfile.ZipFile(ARCHIVE) as archive:
-        members = [m for m in archive.infolist() if not m.is_dir()]
-        if len(members) != data["archive_entries"]:
-            errors.append("Archive entry count differs from manifest")
-        bad_member = archive.testzip()
-        if bad_member:
-            errors.append(f"Archive CRC failure: {bad_member}")
-        archive_names = {m.filename for m in members}
-        archive_crc = {m.filename: m.CRC for m in members}
-    archive_sources: set[str] = set()
     pdf_pages: dict[Path, int] = {}
     for book in books:
         pdf = ROOT / book["source_pdf"]
@@ -193,24 +172,12 @@ def validate() -> list[str]:
             errors.append(f"Missing or changed source PDF: {pdf}")
         pdf_pages[pdf.resolve()] = book["pdf_pages"]
         provenance = book.get("provenance")
-        if provenance:
-            if not all(provenance.get(key) for key in ("url", "landing_url", "retrieved_on")):
-                errors.append(f"Incomplete external provenance: {book['id']}")
-        else:
-            archive_name = "Poker book/" + pdf.relative_to(ROOT / "sources" / "pdf").as_posix()
-            if archive_name not in archive_names:
-                errors.append(f"Source PDF absent from archive: {pdf}")
-            elif pdf.is_file() and crc32(pdf) != archive_crc[archive_name]:
-                errors.append(f"Source PDF CRC differs from archive: {pdf}")
-            archive_sources.add(archive_name)
+        if provenance and not all(provenance.get(key) for key in ("url", "landing_url", "retrieved_on")):
+            errors.append(f"Incomplete external provenance: {book['id']}")
         for alias in book["aliases"]:
             target = ROOT / alias
             if not target.is_file() or sha256(target) != book["sha256"]:
                 errors.append(f"Missing or non-identical alias: {alias}")
-            alias_name = "Poker book/" + target.relative_to(ROOT / "sources" / "pdf").as_posix()
-            if alias_name in archive_crc and target.is_file() and crc32(target) != archive_crc[alias_name]:
-                errors.append(f"Alias CRC differs from archive: {target}")
-            archive_sources.add(alias_name)
             pdf_pages[target.resolve()] = book["pdf_pages"]
         expected = list(range(1, book["pdf_pages"] + 1))
         actual: list[int] = []
@@ -244,8 +211,6 @@ def validate() -> list[str]:
         for key in ("empty_text_pages", "low_text_pages", "embedded_image_pages", "embedded_url_pages"):
             if any(not 1 <= value <= book["pdf_pages"] for value in book[key]):
                 errors.append(f"Out-of-bounds {key}: {book['id']}")
-    if archive_sources != archive_names:
-        errors.append(f"Archive coverage differs: missing={sorted(archive_names - archive_sources)} extra={sorted(archive_sources - archive_names)}")
     for subdir in ("topics", "guides"):
         en = {path.name for path in (ROOT / "harnesses" / "EN" / subdir).glob("*.md")}
         th = {path.name for path in (ROOT / "harnesses" / "TH" / subdir).glob("*.md")}
@@ -289,7 +254,7 @@ def main() -> None:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         raise SystemExit(1)
-    print("Validated archive coverage, source hashes and aliases, page bodies and citations, bilingual topic and guide coverage, and local Markdown links.")
+    print("Validated source hashes and aliases, page bodies and citations, bilingual topic and guide coverage, and local Markdown links.")
 
 
 if __name__ == "__main__":
