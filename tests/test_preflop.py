@@ -92,6 +92,55 @@ class ParsingTests(unittest.TestCase):
     def test_a_question_without_a_seat_is_not_usable(self):
         self.assertFalse(preflop.parse("ICM คืออะไร").usable)
 
+    def test_blind_seats_spoken_as_two_words_are_read(self):
+        self.assertEqual(preflop.parse("อยู่ Big blind เจอ CO เปิด").hero, "BB")
+        self.assertEqual(preflop.parse("อยู่ small blind เจอ CO เปิด").hero, "SB")
+
+
+class SeatRoleTests(unittest.TestCase):
+    """คนพูดชื่อคนเปิดก่อน แล้วค่อยพูดตำแหน่งตัวเอง ลำดับคำจึงบอกบทบาทไม่ได้"""
+
+    def test_the_seat_that_three_bets_an_opener_is_the_hero(self):
+        # ถามจริงในวงคุย เคยได้ชาร์ต BTN เจอ SB 3-bet แทนที่จะเป็น BB เจอ BTN เปิด
+        request = preflop.parse(
+            "ขอฉาก 3-bet หน่อย ถ้าเกิด Button เปิดมา จาก เอ่อ ถ้า Button raise first in "
+            "มาตอน 20 Big blind ตําแหน่ง Big blind 3-bet อะไรได้บ้าง?")
+        self.assertEqual((request.hero, request.villain, request.scenario, request.stack),
+                         ("BB", "BTN", "RFI", 20))
+
+    def test_the_seat_answering_an_open_is_the_hero(self):
+        request = preflop.parse(
+            "ไม่ใช่ ไม่ใช่ ขอว่า Button น่ะจะ Action ยังไงบ้าง ไม่ใช่ว่า Button น่ะเจออะไรบ้าง "
+            "เออ แล้วขอ Big blind ไม่ได้ขอ small blind Button เปิด แล้ว Big blind ทําอะไรได้บ้าง?")
+        self.assertEqual((request.hero, request.villain, request.scenario),
+                         ("BB", "BTN", "RFI"))
+
+    def test_an_opener_hit_by_a_named_three_bettor_is_the_hero(self):
+        request = preflop.parse("BTN เปิดแล้วโดน BB 3-bet ทำไงดี")
+        self.assertEqual((request.hero, request.villain, request.scenario),
+                         ("BTN", "BB", "3-Bet"))
+
+    def test_an_opener_facing_a_three_bet_from_a_seat_is_the_hero(self):
+        request = preflop.parse("CO เปิด แล้วโดน 3-bet จาก BTN")
+        self.assertEqual((request.hero, request.villain, request.scenario),
+                         ("CO", "BTN", "3-Bet"))
+
+
+class CarryTests(unittest.TestCase):
+    def test_a_follow_up_keeps_the_stack_and_game_said_earlier(self):
+        text = preflop.carry("BB เจอ BTN เปิด ไม่มีได้ยังไง",
+                             ["ทัวร์นาเมนต์ 20BB BTN เปิด", "อะไรนะ"])
+        request = preflop.parse(text)
+        self.assertEqual((request.stack, request.game), (20, "tournament"))
+
+    def test_the_latest_stack_said_wins(self):
+        text = preflop.carry("BB เจอ BTN เปิด", ["50BB CO เปิด", "20BB BTN เปิด"])
+        self.assertEqual(preflop.parse(text).stack, 20)
+
+    def test_a_stack_in_the_question_is_not_replaced(self):
+        text = preflop.carry("30BB BB เจอ BTN เปิด", ["20BB BTN เปิด"])
+        self.assertEqual(preflop.parse(text).stack, 30)
+
 
 class HandTests(unittest.TestCase):
     def test_a_hand_with_letters_is_read(self):
@@ -215,6 +264,13 @@ class FindingTests(unittest.TestCase):
         self.assertRegex(block, r"call \(ราว [0-9.]+% ของมือทั้งหมด\): KK")
         self.assertIn("คู่มือทดสอบ", block)
         self.assertIn("fold", block)
+
+    def test_the_block_says_what_a_raise_against_a_three_bet_is(self):
+        block = preflop.context_block("20BB อยู่ CO โดน 3-bet จาก UTG")
+        self.assertIn("ช่อง raise ในตารางนี้คือเรนจ์ 4-bet ของ CO ใส่ UTG", block)
+
+    def test_an_opening_chart_has_no_reraise_line(self):
+        self.assertNotIn("ช่อง raise", preflop.context_block("20BB UTG เปิดอะไรได้"))
 
     def test_the_context_block_answers_the_asked_hand_directly(self):
         block = preflop.context_block("20BB อยู่ CO โดน 3-bet จาก UTG ถือ KK กับ 18 offsuit")

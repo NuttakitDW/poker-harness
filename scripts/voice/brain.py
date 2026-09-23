@@ -376,7 +376,10 @@ def chart_question(question: str, history: Conversation | None) -> str:
     if plo_context(question, history):
         return ""
     borrowed_plo = history is not None and bool(retrieval.hands(history.last_question))
-    return question if borrowed_plo else search_text(question, history)
+    if borrowed_plo:
+        return question
+    earlier = [turn.text for turn in (history.turns if history else ()) if turn.role == "user"]
+    return preflop.carry(search_text(question, history), earlier)
 
 
 def stream_answer(question: str, language: str = "TH",

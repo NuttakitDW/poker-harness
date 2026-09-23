@@ -61,6 +61,18 @@ class SearchTextTests(unittest.TestCase):
         self.assertEqual(brain.search_text("ถามใหม่", conversation), "ถามใหม่")
 
 
+class ChartQuestionTests(unittest.TestCase):
+    def test_a_follow_up_keeps_the_stack_from_an_older_question(self):
+        # ถามต่อว่า "ไม่มีได้ยังไง" เคยได้ชาร์ต cash 100BB เพราะคำถามก่อนหน้าไม่ได้บอกสแตก
+        conversation = (brain.Conversation()
+                        .with_turn("user", "Button เปิดมาตอน 20 Big blind ตำแหน่ง Big blind 3-bet อะไรได้")
+                        .with_turn("assistant", "ไม่มีตาราง")
+                        .with_turn("user", "ขอ Big blind นะ Button เปิด แล้ว Big blind ทำอะไรได้บ้าง")
+                        .with_turn("assistant", "ไม่มีตาราง"))
+        text = brain.chart_question("ไม่มีได้ยังไง?", conversation)
+        self.assertIn("20BB", text)
+
+
 class MessageBuildingTests(unittest.TestCase):
     def test_previous_turns_sit_between_the_system_line_and_the_question(self):
         conversation = brain.Conversation().with_turn("user", "ถามเก่า")

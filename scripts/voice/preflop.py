@@ -51,6 +51,13 @@ TOURNAMENT_WORDS = ("tournament", "mtt", "ทัวร์", "icm", "bubble", "�
 CHART_WORDS = ("ชาร์ต", "ชาร์ท", "chart", "เรนจ์", "range", "ตาราง",
                "preflop", "pre-flop", "พรีฟลอป", "พรีฟล็อป")
 CASH_WORDS = ("cash", "แคช", "เงินสด", "ring", "ริงเกม", "zoom")
+# ชาร์ตที่เจอคู่มือ ช่อง raise คือการรีเรสกลับหนึ่งขั้นจากสถานการณ์นั้น
+RAISE_MEANS = {"RFI": "3-bet", "Limp": "iso-raise", "3-Bet": "4-bet", "4-Bet": "5-bet"}
+# คำที่ตามหลังชื่อตำแหน่งทันที บอกว่าตำแหน่งนั้นเปิดหรือ 3-bet
+_OPENS = re.compile(r"\s*(?:เปิด|open|raise\s*first|rfi)")
+_THREE_BETS = re.compile(r"\s*(?:3\s*-?\s*bet|three\s*bet|ทรีเบ็ท|สามเบ็ท)")
+# "โดน 3-bet" หรือ "โดน BB 3-bet" แปลว่าคนถามคือคนเปิดที่ถูก 3-bet กลับ
+_FACING_THREE_BET = re.compile(r"(?:โดน|เจอ).{0,15}?(?:3bet|threebet|ทรีเบ็ท|สามเบ็ท)")
 
 # ตัวถอดเสียงเขียนบิ๊กบลายด์ได้หลายแบบ เช่น บิ๊กบาย บิกบลาย จึงจับแค่ต้นคำ
 _STACK = re.compile(r"(\d{1,3})\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)",
@@ -94,30 +101,60 @@ def books() -> tuple[dict, ...]:
     return tuple(loaded)
 
 
-def _positions(text: str) -> list[str]:
-    """ตำแหน่งที่ถูกพูดถึง เรียงตามลำดับที่โผล่ในข้อความ
+def _mentions(text: str) -> list[tuple[int, int, str]]:
+    """ทุกจุดที่พูดถึงตำแหน่ง (ต้นคำ, ท้ายคำ, ตำแหน่ง) เรียงตามลำดับในข้อความ
 
     ภาษาไทยไม่เว้นวรรคระหว่างคำ จึงหาคำไทยแบบข้อความย่อย ส่วนคำอังกฤษต้องเป็นคำเต็ม
     ไม่งั้น co ในคำอื่นจะถูกอ่านเป็นตำแหน่ง cutoff
     """
-    found: list[tuple[int, str]] = []
+    found: list[tuple[int, int, str]] = []
     for word, name in POSITION_WORDS.items():
-        if word.isascii():
-            match = re.search(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9+])", text)
-            index = match.start() if match else -1
-        else:
-            index = text.find(word)
-        if index >= 0:
-            found.append((index, name))
-    ordered: list[str] = []
-    for _, name in sorted(found):
-        if name not in ordered:
-            ordered.append(name)
-    return ordered
+        pattern = (rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9+])" if word.isascii()
+                   else re.escape(word))
+        found.extend((match.start(), match.end(), name)
+                     for match in re.finditer(pattern, text))
+    return sorted(found)
+
+
+def _positions(mentions: list[tuple[int, int, str]]) -> list[str]:
+    """ตำแหน่งที่ถูกพูดถึง ไม่ซ้ำ เรียงตามครั้งแรกที่โผล่"""
+    return list(dict.fromkeys(name for _, _, name in mentions))
+
+
+def _seat_doing(text: str, mentions: list[tuple[int, int, str]], action: re.Pattern) -> str | None:
+    """ตำแหน่งแรกที่ตามด้วยคำบอกการกระทำทันที เช่น "Button เปิด" หรือ "BB 3-bet" """
+    return next((name for _, end, name in mentions if action.match(text, end)), None)
+
+
+def _roles(text: str, found: list[str],
+           scenario: str | None) -> tuple[str | None, str | None, str | None]:
+    """เลือกว่าใครคือผู้ถาม (hero) ใครคือคู่มือ จากบทบาทที่พูด ไม่ใช่จากลำดับคำ
+
+    คนเล่นพูดชื่อคนเปิดก่อน เช่น "Button เปิด แล้ว BB 3-bet อะไรได้" คนถามคือ BB
+    ส่วนเรนจ์ 3-bet ของ BB อยู่ในชาร์ตฝั่ง BB เจอการเปิด (ช่อง raise) ไม่ใช่ชาร์ต 3-Bet
+    ซึ่งเป็นฝั่งคนเปิดที่โดน 3-bet กลับมา
+    """
+    hero = found[0] if found else None
+    villain = found[1] if len(found) > 1 else None
+    mentions = _mentions(text)
+    opener = _seat_doing(text, mentions, _OPENS)
+    if len(found) < 2 or opener is None or scenario not in (None, "RFI", "3-Bet"):
+        return hero, villain, scenario
+    raiser = _seat_doing(text, mentions, _THREE_BETS)
+    other = raiser if raiser not in (None, opener) else next(
+        name for name in found if name != opener)
+    if _FACING_THREE_BET.search(_squash(text)):
+        return opener, other, "3-Bet"
+    return other, opener, "RFI"
 
 
 def _squash(text: str) -> str:
     return re.sub(r"[\s\-]+", "", text)
+
+
+def _spaced_blinds(text: str) -> str:
+    """ตัวถอดเสียงเขียน big blind แยกสองคำ รวมให้เป็นคำเดียวกับที่ตารางคำรู้จัก"""
+    return re.sub(r"\b(big|small)[\s\-]+blind", r"\1blind", text)
 
 
 def parse(question: str) -> Request:
@@ -137,15 +174,34 @@ def parse(question: str) -> Request:
                      if any(_squash(word) in squashed for word in words)), None)
 
     # ตัด "80BB" ออกก่อนหาตำแหน่ง ไม่งั้น BB ที่หมายถึงหน่วยชิปจะถูกอ่านเป็นตำแหน่ง
-    found = _positions(_STACK.sub(" ", lowered))
-    hero = found[0] if found else None
-    villain = found[1] if len(found) > 1 else None
+    seats = _spaced_blinds(_STACK.sub(" ", lowered))
+    found = _positions(_mentions(seats))
+    hero, villain, scenario = _roles(seats, found, scenario)
     if "vs" in lowered or "เจอ" in lowered or "โดน" in lowered:
         scenario = scenario or "RFI"
     if hero and not villain and any(word in lowered for word in CHART_WORDS):
         scenario = scenario or "RFI"
     return Request(game=game, stack=int(stack.group(1)) if stack else None,
                    hero=hero, villain=villain, scenario=scenario)
+
+
+def carry(question: str, earlier: list[str]) -> str:
+    """เติมสแตกและประเภทเกมที่เคยพูดไว้ในคำถามก่อน ๆ ถ้าคำถามนี้ไม่ได้บอก
+
+    คำถามต่อเนื่องอย่าง "ไม่มีได้ยังไง" ยืมได้แค่คำถามก่อนหน้าหนึ่งตา ถ้าตานั้นไม่ได้บอกสแตก
+    เคยได้ชาร์ต cash 100BB ทั้งที่คุยกันเรื่องทัวร์ 20BB มาตลอด
+    """
+    request = parse(question)
+    extra = []
+    for text in reversed(earlier):
+        said = parse(text)
+        if request.stack is None and said.stack is not None:
+            extra.append(f"{said.stack}BB")
+            request = dataclasses.replace(request, stack=said.stack)
+        if request.game is None and said.game is not None:
+            extra.append(said.game)
+            request = dataclasses.replace(request, game=said.game)
+    return " ".join((question, *extra))
 
 
 def hands_in(question: str) -> list[str]:
@@ -346,6 +402,11 @@ def context_block(question: str, on_screen: bool = False) -> str:
         lines.append(f"หมายเหตุ ผู้ใช้ถามที่ {request.stack} BB "
                      f"แต่คู่มือมีใกล้สุดที่ {chart['stack']} BB "
                      f"ยิ่งสแตกสั้นกว่านี้เรนจ์ยิ่งต้องกว้างขึ้น")
+    raise_means = RAISE_MEANS.get(chart["scenario"]) if chart.get("villain") else None
+    if raise_means:
+        # โมเดลเคยตอบว่าไม่มีเรนจ์ BB 3-bet ทั้งที่อยู่ในช่อง raise ของชาร์ต BB เจอ BTN เปิด
+        lines.append(f"ช่อง raise ในตารางนี้คือเรนจ์ {raise_means} ของ {chart['hero']} "
+                     f"ใส่ {chart['villain']}")
     lines.append("")
     for action in ("raise", "call"):
         hands = notation(book, chart, action)
