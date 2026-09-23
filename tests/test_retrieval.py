@@ -131,3 +131,32 @@ class RoutingTests(unittest.TestCase):
 
     def test_system_prompt_forbids_claiming_no_plo_knowledge(self):
         self.assertIn("ห้ามอ้างว่าไม่มีความรู้เรื่อง PLO", brain.system_prompt())
+
+    def test_spoken_plo_exam_question_routes_to_starting_hands_not_hi_lo(self):
+        question = ("สวัสดีครับลูกชุบ ช่วยพี่ทําข้อสอบนี้หน่อย มี KK QJ Suit Pot Limit Omaha "
+                    "แฮนด์นี้เป็นประเภทมืออะไรครับ")
+        hits = retrieval.search(question)
+        self.assertEqual(hits[0].card.slug, "25-plo-starting-hands")
+        self.assertNotIn("27-plo-hi-lo", [hit.card.slug for hit in hits])
+        context, _, _ = brain.gather(question)
+        self.assertIn("KKQJ double-suited", context)
+
+    def test_hi_lo_cards_need_a_hi_lo_cue(self):
+        for question in ("PLO Hi Lo ควรเล่นมือแบบไหน", "โอมาฮาไฮโลเล่นยังไง", "Omaha eight or better คืออะไร"):
+            with self.subTest(question=question):
+                self.assertIn(retrieval.search(question)[0].card.slug,
+                              {"27-plo-hi-lo", "16-omaha-hi-lo-and-five-card-caveat"})
+
+    def test_plo_rule_says_plain_plo_means_high(self):
+        self.assertIn("ถ้าไม่ได้พูดถึง Hi/Lo ให้ถือว่าเป็น PLO high", brain.system_prompt())
+
+
+class HandSpottingTests(unittest.TestCase):
+    def test_spaced_and_joined_ranks_become_one_hand(self):
+        self.assertEqual(retrieval.hands("มี KK QJ Suit"), ("KKQJ",))
+        self.assertEqual(retrieval.hands("ถือ A A K K double"), ("AAKK",))
+        self.assertEqual(retrieval.hands("มือ JT98 เล่นยังไง"), ("JT98",))
+        self.assertEqual(retrieval.hands("hand 10 9 8 7"), ("T987",))
+
+    def test_ordinary_words_are_not_hands(self):
+        self.assertEqual(retrieval.hands("pot limit omaha ICM 3 bet"), ())

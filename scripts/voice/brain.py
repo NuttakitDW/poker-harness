@@ -116,6 +116,8 @@ def gather(question: str, language: str = "TH",
         if any("/sources/web/" in citation.path.as_posix() for citation in citations):
             terms = [word for word in re.findall(r"[A-Za-z]{3,}|[ก-๙]{4,}", question.lower())
                      if word not in {"poker", "โป๊กเกอร์"}]
+            # มือที่ถามตรงตัวสำคัญกว่าคำทั่วไป ให้โน้ตที่มีมือนั้นขึ้นก่อน
+            terms += [f"({hand.lower()} " for hand in retrieval.hands(question)] * 4
             thai_grams = {word[index:index + 3] for word in re.findall(r"[ก-๙]+", question)
                           for index in range(len(word) - 2)}
 

@@ -1,6 +1,7 @@
 # Omaha แบ่งสูงต่ำ และข้อควรระวังเกมห้าใบ
 
 - รหัสคงที่: `16-omaha-hi-lo-and-five-card-caveat`
+- Requires: hi/lo, hilo, hi lo, ไฮโล, ไฮ โล, split, eight or better, eight-or-better, 8 or better, o8, scoop, quarter, 5 ใบ, ห้าใบ, five card, five-card, big o, 5 card
 - ขอบเขต: Omaha eight-or-better ใช้ไพ่ส่วนตัว 2 ใบพอดีทั้งฝั่งสูงและต่ำ; Omaha 5 ใบเป็นอีกเกม ต้องตรวจกติกาโต๊ะ
 - ฉบับอังกฤษ: [Omaha eight-or-better and five-card caveat](../../EN/topics/16-omaha-hi-lo-and-five-card-caveat.md)
 

@@ -18,6 +18,7 @@ LANGUAGES = ("TH", "EN")
 _LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 _PAGE_HEADING = re.compile(r"^## PDF page (\d+)\s*$", re.MULTILINE)
 _CITATION_HEADINGS = ("## หน้าต้นฉบับ", "## Source pages")
+_REQUIRES = re.compile(r"^- Requires: (.+)$", re.MULTILINE)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -38,6 +39,8 @@ class Card:
     title: str
     body: str
     citations: tuple[Citation, ...]
+    # คำใดคำหนึ่งต้องอยู่ในคำถาม การ์ดนี้จึงถูกเลือกได้ ว่างไว้คือไม่มีเงื่อนไข
+    requires: tuple[str, ...] = ()
 
     @property
     def identifier(self) -> str:
@@ -77,6 +80,14 @@ def _parse_citations(card_path: pathlib.Path, text: str) -> tuple[Citation, ...]
     return tuple(found)
 
 
+def _requires(text: str) -> tuple[str, ...]:
+    """คำบอกเกมย่อยที่การ์ดต้องการ เช่น การ์ด Hi/Lo ไม่ควรตอบคำถาม PLO high"""
+    match = _REQUIRES.search(text)
+    if not match:
+        return ()
+    return tuple(term.strip() for term in match.group(1).split(",") if term.strip())
+
+
 def _title(text: str, fallback: str) -> str:
     for line in text.splitlines():
         if line.startswith("# "):
@@ -100,6 +111,7 @@ def load_cards() -> tuple[Card, ...]:
                 title=_title(text, path.stem),
                 body=text,
                 citations=_parse_citations(path, text),
+                requires=_requires(text),
             ))
     return tuple(cards)
 

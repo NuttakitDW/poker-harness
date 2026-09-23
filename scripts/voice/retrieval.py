@@ -21,6 +21,10 @@ MIN_SCORE = 0.02
 WORD_WEIGHT = 4
 _KEEP = re.compile(r"[^\w฀-๿]+")
 _LATIN = re.compile(r"^[a-z0-9][a-z0-9'-]*$")
+# ไพ่ Omaha ที่ถอดจากเสียงมักแยกเป็นก้อน เช่น "KK QJ" หรือ "A A K K" จึงรวมก้อนอันดับไพ่ที่ติดกัน
+# ก้อนที่เป็นตัวเลขล้วนต้องเป็นไพ่ใบเดียว ไม่อย่างนั้น "blinds 5 10 25" จะกลายเป็นมือ
+_RANK_WORD = re.compile(r"^(?:[akqjt2-9]+|10)$", re.IGNORECASE)
+HAND_CARDS = 4
 
 
 @dataclasses.dataclass(frozen=True)
@@ -36,6 +40,38 @@ def _normalize(text: str) -> str:
     return _KEEP.sub(" ", folded)
 
 
+def _ranks(word: str) -> str | None:
+    """อันดับไพ่ในคำหนึ่งคำ หรือ None ถ้าคำนั้นไม่ใช่ไพ่"""
+    if not _RANK_WORD.match(word) or (word.isdigit() and word not in "23456789" and word != "10"):
+        return None
+    return word.upper().replace("10", "T")
+
+
+def hands(text: str) -> tuple[str, ...]:
+    """มือ Omaha สี่ใบที่พูดถึงในข้อความ เขียนแบบ KKQJ ให้ตรงกับโน้ตในคลัง"""
+    found: list[str] = []
+    run = ""
+    for word in [*re.split(r"[^\w]+", text), ""]:
+        ranks = _ranks(word) if word else None
+        if ranks is not None:
+            run += ranks
+            continue
+        if len(run) == HAND_CARDS:
+            found.append(run)
+        run = ""
+    return tuple(dict.fromkeys(found))
+
+
+def _allowed(card: corpus.Card, query: str) -> bool:
+    """การ์ดที่ระบุเกมย่อยไว้จะถูกเลือกเมื่อคำถามพูดถึงเกมนั้นเท่านั้น"""
+    if not card.requires:
+        return True
+    spaced = _normalize(query)
+    joined = spaced.replace(" ", "")
+    return any(_normalize(term).strip() in spaced or _normalize(term).replace(" ", "") in joined
+               for term in card.requires)
+
+
 def _features(text: str) -> collections.Counter:
     """ลักษณะเด่นของข้อความ: n-gram ของอักษร บวกคำอังกฤษเต็มคำ
 
@@ -43,6 +79,8 @@ def _features(text: str) -> collections.Counter:
     ที่พบได้ทั่วไป จึงให้น้ำหนักคำเต็มมากกว่า
     """
     counts: collections.Counter = collections.Counter()
+    for hand in hands(text):
+        counts[f"w:{hand.lower()}"] += WORD_WEIGHT
     for word in _normalize(text).split():
         if _LATIN.match(word):
             counts[f"w:{word}"] += WORD_WEIGHT
@@ -84,6 +122,8 @@ def search(query: str, language: str = "TH", top_k: int = TOP_K) -> tuple[Hit, .
     scored = []
     for card, vector in entries:
         if language and card.language != language:
+            continue
+        if not _allowed(card, query):
             continue
         score = sum(weight * vector.get(gram, 0.0) for gram, weight in question.items())
         if score >= MIN_SCORE:
