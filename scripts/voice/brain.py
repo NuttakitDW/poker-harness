@@ -320,13 +320,14 @@ def stream_model(question: str, context: str, key: str,
 
 
 def stream_answer(question: str, language: str = "TH",
-                  history: Conversation | None = None, reasoning: bool = True):
+                  history: Conversation | None = None, reasoning: bool = True,
+                  chart_on_screen: bool = False):
     """คายคำตอบทีละชิ้นพร้อมข้อมูลแหล่งอ้างอิง คืนค่าเป็น (แหล่ง, ตัววนชิ้นข้อความ)"""
     wanted = search_text(question, history)
     context, cards, pages = gather(wanted, language=language,
                                    seen_pages=history.sent_pages if history else ())
     # ตารางเรนจ์วางไว้ก่อนเนื้อหาอื่น เพราะเป็นตัวเลขจริงที่ต้องใช้แทนการเดาของโมเดล
-    chart = preflop.context_block(wanted)
+    chart = preflop.context_block(wanted, on_screen=chart_on_screen)
     context = "\n\n".join(part for part in (chart, context) if part)
     # ไม่มีการ์ดที่ตรงก็ยังส่งให้โมเดล คำทักทายหรือคุยเล่นไม่มีทางตรงกับคลังอยู่แล้ว
     # ถ้าตัดบทว่าไม่พบ ผู้ใช้ทักมาแล้วได้คำตอบเหมือนเครื่องค้นหาแทนคนคุยด้วย

@@ -41,6 +41,11 @@ class ParsingTests(unittest.TestCase):
     def test_a_stack_written_in_thai_is_read(self):
         self.assertEqual(preflop.parse("เหลือ 25 บีบี อยู่ BTN").stack, 25)
 
+    def test_a_misheard_big_blind_is_still_read_as_the_stack(self):
+        for said in ("20 บิ๊กบาย", "20 บิกบาย", "20 บิ๊กบลาย", "20 บิ๊กบลายด์", "20 big blinds"):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.parse(f"ขอชาร์ต {said} จาก Button").stack, 20)
+
     def test_the_stack_unit_is_not_mistaken_for_the_big_blind_seat(self):
         self.assertEqual(preflop.parse("80BB ที่ UTG เปิดอะไรได้").hero, "UTG")
 
@@ -62,8 +67,90 @@ class ParsingTests(unittest.TestCase):
     def test_asking_about_shoving_counts_as_opening(self):
         self.assertEqual(preflop.parse("3BB ที่ UTG shove ได้มือไหน").scenario, "RFI")
 
+    def test_asking_for_a_chart_at_a_seat_means_opening_first(self):
+        request = preflop.parse("พี่ขอพรีฟลอปชาร์ต 50 Big blind ตําแหน่ง Button หน่อย")
+        self.assertEqual((request.hero, request.stack, request.scenario), ("BTN", 50, "RFI"))
+        self.assertTrue(request.usable)
+
+    def test_asking_for_a_range_at_a_seat_means_opening_first(self):
+        self.assertEqual(preflop.parse("เรนจ์ CO 30BB").scenario, "RFI")
+
+    def test_raise_first_in_with_a_hyphen_is_recognised(self):
+        self.assertEqual(preflop.parse("ขอ Raise first-in จาก Button 20 Big blind").scenario,
+                         "RFI")
+
+    def test_a_misheard_chart_word_still_means_opening_when_preflop_is_said(self):
+        request = preflop.parse("พี่ขอพรีฟลอปฉาด จากตําแหน่ง Button 20 Big blind")
+        self.assertEqual(request.scenario, "RFI")
+
+    def test_a_misheard_cutoff_is_still_the_cutoff(self):
+        self.assertEqual(preflop.parse("จากบัตรทอดเนี่ยครับ เปิดแฮนด์ไหนได้").hero, "CO")
+
+    def test_a_seat_alone_is_still_not_enough(self):
+        self.assertFalse(preflop.parse("อยู่ BTN รู้สึกยังไง").usable)
+
     def test_a_question_without_a_seat_is_not_usable(self):
         self.assertFalse(preflop.parse("ICM คืออะไร").usable)
+
+
+class HandTests(unittest.TestCase):
+    def test_a_hand_with_letters_is_read(self):
+        self.assertEqual(preflop.hands_in("เปิด A8o ได้ไหม"), ["A8o"])
+
+    def test_the_high_card_comes_first(self):
+        self.assertEqual(preflop.hands_in("8A offsuit"), ["A8o"])
+
+    def test_suited_is_read(self):
+        self.assertEqual(preflop.hands_in("KQ suited"), ["KQs"])
+
+    def test_a_pair_has_no_suffix(self):
+        self.assertEqual(preflop.hands_in("ถือ JJ อยู่"), ["JJ"])
+
+    def test_ten_spoken_in_thai_comes_out_as_a_teen_number(self):
+        # "สิบแปดออฟสูท" ตัวถอดเสียงเขียนเป็น 18 offsuit
+        self.assertEqual(preflop.hands_in("เปิด 18 offsuit จาก button"), ["T8o"])
+
+    def test_ten_written_as_digits_is_read(self):
+        self.assertEqual(preflop.hands_in("10 9 suited"), ["T9s"])
+
+    def test_digits_without_a_suit_word_are_not_a_hand(self):
+        self.assertEqual(preflop.hands_in("เหลือ 18 คน 98 เปอร์เซ็นต์"), [])
+
+    def test_no_suit_word_means_both_shapes(self):
+        self.assertEqual(preflop.hands_in("AK ล่ะ"), ["AKs", "AKo"])
+
+    def test_the_stack_is_not_a_hand(self):
+        self.assertEqual(preflop.hands_in("20 big blind เปิด 18 offsuit"), ["T8o"])
+
+    def test_lower_case_english_words_are_not_hands(self):
+        self.assertEqual(preflop.hands_in("look at this"), [])
+
+    def test_the_answer_for_an_asked_hand_is_read_from_the_chart(self):
+        made = book([chart(raises=("A9o",))])
+        lines = preflop.hand_answers(made, made["charts"][0], ["T8o", "A9o"])
+        self.assertEqual(lines, ["T8o = fold", "A9o = raise"])
+
+    def test_a_mixed_hand_answer_carries_the_frequencies(self):
+        made_chart = chart(raises=("77",))
+        made_chart["mixed"] = {"77": {"raise": 0.5, "fold": 0.5}}
+        lines = preflop.hand_answers(book([made_chart]), made_chart, ["77"])
+        self.assertEqual(lines, ["77 = raise (เล่นผสม raise 50% fold 50%)"])
+
+
+class ShareTests(unittest.TestCase):
+    def test_a_pair_is_six_combos(self):
+        made = book([chart(raises=("AA",))])
+        self.assertAlmostEqual(preflop.range_share(made, made["charts"][0], "raise"), 6 / 1326)
+
+    def test_suited_and_offsuit_hands_count_their_combos(self):
+        made = book([chart(raises=("AKs", "AKo"))])
+        self.assertAlmostEqual(preflop.range_share(made, made["charts"][0], "raise"), 16 / 1326)
+
+    def test_a_mixed_hand_counts_by_its_frequency(self):
+        made_chart = chart(raises=("AA",))
+        made_chart["mixed"] = {"AA": {"raise": 0.5, "fold": 0.5}}
+        self.assertAlmostEqual(preflop.range_share(book([made_chart]), made_chart, "raise"),
+                               3 / 1326)
 
 
 class NotationTests(unittest.TestCase):
@@ -124,10 +211,31 @@ class FindingTests(unittest.TestCase):
 
     def test_the_context_block_carries_the_range_and_the_source(self):
         block = preflop.context_block("20BB อยู่ CO โดน 3-bet จาก UTG")
-        self.assertIn("raise: AA", block)
-        self.assertIn("call: KK", block)
+        self.assertRegex(block, r"raise \(ราว [0-9.]+% ของมือทั้งหมด\): AA")
+        self.assertRegex(block, r"call \(ราว [0-9.]+% ของมือทั้งหมด\): KK")
         self.assertIn("คู่มือทดสอบ", block)
         self.assertIn("fold", block)
+
+    def test_the_context_block_answers_the_asked_hand_directly(self):
+        block = preflop.context_block("20BB อยู่ CO โดน 3-bet จาก UTG ถือ KK กับ 18 offsuit")
+        self.assertIn("KK = call", block)
+        self.assertIn("T8o = fold", block)
+
+    def test_an_asked_hand_is_named_even_without_a_chart(self):
+        block = preflop.context_block("มี 18 offsuit เนี่ยเปิดได้ไหม")
+        self.assertIn("T8o", block)
+        self.assertNotIn("raise:", block)
+
+    def test_a_chart_on_screen_tells_the_model_not_to_read_hands_aloud(self):
+        block = preflop.context_block("20BB อยู่ CO โดน 3-bet จาก UTG", on_screen=True)
+        self.assertIn("บนจอ", block)
+
+    def test_a_chart_not_on_screen_says_nothing_about_the_screen(self):
+        self.assertNotIn("บนจอ", preflop.context_block("20BB อยู่ CO โดน 3-bet จาก UTG"))
+
+    def test_the_block_says_how_wide_the_range_is(self):
+        block = preflop.context_block("20BB อยู่ CO โดน 3-bet จาก UTG")
+        self.assertIn("ราว 0.5% ของมือทั้งหมด", block)
 
     def test_hands_outside_the_opening_range_are_not_listed_one_by_one(self):
         charts = [chart(stack=20, hero="CO", villain="UTG", scenario="3-Bet",

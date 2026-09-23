@@ -17,6 +17,12 @@ PROMPT_PREFIX = (
 )
 PROMPT_SUFFIX = " ให้ถอดเป็นภาษาไทยโดยคงศัพท์อังกฤษไว้ตามรูปเดิม"
 MAX_PROMPT_CHARS = 620
+# คำที่คนถามชาร์ตพรีฟล็อปพูดบ่อยแต่ glossary ไม่มี ถ้าไม่บอกไว้ cutoff จะถูกถอดเป็น บัตรทอด
+SPOKEN_TERMS = (
+    "under the gun", "UTG", "lojack", "hijack", "cutoff", "button", "small blind",
+    "big blind", "raise first in", "RFI", "open", "3-bet", "4-bet", "shove", "all-in",
+    "offsuit", "suited", "preflop", "preflop chart", "range",
+)
 
 
 HEADER_CELLS = frozenset({"english", "term", "ไทย", "thai"})
@@ -48,6 +54,21 @@ def english_terms() -> tuple[str, ...]:
     if not GLOSSARY.exists():
         return ()
     return tuple(row[0] for row in _table_rows(GLOSSARY.read_text(encoding="utf-8")))
+
+
+@functools.lru_cache(maxsize=1)
+def stream_terms() -> tuple[str, ...]:
+    """ศัพท์ที่ส่งให้ตัวถอดเสียงทางสตรีม glossary ก่อน ตามด้วยคำพูดที่ใช้ถามชาร์ต
+
+    Soniox รับรายการศัพท์ได้ยาวกว่า initial_prompt ของ Whisper มาก จึงเติมเพิ่มได้
+    """
+    terms = list(english_terms())
+    seen = {term.lower() for term in terms}
+    for term in SPOKEN_TERMS:
+        if term.lower() not in seen:
+            terms.append(term)
+            seen.add(term.lower())
+    return tuple(terms)
 
 
 @functools.lru_cache(maxsize=1)

@@ -17,6 +17,7 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 import brain  # noqa: E402
+import chart_grid  # noqa: E402
 import costs  # noqa: E402
 import journal  # noqa: E402
 from engines import usable_text as engines_usable  # noqa: E402
@@ -44,13 +45,17 @@ def transcribe_samples(samples, engine: str) -> tuple[str, float]:
 def respond(question: str, language: str, voice: str, silent: bool,
             history: brain.Conversation | None = None,
             reasoning: bool = True,
-            provider: str = speech.DEFAULT_PROVIDER) -> tuple[float, str, tuple[str, ...]]:
+            provider: str = speech.DEFAULT_PROVIDER,
+            show_chart: bool = True) -> tuple[float, str, tuple[str, ...]]:
     """ตอบหนึ่งคำถาม คืนเวลาถึงเสียงแรก คำตอบที่พูดไป และหน้าต้นฉบับที่ส่งเข้าโมเดล"""
     import speak as player
 
     began = time.perf_counter()
+    if show_chart:
+        show_grid(brain.search_text(question, history), None)
     (cards, pages), pieces = brain.stream_answer(question, language=language,
-                                                 history=history, reasoning=reasoning)
+                                                 history=history, reasoning=reasoning,
+                                                 chart_on_screen=show_chart)
     if reasoning:
         pieces = _speech_only(pieces, brain.SAY_MARKER, [])
 
@@ -92,6 +97,21 @@ MAX_MERGED_SECONDS = 120.0
 # เบากว่านี้เป็นเสียงลมหรือเสียงพิมพ์ ส่งให้ถอดเสียงมีแต่จะได้คำที่ไม่มีใครพูด
 MIN_SPEECH_PEAK = 0.02
 WARM_UP_SECONDS = 0.5
+
+
+def show_grid(wanted: str, shown: tuple | None) -> tuple | None:
+    """พิมพ์ตาราง 13x13 ของชาร์ตที่ตรงกับคำถาม คืนกุญแจของชาร์ตที่โชว์อยู่
+
+    ถามต่อเรื่องเดิมจะได้ชาร์ตใบเดิม ไม่ต้องพิมพ์ซ้ำให้จอรก
+    """
+    found = chart_grid.for_question(wanted, color=sys.stdout.isatty())
+    if found is None:
+        return shown
+    key, grid = found
+    if key != shown:
+        print(f"\n{grid}\n")
+        journal.note("chart", key=list(key))
+    return key
 
 
 def _speech_only(pieces, marker: str, thoughts: list):
@@ -171,6 +191,7 @@ def live(args: argparse.Namespace) -> int:
     conversation = brain.Conversation()
     unfinished = ""
     merged = 0.0
+    shown_chart: tuple | None = None
 
     # ตัวถอดเสียงในเครื่องต้องโหลดโมเดลก่อน ส่วนทางสตรีมพร้อมใช้ทันทีที่เปิดสาย
     if args.engine != STREAMING_ENGINE:
@@ -241,6 +262,8 @@ def live(args: argparse.Namespace) -> int:
             merged = 0.0
             if not full_duplex:
                 listener.mute()
+            if not args.no_chart:
+                shown_chart = show_grid(brain.search_text(question, conversation), shown_chart)
 
             began = time.perf_counter()
             first = 0.0
@@ -257,7 +280,7 @@ def live(args: argparse.Namespace) -> int:
             try:
                 (cards, pages), pieces = brain.stream_answer(
                     question, language=args.language, history=conversation,
-                    reasoning=not args.no_reasoning)
+                    reasoning=not args.no_reasoning, chart_on_screen=not args.no_chart)
                 opened = time.perf_counter() - began
                 player = None if args.no_speak else playback.SpeechQueue(voice)
                 if not args.no_reasoning:
@@ -357,7 +380,8 @@ def repl(args: argparse.Namespace) -> int:
             print(f"ได้ยินว่า: {question}\n")
         first, answer, pages = respond(question, args.language, args.voice, args.no_speak,
                                        history=conversation,
-                                       reasoning=not args.no_reasoning, provider=args.tts)
+                                       reasoning=not args.no_reasoning, provider=args.tts,
+                                       show_chart=not args.no_chart)
         conversation = conversation.with_turn("user", question)
         conversation = conversation.with_turn("assistant", answer).with_pages(pages)
         print(f"\nstt {stt_seconds:.2f}s | ถึงเสียงแรก {first:.2f}s")
@@ -388,6 +412,8 @@ def main() -> int:
                         help="ไม่ต้องโชว์เหตุการณ์บนจอ")
     parser.add_argument("--no-meter", action="store_true",
                         help="ไม่แสดงคลื่นเสียงระหว่างพูด")
+    parser.add_argument("--no-chart", action="store_true",
+                        help="ไม่ต้องวาดตารางพรีฟล็อป 13x13 ในเทอร์มินัล")
     parser.add_argument("--no-reasoning", action="store_true",
                         help="ไม่ต้องให้คิดก่อนตอบ ตอบทันทีแบบเดิม")
     args = parser.parse_args()
@@ -417,7 +443,8 @@ def main() -> int:
         return 1
 
     first, _, _ = respond(question, args.language, args.voice, args.no_speak,
-                          reasoning=not args.no_reasoning, provider=args.tts)
+                          reasoning=not args.no_reasoning, provider=args.tts,
+                          show_chart=not args.no_chart)
     print(f"\nstt {stt_seconds:.2f}s | ถึงเสียงแรก {first:.2f}s")
     return 0
 

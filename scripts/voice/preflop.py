@@ -29,6 +29,8 @@ POSITION_WORDS = {
     "lj": "LJ", "lojack": "LJ", "โลแจ็ค": "LJ",
     "hj": "HJ", "hijack": "HJ", "ไฮแจ็ค": "HJ",
     "co": "CO", "cutoff": "CO", "คัตออฟ": "CO", "คัทออฟ": "CO",
+    # ตัวถอดเสียงเคยเขียน cutoff เป็นคำไทยที่เสียงใกล้กัน
+    "บัตรทอด": "CO", "คัทอ๊อฟ": "CO", "คัตอ๊อฟ": "CO",
     "btn": "BTN", "button": "BTN", "ปุ่ม": "BTN", "บัตตัน": "BTN",
     "sb": "SB", "smallblind": "SB", "สมอลบลายด์": "SB",
     "bb": "BB", "bigblind": "BB", "บิ๊กบลายด์": "BB",
@@ -44,9 +46,24 @@ SCENARIO_WORDS = (
 )
 TOURNAMENT_WORDS = ("tournament", "mtt", "ทัวร์", "icm", "bubble", "บับเบิล", "sng", "shove",
                     "push", "ออลอิน", "all in", "all-in")
+# ขอดูชาร์ตหรือเรนจ์ของตำแหน่งเดียวโดยไม่บอกว่าเจอใคร คนเล่นหมายถึงชาร์ตเปิดเป็นคนแรก
+# คำว่าพรีฟล็อปอยู่ในลิสต์ด้วย เพราะตัวถอดเสียงชอบได้ยินคำว่าชาร์ตเป็นคำอื่น เช่น ฉาด
+CHART_WORDS = ("ชาร์ต", "ชาร์ท", "chart", "เรนจ์", "range", "ตาราง",
+               "preflop", "pre-flop", "พรีฟลอป", "พรีฟล็อป")
 CASH_WORDS = ("cash", "แคช", "เงินสด", "ring", "ริงเกม", "zoom")
 
-_STACK = re.compile(r"(\d{1,3})\s*(?:bb|big\s*blind|บีบี|บิ๊กบลายด์|บิกบลายด์)", re.IGNORECASE)
+# ตัวถอดเสียงเขียนบิ๊กบลายด์ได้หลายแบบ เช่น บิ๊กบาย บิกบลาย จึงจับแค่ต้นคำ
+_STACK = re.compile(r"(\d{1,3})\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)",
+                    re.IGNORECASE)
+
+# คำบอกว่าดอกเดียวกันหรือต่างดอก ตัวถอดเสียงเขียนได้ทั้งอังกฤษและไทย
+_SUIT_WORD = r"(?i:offsuit|off-suit|suited|ออฟสูท|ออฟ|สูท)"
+# คนไทยอ่าน T ว่าสิบ พูด T8 ว่าสิบแปดแล้วตัวถอดเสียงเขียนเป็น 18 ถือเป็นมือเฉพาะเมื่อตามด้วยคำบอกดอก
+_TEEN_HAND = re.compile(rf"(?<!\d)1([2-9])(?=\s*{_SUIT_WORD})")
+_TEN = re.compile(r"(?<!\d)10(?!\d)")
+# ตัวอักษรไพ่ต้องเป็นตัวใหญ่ ไม่งั้นคำอังกฤษอย่าง at จะกลายเป็นมือ AT
+_HAND = re.compile(rf"(?<![A-Za-z0-9])([AKQJT2-9])\s?([AKQJT2-9])"
+                   rf"(?:\s*({_SUIT_WORD})|([so]))?(?![A-Za-z0-9])")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -99,6 +116,10 @@ def _positions(text: str) -> list[str]:
     return ordered
 
 
+def _squash(text: str) -> str:
+    return re.sub(r"[\s\-]+", "", text)
+
+
 def parse(question: str) -> Request:
     """อ่านคำถามแล้วเดาว่าเป็นสถานการณ์ไหน"""
     lowered = question.lower()
@@ -110,8 +131,10 @@ def parse(question: str) -> Request:
     elif any(word in lowered for word in CASH_WORDS):
         game = "cash"
 
+    # ตัวถอดเสียงเขียน first-in บ้าง first in บ้าง เทียบแบบไม่สนขีดและช่องว่าง
+    squashed = _squash(lowered)
     scenario = next((name for name, words in SCENARIO_WORDS
-                     if any(word in lowered for word in words)), None)
+                     if any(_squash(word) in squashed for word in words)), None)
 
     # ตัด "80BB" ออกก่อนหาตำแหน่ง ไม่งั้น BB ที่หมายถึงหน่วยชิปจะถูกอ่านเป็นตำแหน่ง
     found = _positions(_STACK.sub(" ", lowered))
@@ -119,8 +142,53 @@ def parse(question: str) -> Request:
     villain = found[1] if len(found) > 1 else None
     if "vs" in lowered or "เจอ" in lowered or "โดน" in lowered:
         scenario = scenario or "RFI"
+    if hero and not villain and any(word in lowered for word in CHART_WORDS):
+        scenario = scenario or "RFI"
     return Request(game=game, stack=int(stack.group(1)) if stack else None,
                    hero=hero, villain=villain, scenario=scenario)
+
+
+def hands_in(question: str) -> list[str]:
+    """มือที่ผู้ใช้ถามถึง เช่น A8o หรือ KQs ถ้าไม่บอกดอกคืนทั้ง suited และ offsuit"""
+    text = _STACK.sub(" ", question)
+    text = _TEN.sub("T", _TEEN_HAND.sub(r"T\1", text))
+    found: list[str] = []
+    for match in _HAND.finditer(text):
+        first, second, word, letter = match.groups()
+        suit = letter
+        if word:
+            suit = "o" if "off" in word.lower() or "ออฟ" in word else "s"
+        # ตัวเลขล้วนไม่มีคำบอกดอก เช่น 98 เปอร์เซ็นต์ ไม่ใช่มือ
+        if suit is None and first.isdigit() and second.isdigit():
+            continue
+        high, low = sorted((first, second), key=STRENGTH.get)
+        if high == low:
+            names = [high * 2]
+        elif suit:
+            names = [f"{high}{low}{suit}"]
+        else:
+            names = [f"{high}{low}s", f"{high}{low}o"]
+        found.extend(name for name in names if name not in found)
+    return found
+
+
+def _shares(shares: dict) -> str:
+    return " ".join(f"{name} {int(share * 100)}%" for name, share in sorted(
+        shares.items(), key=lambda item: -item[1]))
+
+
+def hand_answers(book: dict, chart: dict, hands: list[str]) -> list[str]:
+    """คำตอบของแต่ละมือที่ถาม อ่านจากช่องในตารางตรง ๆ ไม่ต้องให้โมเดลไล่ช่วงเอง"""
+    codes = dict(zip(book["hand_order"], chart["actions"]))
+    mixed = chart.get("mixed", {})
+    lines = []
+    for hand in hands:
+        action = CODE_ACTIONS.get(codes.get(hand, "-"), "none")
+        answer = "ไม่อยู่ในเรนจ์" if action == "none" else action
+        if hand in mixed:
+            answer = f"{answer} (เล่นผสม {_shares(mixed[hand])})"
+        lines.append(f"{hand} = {answer}")
+    return lines
 
 
 def _score(chart: dict, request: Request) -> tuple:
@@ -199,6 +267,26 @@ def _suited_group(hands: list[str], suffix: str) -> list[str]:
     return parts
 
 
+TOTAL_COMBOS = 1326
+
+
+def combos(hand: str) -> int:
+    """จำนวนคู่ไพ่จริงของมือ คู่มี 6 แบบ suited 4 แบบ offsuit 12 แบบ"""
+    return 6 if len(hand) == 2 else 4 if hand.endswith("s") else 12
+
+
+def range_share(book: dict, chart: dict, action: str) -> float:
+    """สัดส่วนของมือทั้งหมดที่เล่น action นี้ นับตามคอมโบ ช่องที่เล่นผสมนับตามความถี่"""
+    mixed = chart.get("mixed", {})
+    total = 0.0
+    for hand, code in zip(book["hand_order"], chart["actions"]):
+        if hand in mixed:
+            total += combos(hand) * mixed[hand].get(action, 0.0)
+        elif CODE_ACTIONS.get(code) == action:
+            total += combos(hand)
+    return total / TOTAL_COMBOS
+
+
 def notation(book: dict, chart: dict, action: str) -> str:
     """เรนจ์ของ action หนึ่งในรูปแบบที่คนเล่นอ่านออก"""
     order = book["hand_order"]
@@ -215,9 +303,7 @@ def mixed_note(chart: dict) -> str:
     """ช่องที่เล่นผสมหลาย action พร้อมความถี่"""
     notes = []
     for hand, shares in sorted(chart.get("mixed", {}).items()):
-        inner = " ".join(f"{name} {int(share * 100)}%" for name, share in sorted(
-            shares.items(), key=lambda item: -item[1]))
-        notes.append(f"{hand} {inner}")
+        notes.append(f"{hand} {_shares(shares)}")
     return ", ".join(notes)
 
 
@@ -228,11 +314,26 @@ def describe(book: dict, chart: dict) -> str:
     return f"{chart['hero']}{facing} · {chart['scenario']} · {chart['stack']} BB ({game})"
 
 
-def context_block(question: str) -> str:
-    """บล็อกบริบทสำหรับแปะเข้าพรอมต์ คืนค่าว่างถ้าไม่มีชาร์ตที่ตรง"""
+def _hands_only(question: str) -> str:
+    """ไม่รู้ว่าสถานการณ์ไหน แต่อย่างน้อยบอกโมเดลว่ามือที่ได้ยินคือมืออะไร
+
+    ตัวถอดเสียงเขียน สิบแปดออฟสูท เป็น 18 offsuit โมเดลอ่านแล้วงงว่ามือ 18 คืออะไร
+    """
+    hands = hands_in(question)
+    if not hands:
+        return ""
+    return ("# มือที่ผู้ใช้พูดถึง (ตัวถอดเสียงอาจเขียนไพ่สิบเป็นเลข 1 เช่น 18 คือ T8)\n"
+            + ", ".join(hands))
+
+
+def context_block(question: str, on_screen: bool = False) -> str:
+    """บล็อกบริบทสำหรับแปะเข้าพรอมต์ คืนค่าว่างถ้าไม่มีชาร์ตที่ตรง
+
+    on_screen คือตาราง 13x13 ถูกวาดให้ผู้ใช้ดูบนจอแล้ว
+    """
     found = find(question)
     if found is None:
-        return ""
+        return _hands_only(question)
     book, chart, request = found
     lines = [
         "# ตารางพรีฟล็อป GTO (ตัวเลขจริง ใช้แทนการเดา)",
@@ -249,7 +350,8 @@ def context_block(question: str) -> str:
     for action in ("raise", "call"):
         hands = notation(book, chart, action)
         if hands:
-            lines.append(f"{action}: {hands}")
+            share = range_share(book, chart, action) * 100
+            lines.append(f"{action} (ราว {share:.1f}% ของมือทั้งหมด): {hands}")
     mixed = mixed_note(chart)
     if mixed:
         lines.append(f"เล่นผสม: {mixed}")
@@ -258,4 +360,15 @@ def context_block(question: str) -> str:
         lines.append("มือที่ไม่อยู่ในรายการคือ fold หรือไม่ได้อยู่ในเรนจ์ที่เปิดมาตั้งแต่ต้น")
     else:
         lines.append("มือที่ไม่อยู่ในรายการข้างบนคือ fold")
+    # โมเดลเคยไล่ช่วง A6o-A2o แล้วนับ A8o ว่าอยู่ในนั้น จึงเปิดตารางตอบมือที่ถามให้เสร็จ
+    asked = hand_answers(book, chart, hands_in(question))
+    if asked:
+        lines += ["", "## มือที่ผู้ใช้ถาม (อ่านจากตารางแล้ว ใช้ตามนี้ ห้ามไล่ช่วงเอง)", *asked]
+    if on_screen:
+        # อ่านรายชื่อมือเป็นเสียงช้าและฟังไม่ทัน ผู้ใช้เคยบ่นว่าไล่ทีละแฮนด์ช้าตาย
+        lines += ["", "## วิธีพูดเรื่องตารางนี้",
+                  "ผู้ใช้เห็นตาราง 13x13 ของชาร์ตนี้บนจออยู่แล้ว ห้ามไล่รายชื่อมือหรือช่วงมือตอนพูด",
+                  "ให้เล่าภาพกว้าง เช่น เปิดราวกี่เปอร์เซ็นต์ กลุ่มไหนเปิดเกือบหมด กลุ่มไหนตัดทิ้ง "
+                  "แล้วชวนให้ดูตารางบนจอ",
+                  "ถ้าผู้ใช้ถามมือเฉพาะ ให้ตอบมือนั้นตรง ๆ ได้"]
     return "\n".join(lines)

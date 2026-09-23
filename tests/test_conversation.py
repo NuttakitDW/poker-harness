@@ -85,7 +85,7 @@ class MessageBuildingTests(unittest.TestCase):
         originals = (brain.gather, brain.preflop.context_block,
                      brain.load_api_key, brain.stream_model)
         brain.gather = lambda *a, **k: ("", [], [])
-        brain.preflop.context_block = lambda wanted: ""
+        brain.preflop.context_block = lambda wanted, **_: ""
         brain.load_api_key = lambda: "key"
         brain.stream_model = fake_model
         try:

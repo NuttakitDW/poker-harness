@@ -40,5 +40,22 @@ class BiasPromptTests(unittest.TestCase):
         self.assertIn("Bankroll", lexicon.bias_prompt())
 
 
+class StreamTermTests(unittest.TestCase):
+    def test_seat_names_are_given_to_the_streaming_recogniser(self):
+        terms = lexicon.stream_terms()
+        for seat in ("cutoff", "button", "hijack", "lojack"):
+            self.assertIn(seat, terms)
+
+    def test_hand_words_are_given_to_the_streaming_recogniser(self):
+        terms = {term.lower() for term in lexicon.stream_terms()}
+        for word in ("offsuit", "suited", "raise first in", "big blind"):
+            self.assertIn(word, terms)
+
+    def test_glossary_terms_are_kept_and_not_repeated(self):
+        terms = lexicon.stream_terms()
+        self.assertTrue(set(lexicon.english_terms()) <= set(terms))
+        self.assertEqual(len(terms), len({term.lower() for term in terms}))
+
+
 if __name__ == "__main__":
     unittest.main()

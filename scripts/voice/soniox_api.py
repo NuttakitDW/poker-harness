@@ -62,14 +62,14 @@ def load_api_key() -> str:
 def transcription_context() -> dict:
     """บอกโมเดลว่ากำลังฟังเรื่องอะไรและคาดว่าจะเจอศัพท์ตัวไหน
 
-    ศัพท์จาก glossary เดียวกับที่ป้อนให้ Whisper จะได้เทียบกันได้อย่างเป็นธรรม
+    ศัพท์จาก glossary เดียวกับที่ป้อนให้ Whisper เติมชื่อตำแหน่งและคำเรียกมือที่ใช้ถามชาร์ต
     """
     return {
         "general": [
             {"key": "domain", "value": DOMAIN},
             {"key": "topic", "value": TOPIC},
         ],
-        "terms": list(lexicon.english_terms()),
+        "terms": list(lexicon.stream_terms()),
     }
 
 
