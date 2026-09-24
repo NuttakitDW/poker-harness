@@ -89,6 +89,10 @@ class ParsingTests(unittest.TestCase):
     def test_a_seat_alone_is_still_not_enough(self):
         self.assertFalse(preflop.parse("อยู่ BTN รู้สึกยังไง").usable)
 
+    def test_holding_a_hand_at_a_seat_means_opening_first(self):
+        request = preflop.parse("ถือ 33 อยู่ UTG 100 Big blind เล่นยังไงดี")
+        self.assertEqual((request.hero, request.stack, request.scenario), ("UTG", 100, "RFI"))
+
     def test_a_question_without_a_seat_is_not_usable(self):
         self.assertFalse(preflop.parse("ICM คืออะไร").usable)
 
@@ -140,6 +144,16 @@ class CarryTests(unittest.TestCase):
     def test_a_stack_in_the_question_is_not_replaced(self):
         text = preflop.carry("30BB BB เจอ BTN เปิด", ["20BB BTN เปิด"])
         self.assertEqual(preflop.parse(text).stack, 30)
+
+
+    def test_a_seat_answering_a_request_for_a_range_gets_the_chart(self):
+        text = preflop.carry("ตําแหน่ง UTG 100 Big blind",
+                             ["ให้ตาราง Range ไม่ได้นี่", "ได้ ได้"])
+        self.assertTrue(preflop.parse(text).usable)
+
+    def test_a_range_asked_long_ago_is_not_carried(self):
+        text = preflop.carry("อยู่ BTN รู้สึกยังไง", ["ขอ range หน่อย", "อะไรนะ", "เหนื่อย", "โอเค"])
+        self.assertFalse(preflop.parse(text).usable)
 
 
 class HandTests(unittest.TestCase):

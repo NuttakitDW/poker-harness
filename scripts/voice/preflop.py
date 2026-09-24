@@ -50,6 +50,9 @@ TOURNAMENT_WORDS = ("tournament", "mtt", "ทัวร์", "icm", "bubble", "�
 # คำว่าพรีฟล็อปอยู่ในลิสต์ด้วย เพราะตัวถอดเสียงชอบได้ยินคำว่าชาร์ตเป็นคำอื่น เช่น ฉาด
 CHART_WORDS = ("ชาร์ต", "ชาร์ท", "chart", "เรนจ์", "range", "ตาราง",
                "preflop", "pre-flop", "พรีฟลอป", "พรีฟล็อป")
+HOLD_WORDS = ("ถือ", "hold", "ได้ไพ่", "ได้มือ")
+# คำขอตารางยังมีผลอยู่ถ้าพูดไว้ไม่เกินเท่านี้ตา เก่ากว่านั้นถือว่าเปลี่ยนเรื่องแล้ว
+CHART_CARRY_TURNS = 2
 CASH_WORDS = ("cash", "แคช", "เงินสด", "ring", "ริงเกม", "zoom")
 # ชาร์ตที่เจอคู่มือ ช่อง raise คือการรีเรสกลับหนึ่งขั้นจากสถานการณ์นั้น
 RAISE_MEANS = {"RFI": "3-bet", "Limp": "iso-raise", "3-Bet": "4-bet", "4-Bet": "5-bet"}
@@ -179,7 +182,11 @@ def parse(question: str) -> Request:
     hero, villain, scenario = _roles(seats, found, scenario)
     if "vs" in lowered or "เจอ" in lowered or "โดน" in lowered:
         scenario = scenario or "RFI"
-    if hero and not villain and any(word in lowered for word in CHART_WORDS):
+    # ถือมืออยู่ตำแหน่งเดียวโดยไม่มีใครเปิดมาก่อน คือถามว่าควรเปิดมือนี้ไหม
+    # มือคู่ตัวเลขอย่าง 33 ไม่ถูกนับเป็นมือเพราะชนกับเปอร์เซ็นต์ จึงดูคำว่าถือด้วย
+    asks_open = (any(word in lowered for word in (*CHART_WORDS, *HOLD_WORDS))
+                 or bool(hands_in(question)))
+    if hero and not villain and asks_open:
         scenario = scenario or "RFI"
     return Request(game=game, stack=int(stack.group(1)) if stack else None,
                    hero=hero, villain=villain, scenario=scenario)
@@ -201,6 +208,11 @@ def carry(question: str, earlier: list[str]) -> str:
         if request.game is None and said.game is not None:
             extra.append(said.game)
             request = dataclasses.replace(request, game=said.game)
+    # ขอตาราง range แล้วตาถัดมาค่อยบอกตำแหน่ง เคยได้คำตอบว่าส่งตารางให้ดูไม่ได้
+    recent = " ".join(earlier[-CHART_CARRY_TURNS:]).lower()
+    if (request.hero and not request.usable
+            and any(word in recent for word in CHART_WORDS)):
+        extra.append("range")
     return " ".join((question, *extra))
 
 
