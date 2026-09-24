@@ -31,7 +31,7 @@ import keys  # noqa: E402
 
 ENDPOINT = "https://api.paxalabs.com/v1/audio/speech"
 MODEL = "paxa-tts-flash-v1"
-DEFAULT_VOICE = "lukchup"
+DEFAULT_VOICE = "foithong"
 # เร็วกว่าปกตินิดหน่อย จังหวะพูดปริยายฟังแล้วอืดเกินกว่าบทสนทนาจริง
 DEFAULT_SPEED = 1.15
 # ฝั่ง Paxa ปฏิเสธค่านอกช่วงนี้ด้วย 400 จึงกันไว้ก่อนยิงเพื่อไม่ให้เสียรอบ
