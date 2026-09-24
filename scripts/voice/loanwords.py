@@ -55,6 +55,8 @@ SPOKEN_IN_ENGLISH = {
     "สมอลบลายด์": "small blind",
     # ศัพท์เชิงกลยุทธ์
     "เรนจ์": "range",
+    "ชาร์ต": "chart",
+    "ชาร์ท": "chart",
     "อิควิตี้": "equity",
     "เอควิตี้": "equity",
     "พอตออดส์": "pot odds",

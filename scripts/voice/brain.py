@@ -25,6 +25,7 @@ import plo_hand
 import plo_low
 import preflop
 import retrieval
+import tools
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -49,6 +50,12 @@ _THIS_HAND = re.compile(r"(?:มือ|แฮนด์|hand)\s*(?:นี้|น�
 TIMEOUT_SECONDS = 20
 RETRIES = 3
 RETRY_BACKOFF_SECONDS = 0.6
+# รอบที่ยอมให้เรียกเครื่องมือได้ รอบถัดจากนี้ต้องตอบเลย ไม่ให้วนเรียกไม่จบ
+MAX_TOOL_ROUNDS = 3
+# DeepSeek เคยเขียนคำขอเรียกเครื่องมือออกมาเป็นข้อความดิบในรอบที่ไม่ให้เรียกแล้ว
+# แล้วเครื่องอ่านออกเสียงก็อ่านมันออกมาทั้งก้อน เจอเครื่องหมายนี้เมื่อไรต้องหยุดพูดทันที
+TOOL_MARKUP = "DSML"
+TOOL_LEAK_REPLY = "ขอโทษค่ะ ลูกชุบคำนวณ equity ไม่สำเร็จ ช่วยบอก range อีกทีได้ไหมคะ"
 
 THINK_MARKER = "คิด:"
 SAY_MARKER = "ตอบ:"
@@ -251,7 +258,7 @@ def build_messages(question: str, context: str,
                    reasoning: bool = True, note: str = "") -> list[dict]:
     """ประกอบข้อความทั้งชุดที่ส่งให้โมเดล ระบบ ตาเก่า แล้วค่อยคำถามใหม่"""
     body = f"{context}\n\n# คำถาม\n\n{question}" if context else question
-    system = f"{system_prompt()}\n\n{LISTEN_RULES}"
+    system = f"{system_prompt()}\n\n{LISTEN_RULES}\n\n{tools.RULES}"
     if reasoning:
         system = f"{system}\n\n{REASONING_RULES}"
         # ประวัติที่เก็บไว้มีแต่ส่วนพูด ถ้าไม่เตือน ตาหลัง ๆ โมเดลจะเลิกคิดตามรูปแบบ
@@ -267,33 +274,38 @@ def build_messages(question: str, context: str,
 
 def _request(question: str, context: str, key: str,
              history: Conversation | None = None,
-             reasoning: bool = True, note: str = "") -> urllib.request.Request:
-    """คำขอแบบสตรีมไปยังโมเดล"""
-    payload = json.dumps({
+             reasoning: bool = True, note: str = "",
+             extra: tuple[dict, ...] = (), allow_tools: bool = True) -> urllib.request.Request:
+    """คำขอแบบสตรีมไปยังโมเดล extra คือการเรียกเครื่องมือและผลของมันในตานี้"""
+    body = {
         "model": MODEL,
-        "messages": build_messages(question, context, history, reasoning, note),
+        "messages": [*build_messages(question, context, history, reasoning, note), *extra],
         "temperature": 0.3,
         "max_tokens": MAX_ANSWER_TOKENS,
         "stream": True,
         # ขอให้ท้ายสตรีมแนบยอด token มาด้วย ไม่งั้นรู้ต้นทุนจริงของแต่ละคำตอบไม่ได้
         "stream_options": {"include_usage": True},
-    }).encode("utf-8")
+    }
+    # รอบสุดท้ายยังต้องแนบเครื่องมือไว้ ไม่งั้นโมเดลที่อยากเรียกต่อจะเขียนคำขอเป็นข้อความดิบ
+    body["tools"] = tools.SCHEMAS
+    if not allow_tools:
+        body["tool_choice"] = "none"
     return urllib.request.Request(
         ENDPOINT,
-        data=payload,
+        data=json.dumps(body).encode("utf-8"),
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
     )
 
 
 def _open_stream(question: str, context: str, key: str,
                  history: "Conversation | None" = None, reasoning: bool = True,
-                 note: str = ""):
+                 note: str = "", extra: tuple[dict, ...] = (), allow_tools: bool = True):
     """เปิดการเชื่อมต่อแบบสตรีม ลองซ้ำเมื่อเครือข่ายสะดุด"""
     last = ""
     for attempt in range(RETRIES):
         try:
             return urllib.request.urlopen(
-                _request(question, context, key, history, reasoning, note),
+                _request(question, context, key, history, reasoning, note, extra, allow_tools),
                 timeout=TIMEOUT_SECONDS)
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", "replace")[:200]
@@ -334,11 +346,60 @@ def _charge(usage: dict | None, prompt_chars: int, answer_chars: int, seconds: f
 def stream_model(question: str, context: str, key: str,
                  history: "Conversation | None" = None,
                  reasoning: bool = True, note: str = "") -> Iterator[str]:
-    """คายข้อความทีละชิ้นระหว่างที่โมเดลยังเขียนไม่จบ"""
+    """คายข้อความทีละชิ้นระหว่างที่โมเดลยังเขียนไม่จบ
+
+    ถ้าโมเดลขอเรียกเครื่องมือ รันเครื่องมือแล้วส่งผลกลับไปถามต่อ ข้อความที่โมเดลเขียน
+    ก่อนขอเรียกเครื่องมือถูกทิ้ง เพราะรอบถัดไปจะคิดใหม่พร้อมตัวเลขจริง
+    """
+    extra: tuple[dict, ...] = ()
+    for round_ in range(MAX_TOOL_ROUNDS + 1):
+        calls: dict[int, dict] = {}
+        last = round_ == MAX_TOOL_ROUNDS
+        said = yield from _stream_round(question, context, key, history, reasoning, note,
+                                        extra, not last, calls)
+        if not calls:
+            # เรียกเครื่องมือพลาดจนหมดสิทธิ์ โมเดลมักตอบว่างเปล่า ปล่อยไว้ผู้ใช้จะได้แต่ความเงียบ
+            if last and extra and not said:
+                yield f"\n{SAY_MARKER} {TOOL_LEAK_REPLY}"
+            return
+        ordered = [calls[index] for index in sorted(calls)]
+        extra = (*extra, {"role": "assistant", "content": "", "tool_calls": [
+            {"id": call["id"], "type": "function",
+             "function": {"name": call["name"], "arguments": call["arguments"]}}
+            for call in ordered]})
+        extra = (*extra, *({"role": "tool", "tool_call_id": call["id"],
+                            "content": tools.run(call["name"], call["arguments"])}
+                           for call in ordered))
+
+
+def _collect_call(calls: dict[int, dict], delta: dict) -> None:
+    """ประกอบคำขอเรียกเครื่องมือที่ไหลมาเป็นชิ้น ๆ ชื่อมาก่อน arguments ตามมาทีละท่อน"""
+    for part in delta.get("tool_calls") or ():
+        call = calls.setdefault(part.get("index", 0), {"id": "", "name": "", "arguments": ""})
+        call["id"] = part.get("id") or call["id"]
+        function = part.get("function") or {}
+        call["name"] += function.get("name") or ""
+        call["arguments"] += function.get("arguments") or ""
+
+
+def _stream_round(question: str, context: str, key: str,
+                  history: "Conversation | None", reasoning: bool, note: str,
+                  extra: tuple[dict, ...], allow_tools: bool,
+                  calls: dict[int, dict]):
+    """หนึ่งคำขอไปยังโมเดล คำขอเรียกเครื่องมือถูกเก็บลง calls คืนจำนวนตัวอักษรในส่วนพูด
+
+    ชิ้นข้อความถูกกักไว้จนเห็นตัวคั่นส่วนพูด ส่วนคิดถูกกักอยู่แล้วที่ปลายทาง
+    จึงไม่ช้าลง และถ้าโมเดลขอเรียกเครื่องมือก่อนถึงส่วนพูดก็ทิ้งได้ทั้งก้อน
+    """
     started = time.perf_counter()
-    response = _open_stream(question, context, key, history, reasoning, note)
+    response = _open_stream(question, context, key, history, reasoning, note, extra, allow_tools)
     usage: dict | None = None
     answer_chars = 0
+    held: list[str] = []
+    speaking = not reasoning
+    tail = ""
+    leaked = False
+    said = 0
 
     try:
         with response:
@@ -348,7 +409,7 @@ def stream_model(question: str, context: str, key: str,
                     continue
                 body = line[5:].strip()
                 if body == "[DONE]":
-                    return
+                    break
                 try:
                     chunk = json.loads(body)
                 except json.JSONDecodeError:
@@ -356,14 +417,42 @@ def stream_model(question: str, context: str, key: str,
                 # ชิ้นสุดท้ายมีแต่ยอด token และ choices ว่าง
                 usage = chunk.get("usage") or usage
                 choices = chunk.get("choices") or [{}]
-                piece = choices[0].get("delta", {}).get("content")
-                if piece:
-                    answer_chars += len(piece)
+                delta = choices[0].get("delta") or {}
+                _collect_call(calls, delta)
+                piece = delta.get("content")
+                if not piece:
+                    continue
+                answer_chars += len(piece)
+                tail = f"{tail[-len(TOOL_MARKUP):]}{piece}"
+                if TOOL_MARKUP in tail:
+                    leaked = True
+                    break
+                if speaking:
+                    said += len(piece.strip())
                     yield piece
+                    continue
+                held.append(piece)
+                joined = "".join(held)
+                if SAY_MARKER in joined:
+                    speaking = True
+                    said += len(joined.split(SAY_MARKER, 1)[1].strip())
+                    yield joined
+                    held = []
+        if leaked:
+            print("[tool] โมเดลเขียนคำขอเรียกเครื่องมือเป็นข้อความ ตัดทิ้งไม่อ่านออกเสียง",
+                  file=sys.stderr, flush=True)
+            journal.note("tool-leak", round_extra=len(extra))
+            yield f"{'' if speaking else SAY_MARKER} {TOOL_LEAK_REPLY}"
+            said += len(TOOL_LEAK_REPLY)
+        elif held and not calls:
+            said += len("".join(held).split(SAY_MARKER)[-1].strip())
+            yield "".join(held)
     finally:
-        prompt_chars = sum(len(message["content"]) for message in
+        prompt_chars = sum(len(message.get("content") or "") for message in
                            build_messages(question, context, history, reasoning, note))
+        prompt_chars += sum(len(json.dumps(message, ensure_ascii=False)) for message in extra)
         _charge(usage, prompt_chars, answer_chars, time.perf_counter() - started)
+    return said
 
 
 def chart_question(question: str, history: Conversation | None) -> str:

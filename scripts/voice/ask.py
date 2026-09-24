@@ -21,10 +21,12 @@ import brain  # noqa: E402
 import chart_grid  # noqa: E402
 import costs  # noqa: E402
 import journal  # noqa: E402
+import loanwords  # noqa: E402
 from engines import usable_text as engines_usable  # noqa: E402
 import speech  # noqa: E402
 import spoken  # noqa: E402
 import streaming  # noqa: E402
+import tools  # noqa: E402
 
 
 def transcribe(audio: pathlib.Path, engine: str) -> tuple[str, float]:
@@ -66,7 +68,7 @@ def respond(question: str, language: str, voice: str, silent: bool,
     spoken_parts: list[str] = []
 
     try:
-        for sentence in streaming.sentences(pieces):
+        for sentence in _english_terms(streaming.sentences(pieces)):
             spoken_parts.append(sentence)
             print(sentence)
             if silent:
@@ -127,6 +129,16 @@ def _speech_only(pieces, marker: str, thoughts: list):
             journal.note("reasoning", text=text)
             continue
         yield text
+
+
+def _english_terms(sentences):
+    """เปลี่ยนคำทับศัพท์อักษรไทยเป็นรูปอังกฤษก่อนขึ้นจอและก่อนเก็บลงประวัติ
+
+    เดิมแก้แค่ตอนส่งเข้าเสียง จอยังโชว์ "เรนจ์" และประวัติที่ส่งกลับให้โมเดลก็ยังเป็นรูปไทย
+    โมเดลเห็นตัวเองเขียนแบบนั้นในตาก่อน ๆ เลยเขียนตามต่อไปเรื่อย ๆ
+    """
+    for sentence in sentences:
+        yield loanwords.prefer_english(sentence).strip()
 
 
 def _mark_first(pieces, marks: list):
@@ -213,6 +225,7 @@ def live(args: argparse.Namespace) -> int:
     # วินาทีเสียงที่ส่งเข้าสายถอดเสียงและคิดเงินไปแล้ว
     billed = 0.0
 
+    tools.warm_up()
     # ตัวถอดเสียงในเครื่องต้องโหลดโมเดลก่อน ส่วนทางสตรีมพร้อมใช้ทันทีที่เปิดสาย
     if args.engine != STREAMING_ENGINE:
         print("กำลังอุ่นเครื่องถอดเสียง โหลดโมเดลครั้งเดียว รอสักครู่")
@@ -331,7 +344,7 @@ def live(args: argparse.Namespace) -> int:
                     watch = barge.BargeWatch(listener, player)
                 if not args.no_reasoning:
                     pieces = _speech_only(pieces, brain.SAY_MARKER, thoughts)
-                stream = streaming.sentences(_mark_first(pieces, marks))
+                stream = _english_terms(streaming.sentences(_mark_first(pieces, marks)))
                 for sentence in stream:
                     # ถูกแทรกแล้ว ไม่ต้องเสียเวลาสังเคราะห์ประโยคที่เหลือ
                     if full_duplex and (listener.speaking or listener.waiting
@@ -437,6 +450,7 @@ def live(args: argparse.Namespace) -> int:
 def repl(args: argparse.Namespace) -> int:
     """ถามต่อเนื่องหลายคำถาม โหลดโมเดลถอดเสียงครั้งเดียวแล้วใช้ซ้ำ"""
     print("พิมพ์คำถาม หรือพิมพ์พาธไฟล์เสียง  ออกด้วย Ctrl-D หรือพิมพ์ ออก")
+    tools.warm_up()
     conversation = brain.Conversation()
     while True:
         try:

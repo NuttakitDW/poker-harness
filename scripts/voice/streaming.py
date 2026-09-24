@@ -44,8 +44,10 @@ def _split_long(chunk: str, limit: int = MAX_CHARS) -> list[str]:
     current = chunk
     while len(current) > limit:
         window = current[:limit]
-        breaks = list(_THAI_BREAK.finditer(window))
-        cut = breaks[-1].start() if breaks else window.rfind(" ")
+        # ช่องว่างระหว่างคำไทยดีที่สุด ถ้าไม่มีหรือชิดต้นเกินไปก็ใช้ช่องว่างไหนก็ได้
+        # เคยตัดกลางคำ "ไล่ทุก|บอร์ด" เพราะช่องว่างไทยช่องเดียวอยู่ต้นประโยค ทั้งที่มีช่องว่างหน้า "เป็น" ให้ใช้
+        breaks = [match.start() for match in _THAI_BREAK.finditer(window)]
+        cut = breaks[-1] if breaks and breaks[-1] > MIN_CHARS else window.rfind(" ")
         if cut <= MIN_CHARS:
             cut = _safe_cut(current, limit)
         parts.append(current[:cut].strip())

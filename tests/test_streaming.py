@@ -45,6 +45,14 @@ class ChunkingTests(unittest.TestCase):
         chunks = list(streaming.sentences(drip("ok. ยังไม่จบประโยคนี้นะครับ ต่ออีกหน่อย")))
         self.assertTrue(all(len(c) >= streaming.MIN_CHARS or c == chunks[-1] for c in chunks))
 
+    def test_a_word_is_not_cut_when_a_later_space_exists(self):
+        # ช่องว่างไทยช่องเดียวอยู่ต้นประโยค เคยทำให้ตัดกลางคำ "ไล่ทุก|บอร์ด"
+        text = ("UTG นำค่ะ ได้ 54.6% ส่วน big blind ที่ call ได้ 45.4% เป็นค่าที่ไล่ทุกบอร์ดแล้ว "
+                "ตัวเลขนี้คิดจากเรนจ์ call ของ big blind ที่ลูกชุบตั้งเป็นสมมติฐานกว้าง ๆ นะคะ")
+        chunks = list(streaming.sentences(text[i:i + 3] for i in range(0, len(text), 3)))
+        self.assertTrue(all("ทุกบอร์ด" in chunk or "ทุก" not in chunk for chunk in chunks), chunks)
+        self.assertLessEqual(len(chunks[0]), streaming.FIRST_MAX_CHARS)
+
     def test_empty_stream_yields_nothing(self):
         self.assertEqual(list(streaming.sentences([])), [])
 
