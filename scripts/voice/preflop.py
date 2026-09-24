@@ -32,8 +32,12 @@ POSITION_WORDS = {
     # ตัวถอดเสียงเคยเขียน cutoff เป็นคำไทยที่เสียงใกล้กัน
     "บัตรทอด": "CO", "คัทอ๊อฟ": "CO", "คัตอ๊อฟ": "CO",
     "btn": "BTN", "button": "BTN", "ปุ่ม": "BTN", "บัตตัน": "BTN",
+    "dealer": "BTN", "ดีลเลอร์": "BTN",
     "sb": "SB", "smallblind": "SB", "สมอลบลายด์": "SB",
     "bb": "BB", "bigblind": "BB", "บิ๊กบลายด์": "BB",
+    # ตัวถอดเสียงเขียนบิ๊กบลายด์ที่หมายถึงที่นั่งเป็นบิ๊กบายบ่อยมาก สแตกอย่าง 25 บิ๊กบาย ถูกตัดออกไปก่อนแล้ว
+    "บิ๊กบาย": "BB", "บิกบาย": "BB", "บิ๊กบลาย": "BB",
+    "สมอลบาย": "SB", "สมอลบลาย": "SB",
 }
 SCENARIO_WORDS = (
     ("6-Bet", ("6-bet", "6bet", "six bet", "หกเบ็ท")),
@@ -141,6 +145,11 @@ def _roles(text: str, found: list[str],
     villain = found[1] if len(found) > 1 else None
     mentions = _mentions(text)
     opener = _seat_doing(text, mentions, _OPENS)
+    # "BB 3-bet ใส่ button" คือ BB จะ 3-bet คนเปิด เรนจ์อยู่ในช่อง raise ของชาร์ต BB เจอการเปิด
+    raiser = _seat_doing(text, mentions, _THREE_BETS)
+    if (opener is None and raiser is not None and scenario == "3-Bet" and len(found) > 1
+            and not _FACING_THREE_BET.search(_squash(text))):
+        return raiser, next(name for name in found if name != raiser), "RFI"
     if len(found) < 2 or opener is None or scenario not in (None, "RFI", "3-Bet"):
         return hero, villain, scenario
     raiser = _seat_doing(text, mentions, _THREE_BETS)
@@ -149,6 +158,16 @@ def _roles(text: str, found: list[str],
     if _FACING_THREE_BET.search(_squash(text)):
         return opener, other, "3-Bet"
     return other, opener, "RFI"
+
+
+def seat_mentions(text: str) -> list[tuple[int, int, str]]:
+    """ทุกจุดที่พูดถึงตำแหน่งในข้อความที่ผ่าน normalize_seats แล้ว"""
+    return _mentions(text)
+
+
+def normalize_seats(text: str) -> str:
+    """ตัวพิมพ์เล็กและรวม big blind เป็นคำเดียว ตำแหน่งที่ seat_mentions คืนอิงข้อความนี้"""
+    return _spaced_blinds(text.lower())
 
 
 def _squash(text: str) -> str:
@@ -245,16 +264,26 @@ def _shares(shares: dict) -> str:
         shares.items(), key=lambda item: -item[1]))
 
 
-def hand_answers(book: dict, chart: dict, hands: list[str]) -> list[str]:
+# คำที่ใช้บนจอ แยกตามภาษาของผู้ถาม ชื่อ action เป็นอังกฤษทั้งสองภาษาเพราะคนเล่นไทยพูดแบบนี้
+WORDS = {
+    "TH": {"none": "ไม่อยู่ในเรนจ์", "mixed": "เล่นผสม", "page": "หน้า", "vs": "เจอ",
+           "tournament": "ทัวร์นาเมนต์", "cash": "cash game"},
+    "EN": {"none": "not in range", "mixed": "mixed", "page": "page", "vs": "vs",
+           "tournament": "tournament", "cash": "cash game"},
+}
+
+
+def hand_answers(book: dict, chart: dict, hands: list[str], lang: str = "TH") -> list[str]:
     """คำตอบของแต่ละมือที่ถาม อ่านจากช่องในตารางตรง ๆ ไม่ต้องให้โมเดลไล่ช่วงเอง"""
+    words = WORDS[lang]
     codes = dict(zip(book["hand_order"], chart["actions"]))
     mixed = chart.get("mixed", {})
     lines = []
     for hand in hands:
         action = CODE_ACTIONS.get(codes.get(hand, "-"), "none")
-        answer = "ไม่อยู่ในเรนจ์" if action == "none" else action
+        answer = words["none"] if action == "none" else action
         if hand in mixed:
-            answer = f"{answer} (เล่นผสม {_shares(mixed[hand])})"
+            answer = f"{answer} ({words['mixed']} {_shares(mixed[hand])})"
         lines.append(f"{hand} = {answer}")
     return lines
 
@@ -375,10 +404,11 @@ def mixed_note(chart: dict) -> str:
     return ", ".join(notes)
 
 
-def describe(book: dict, chart: dict) -> str:
+def describe(book: dict, chart: dict, lang: str = "TH") -> str:
     """ชื่อสถานการณ์ของชาร์ตแบบอ่านออกเสียงได้"""
-    facing = f" เจอ {chart['villain']}" if chart.get("villain") else ""
-    game = "ทัวร์นาเมนต์" if book["game"] == "tournament" else "cash game"
+    words = WORDS[lang]
+    facing = f" {words['vs']} {chart['villain']}" if chart.get("villain") else ""
+    game = words["tournament"] if book["game"] == "tournament" else words["cash"]
     return f"{chart['hero']}{facing} · {chart['scenario']} · {chart['stack']} BB ({game})"
 
 

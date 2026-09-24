@@ -75,10 +75,10 @@ def tail_fit(text: str, width: int) -> str:
     return ELLIPSIS + "".join(reversed(kept))
 
 
-def render(levels, heard: str, columns: int, color: bool = True) -> str:
+def render(levels, heard: str, columns: int, color: bool = True, label: str = LABEL) -> str:
     """บรรทัดคลื่นหนึ่งบรรทัด: ป้าย คลื่น แล้วคำที่ถอดได้ระหว่างพูด"""
     wave = "".join(bar(level) for level in levels).rjust(WAVE_WIDTH)
-    lead = f"  {LABEL}  "
+    lead = f"  {label}  "
     room = columns - display_width(lead) - WAVE_WIDTH - 2
     words = tail_fit(heard, room) if heard else ""
     if not color:
@@ -109,7 +109,8 @@ class Meter:
     ถ้า stdout ไม่ใช่เทอร์มินัล เช่นส่งต่อเข้าไฟล์ จะไม่ทำอะไรเลย
     """
 
-    def __init__(self, stream=None, clock=time.monotonic) -> None:
+    def __init__(self, stream=None, clock=time.monotonic, label: str = LABEL) -> None:
+        self._label = label
         self._stream = stream if stream is not None else sys.stdout
         self._clock = clock
         self._levels: collections.deque = collections.deque(maxlen=WAVE_WIDTH)
@@ -159,7 +160,7 @@ class Meter:
                 self._stream.flush()
                 return
             columns = shutil.get_terminal_size((80, 24)).columns
-            line = render(tuple(self._levels), self._heard, columns)
+            line = render(tuple(self._levels), self._heard, columns, label=self._label)
             self._stream.write(CLEAR + line)
             self._stream.flush()
             self._drawn = True
