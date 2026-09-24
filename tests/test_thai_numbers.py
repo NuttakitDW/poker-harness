@@ -6,7 +6,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "voice"))
-from thai_numbers import normalize_numbers  # noqa: E402
+from thai_numbers import normalize_numbers, to_words  # noqa: E402
 
 
 class SpokenNumberTests(unittest.TestCase):
@@ -42,6 +42,19 @@ class SpokenNumberTests(unittest.TestCase):
 
     def test_thai_words_that_merely_look_numeric_are_left_alone(self):
         self.assertEqual(normalize_numbers("flop แห้ง"), "flop แห้ง")
+
+
+class WrittenOutTests(unittest.TestCase):
+    def test_numbers_are_written_the_way_thai_people_say_them(self):
+        cases = {"0": "ศูนย์", "1": "หนึ่ง", "10": "สิบ", "11": "สิบเอ็ด", "21": "ยี่สิบเอ็ด",
+                 "40": "สี่สิบ", "101": "หนึ่งร้อยเอ็ด", "2500": "สองพันห้าร้อย",
+                 "1000000": "หนึ่งล้าน", "2.5": "สองจุดห้า", "0.25": "ศูนย์จุดสองห้า"}
+        for digits, words in cases.items():
+            self.assertEqual(to_words(digits), words, digits)
+
+    def test_written_words_read_back_to_the_same_number(self):
+        for number in ("7", "15", "99", "150", "12345", "2.5"):
+            self.assertEqual(normalize_numbers(to_words(number)), number)
 
 
 class ScoringIntegrationTests(unittest.TestCase):

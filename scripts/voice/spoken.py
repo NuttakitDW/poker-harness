@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 
 from loanwords import prefer_english
+from thai_numbers import to_words
 
 _LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _CODE_FENCE = re.compile(r"```.*?```", re.DOTALL)
@@ -48,6 +49,21 @@ _PAIR_UP = re.compile(r"(?<![A-Za-z0-9])([AKQJT2-9])\1\+(?![A-Za-z0-9])")
 # ช่วงของมืออย่าง ATo-A8o หลังแปลงแล้วเหลือขีดคั่น ต้องอ่านว่า "ถึง"
 _COMBO_RANGE = re.compile(r"(suited|offsuit) -")
 COMBO_SHAPES = {"s": "suited", "o": "offsuit"}
+
+# เครื่องอ่านออกเสียงอ่านเลขอารบิกเป็นภาษาอังกฤษบ้างเพี้ยนบ้าง จึงเขียนทุกจำนวนเป็นคำไทยก่อนส่ง
+# เลขที่ติดตัวอักษรอังกฤษเป็นชื่อเฉพาะอย่าง PLO8 หรือ v2 ปล่อยไว้ ยกเว้นหน่วย bb และ k
+_UNIT_GLUED = re.compile(r"(\d)(?=bb(?![a-z]))", re.IGNORECASE)
+_THOUSANDS = re.compile(r"(?<![A-Za-z\d.])(\d+(?:\.\d+)?)\s?k(?![a-z])", re.IGNORECASE)
+_NUMBER = re.compile(r"(?<![A-Za-z\d.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![A-Za-z\d])"
+                     r"|(?<![A-Za-z\d.,])\d+(?:\.\d+)?(?![A-Za-z\d])")
+# 3-bet 4-bet คนเล่นพูดเป็นอังกฤษทั้งคำ
+_N_BET = re.compile(r"(?<![\w.])([2-6])\s*-?\s*bet", re.IGNORECASE)
+BET_NAMES = {"2": "two", "3": "three", "4": "four", "5": "five", "6": "six"}
+# เลขซ้ำสองหลักอย่าง 33 คือไพ่คู่ ถ้าไม่มีหน่วยตามหลัง เช่น 33 เปอร์เซ็นต์ หรือ 55 ดอลลาร์
+_POCKET_PAIR = re.compile(
+    r"(?<![A-Za-z\d.,])([2-9])\1(?![A-Za-z\d.,%])"
+    r"(?!\s*(?:เปอร์เซ็นต์|dollar|ดอลลาร์|บาท|bb|big|k\b|คน|ครั้ง|ปี|วัน|นาที|ชั่วโมง|เดือน|มือ|รอบ|ที่|ใบ|%))",
+    re.IGNORECASE)
 
 CURRENCY = re.compile(r"\$\s*(\d[\d,]*(?:\.\d+)?)")
 
@@ -119,8 +135,24 @@ def _expand_symbols(text: str) -> str:
     return text
 
 
+def _times_thousand(number: str) -> str:
+    """5k เป็น 5000 และ 1.5k เป็น 1500 คิดแบบทศนิยมตรงตัวเพื่อไม่ให้ปัดเศษเพี้ยน"""
+    whole, _, fraction = number.partition(".")
+    return str(int(whole + fraction.ljust(3, "0")[:3]))
+
+
+def _numbers_in_thai(text: str) -> str:
+    """เขียนไพ่คู่เป็นชื่อไพ่ แล้วเขียนจำนวนที่เหลือทั้งหมดเป็นคำไทย"""
+    text = _N_BET.sub(lambda m: f"{BET_NAMES[m.group(1)]}-bet", text)
+    text = _POCKET_PAIR.sub(lambda m: f" {to_words(m.group(1))} {to_words(m.group(1))} ", text)
+    text = _THOUSANDS.sub(lambda m: f" {to_words(_times_thousand(m.group(1)))} ", text)
+    text = _UNIT_GLUED.sub(r"\1 ", text)
+    return _NUMBER.sub(lambda m: f" {to_words(m.group(0).replace(',', ''))} ", text)
+
+
 def to_speech(text: str) -> str:
     """ข้อความพร้อมส่งเข้า TTS"""
     cleaned = prefer_english(_expand_symbols(_expand_cards(_strip_markdown(text))))
+    cleaned = _numbers_in_thai(cleaned)
     cleaned = _BLANKS.sub(" ", cleaned).replace("\n", " ")
     return _SPACES.sub(" ", cleaned).strip()

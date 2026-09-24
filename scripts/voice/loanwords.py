@@ -13,9 +13,9 @@ import re
 
 SPOKEN_IN_ENGLISH = {
     # ชื่อเกมและรูปแบบการเล่น
-    "โป๊กเกอร์": "poker",
-    "โปกเกอร์": "poker",
-    "โพกเกอร์": "poker",
+    "โป๊กเกอร์": "Poker",
+    "โปกเกอร์": "Poker",
+    "โพกเกอร์": "Poker",
     "ทัวร์นาเมนต์": "tournament",
     "ทัวร์นาเม้นท์": "tournament",
     "ทัวร์นาเมนท์": "tournament",
@@ -65,6 +65,9 @@ SPOKEN_IN_ENGLISH = {
     "บอร์ด": "board",
     "แวลู": "value",
     "สแตก": "stack",
+    "สเตก": "stakes",
+    "สเต็ก": "stakes",
+    "สเตค": "stakes",
     "แบงค์โรล": "bankroll",
     "แบงก์โรล": "bankroll",
     "บับเบิล": "bubble",

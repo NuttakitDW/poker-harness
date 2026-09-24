@@ -81,3 +81,40 @@ def normalize_numbers(text: str) -> str:
             out.append(text[index])
             index += 1
     return "".join(out)
+
+
+_DIGIT_WORDS = ("ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า")
+_PLACE_WORDS = ("", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน")
+
+
+def _below_million(number: int) -> str:
+    """อ่านจำนวนไม่เกินหกหลัก ใช้ยี่สิบและเอ็ดตามแบบที่คนไทยพูด"""
+    digits = [int(d) for d in reversed(str(number))]
+    words = []
+    for place, digit in reversed(list(enumerate(digits))):
+        if digit == 0:
+            continue
+        if place == 1 and digit == 1:
+            words.append("สิบ")
+        elif place == 1 and digit == 2:
+            words.append("ยี่สิบ")
+        elif place == 0 and digit == 1 and number >= 10:
+            words.append("เอ็ด")
+        else:
+            words.append(_DIGIT_WORDS[digit] + _PLACE_WORDS[place])
+    return "".join(words)
+
+
+def to_words(text: str) -> str:
+    """เขียนตัวเลขอย่าง 100 หรือ 2.5 เป็นคำอ่านไทย ทศนิยมอ่านทีละหลักหลังคำว่าจุด"""
+    whole, _, fraction = text.partition(".")
+    number = int(whole)
+    if number == 0:
+        spoken = _DIGIT_WORDS[0]
+    else:
+        millions, rest = divmod(number, 1_000_000)
+        spoken = (to_words(str(millions)) + MILLION if millions else "") + (
+            _below_million(rest) if rest else "")
+    if fraction:
+        spoken += POINT + "".join(_DIGIT_WORDS[int(d)] for d in fraction)
+    return spoken
