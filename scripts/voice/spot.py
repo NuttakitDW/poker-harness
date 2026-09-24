@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import dataclasses
+import math
 import re
 from typing import Callable
 
@@ -21,16 +22,17 @@ DEFAULT_STACK = {"cash": 100, "tournament": 30, None: 100}
 # ตัวคูณความมั่นใจเมื่อสิ่งที่ถามไม่ตรงกับตารางที่มี
 SCENARIO_MISS = 0.5
 VILLAIN_MISS = 0.6
-# ถามแค่ตำแหน่งเดียว แต่ตารางที่ได้เป็นฝั่งเจอคนเปิด
-EXTRA_VILLAIN = 0.8
+# ถามแค่ตำแหน่งเดียว แต่ตารางที่ได้เป็นฝั่งเจอคนเปิด ซึ่งเป็นคนละการตัดสินใจกับการเปิดเอง
+# ต้องหนักกว่าพื้นของสแตกที่ห่าง เคยถาม SB เปิด 10BB แล้วได้ SB เจอ UTG 12BB แทน SB เปิด 20BB
+EXTRA_VILLAIN = 0.35
 STACK_UNSTATED = 0.85
 GAME_UNSTATED = 0.95
 # ประเภทเกมที่พูดไว้ตาก่อนเป็นแค่ความชอบ ไม่ใช่ตัวกรอง cash มีแค่ 100/200BB
 # ถ้ายึดไว้ ถามต่อว่า 40BB ก็ได้ 100BB กลับมาตลอด จึงยอมข้ามไปอีกเกมแต่หักคะแนนเท่านี้
 GAME_SWITCH = 0.8
-# สแตกห่างจากที่ถามทุก 100% ของสแตก หักความมั่นใจเท่านี้ แต่ไม่ต่ำกว่าพื้น
-STACK_GAP_WEIGHT = 0.6
-STACK_GAP_FLOOR = 0.4
+# หักตามระยะห่างแบบอัตราส่วนใน stack_gap ห่างเท่าตัว (10 กับ 20) หักราว 35% แต่ไม่ต่ำกว่าพื้น
+STACK_GAP_WEIGHT = 0.5
+STACK_GAP_FLOOR = 0.25
 # ตัวอ่านหลักกับ SystemOne เห็นตรงกัน ไม่ตรงกัน หรือไม่ได้ถาม SystemOne
 AI_AGREES = 1.0
 AI_DISAGREES = 0.75
@@ -161,6 +163,14 @@ def _agreement(prompt: str, request: preflop.Request, guess: HeroGuess | None,
     return request.hero, AI_DISAGREES, [words["ai_disagrees"].format(seat=guess[0])]
 
 
+def stack_gap(have: int, wanted: int) -> float:
+    """ระยะห่างของสแตกแบบอัตราส่วน 10 กับ 20 ห่างเท่า 50 กับ 100 คือเท่าตัว
+
+    วัดแบบลบกันตรง ๆ แล้ว 10BB ห่างจาก 20BB กับ 80BB พอ ๆ กันจนชนพื้นทั้งคู่
+    """
+    return abs(math.log(have / wanted))
+
+
 def _fit(book: dict, chart: dict, request: preflop.Request, scenario: str,
          lang: str) -> tuple[float, list[str]]:
     """ตารางนี้ตรงกับที่ถามแค่ไหน คืน (ตัวคูณ, หมายเหตุ)
@@ -182,13 +192,13 @@ def _fit(book: dict, chart: dict, request: preflop.Request, scenario: str,
         score *= EXTRA_VILLAIN
         notes.append(words["extra_villain"].format(used=villain))
     if request.stack:
-        gap = abs(chart["stack"] - request.stack) / request.stack
+        gap = stack_gap(chart["stack"], request.stack)
         if gap:
             score *= max(STACK_GAP_FLOOR, 1 - STACK_GAP_WEIGHT * gap)
             notes.append(words["stack"].format(asked=request.stack, used=chart["stack"]))
     else:
         wanted = DEFAULT_STACK[request.game]
-        gap = abs(chart["stack"] - wanted) / wanted
+        gap = stack_gap(chart["stack"], wanted)
         score *= STACK_UNSTATED * max(STACK_GAP_FLOOR, 1 - STACK_GAP_WEIGHT * gap)
         notes.append(words["stack_default"].format(used=chart["stack"]))
     game_name = preflop.WORDS[lang][book["game"]]
@@ -269,7 +279,9 @@ def lookup(prompt: str, classify: Classifier | None = systemone_hero,
             if chart["hero"] != hero:
                 continue
             score, notes = _fit(book, chart, request, scenario, lang)
-            rank = (-score, chart["page"])
+            # คะแนนเท่ากันเพราะชนพื้น ให้สแตกที่ใกล้กว่าชนะ ไม่ใช่เลขหน้า
+            wanted = request.stack or DEFAULT_STACK[request.game]
+            rank = (-score, stack_gap(chart["stack"], wanted), chart["page"])
             if best is None or rank < best[0]:
                 best = (rank, book, chart, score, notes)
     if best is None:

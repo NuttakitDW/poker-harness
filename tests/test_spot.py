@@ -149,6 +149,12 @@ class MemoryTests(SpotTestCase):
         found = self.ask("BB เจอ button 30bb tournament", "UTG เปิด", "BB เจอ button 100bb")
         self.assertEqual(found.book["game"], "cash")
 
+    def test_an_open_chart_at_another_stack_beats_facing_an_open(self):
+        self.use_books(book([chart(hero="SB", villain="UTG", stack=12, page=82),
+                             chart(hero="SB", stack=20, page=40)]))
+        found = self.ask("ขอ 10 Big blind ตำแหน่ง Small blind raise first in ทัวร์นาเมนต์")
+        self.assertEqual((found.chart.get("villain"), found.chart["stack"]), (None, 20))
+
     def test_small_talk_does_not_redraw_the_remembered_chart(self):
         first = self.ask("BB เจอ button 25bb")
         self.assertIsNone(spot.lookup("ฮัลโหล ได้ยินไหมครับ", classify=agrees("BTN", 0.9),
