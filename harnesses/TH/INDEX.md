@@ -40,3 +40,4 @@
 - [PLO มือเริ่มต้นและการตัดสินใจ preflop](topics/25-plo-starting-hands.md)
 - [PLO สถานการณ์หลัง flop](topics/26-plo-postflop-situations.md)
 - [PLO Hi/Lo แบ่ง pot สูงต่ำ](topics/27-plo-hi-lo.md)
+- [Staking การขายหุ้นและการหาคนแบ็ก](topics/28-staking-and-selling-action.md)

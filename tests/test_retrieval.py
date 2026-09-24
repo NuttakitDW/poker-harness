@@ -95,6 +95,13 @@ class RoutingTests(unittest.TestCase):
                 self.assertTrue(topics)
                 self.assertTrue(pages)
 
+    def test_selling_shares_finds_the_staking_card(self):
+        for question in ("ก็เดี๋ยวขายหุ้นเอา", "หมายถึงขายหุ้น staking ให้คนอื่นซื้อหุ้นเราไง",
+                         "makeup คืออะไร"):
+            with self.subTest(question=question):
+                _, topics, _ = brain.gather(question)
+                self.assertEqual(topics[0], "TH/28-staking-and-selling-action")
+
     def test_ambiguous_name_context_asks_to_identify_person(self):
         context, topics, _ = brain.gather("พิปป๊อปนาทีคือใคร")
         self.assertIn("TH/22-poker-players-and-thailand", topics)

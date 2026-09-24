@@ -40,3 +40,4 @@ PokerCoaching cheat sheets: [cash game](guides/pokercoaching-cash-game-cheat-she
 - [PLO starting hands and preflop decisions](topics/25-plo-starting-hands.md)
 - [PLO post-flop situations](topics/26-plo-postflop-situations.md)
 - [PLO hi/lo split](topics/27-plo-hi-lo.md)
+- [Staking, backing and selling action](topics/28-staking-and-selling-action.md)
