@@ -229,6 +229,8 @@ class ToolCallStreamTests(MemoIsolation):
         with mock.patch.object(brain, "_open_stream", side_effect=replies), \
                 mock.patch.object(brain, "_charge"), mock.patch.object(tools, "_log"):
             spoken = "".join(brain.stream_model("q", "", "key"))
+        # ตัวคั่นส่วนพูดต้องมีครั้งเดียว ไม่งั้นคำว่า "ตอบ:" จะถูกอ่านออกเสียง
+        self.assertEqual(spoken.count(brain.SAY_MARKER), 1)
         self.assertIn(brain.TOOL_LEAK_REPLY, spoken.split(brain.SAY_MARKER)[-1])
 
     def test_standard_kicker_spans_are_read(self):

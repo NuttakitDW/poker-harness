@@ -355,12 +355,12 @@ def stream_model(question: str, context: str, key: str,
     for round_ in range(MAX_TOOL_ROUNDS + 1):
         calls: dict[int, dict] = {}
         last = round_ == MAX_TOOL_ROUNDS
-        said = yield from _stream_round(question, context, key, history, reasoning, note,
+        said, marked = yield from _stream_round(question, context, key, history, reasoning, note,
                                         extra, not last, calls)
         if not calls:
             # เรียกเครื่องมือพลาดจนหมดสิทธิ์ โมเดลมักตอบว่างเปล่า ปล่อยไว้ผู้ใช้จะได้แต่ความเงียบ
             if last and extra and not said:
-                yield f"\n{SAY_MARKER} {TOOL_LEAK_REPLY}"
+                yield f" {TOOL_LEAK_REPLY}" if marked else f"\n{SAY_MARKER} {TOOL_LEAK_REPLY}"
             return
         ordered = [calls[index] for index in sorted(calls)]
         extra = (*extra, {"role": "assistant", "content": "", "tool_calls": [
@@ -386,7 +386,7 @@ def _stream_round(question: str, context: str, key: str,
                   history: "Conversation | None", reasoning: bool, note: str,
                   extra: tuple[dict, ...], allow_tools: bool,
                   calls: dict[int, dict]):
-    """หนึ่งคำขอไปยังโมเดล คำขอเรียกเครื่องมือถูกเก็บลง calls คืนจำนวนตัวอักษรในส่วนพูด
+    """หนึ่งคำขอไปยังโมเดล คำขอเรียกเครื่องมือถูกเก็บลง calls คืนจำนวนตัวอักษรในส่วนพูด กับว่าส่งตัวคั่นส่วนพูดไปแล้วหรือยัง
 
     ชิ้นข้อความถูกกักไว้จนเห็นตัวคั่นส่วนพูด ส่วนคิดถูกกักอยู่แล้วที่ปลายทาง
     จึงไม่ช้าลง และถ้าโมเดลขอเรียกเครื่องมือก่อนถึงส่วนพูดก็ทิ้งได้ทั้งก้อน
@@ -452,7 +452,7 @@ def _stream_round(question: str, context: str, key: str,
                            build_messages(question, context, history, reasoning, note))
         prompt_chars += sum(len(json.dumps(message, ensure_ascii=False)) for message in extra)
         _charge(usage, prompt_chars, answer_chars, time.perf_counter() - started)
-    return said
+    return said, speaking or leaked
 
 
 def chart_question(question: str, history: Conversation | None) -> str:
