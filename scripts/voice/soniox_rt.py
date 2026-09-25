@@ -38,7 +38,7 @@ class Result(NamedTuple):
     audio_seconds: float | None
 
 
-def _config(key: str) -> dict:
+def _config(key: str, context: str = "general") -> dict:
     """คำสั่งเปิดสาย ใส่ศัพท์เฉพาะและคำใบ้ภาษาไปพร้อมกัน"""
     return {
         "api_key": key,
@@ -47,7 +47,7 @@ def _config(key: str) -> dict:
         "sample_rate": SAMPLE_RATE,
         "num_channels": 1,
         "language_hints": list(soniox_api.LANGUAGE_HINTS),
-        "context": soniox_api.transcription_context(),
+        "context": soniox_api.transcription_context(context),
         "enable_endpoint_detection": True,
     }
 
@@ -179,10 +179,11 @@ class LiveListener:
     """
 
     def __init__(self, key: str, device: int | None = None, echo_cancel: bool = False,
-                 source=None, meter=None) -> None:
+                 source=None, meter=None, context: str = "general") -> None:
         import listen
 
         self._key = key
+        self._context = context
         self._meter = meter
         self._listen = listen
         self._source = source if source is not None else listen.frames(
@@ -228,7 +229,7 @@ class LiveListener:
         try:
             with connect(WEBSOCKET_URL, user_agent_header=soniox_api.USER_AGENT,
                          open_timeout=TIMEOUT_SECONDS, ping_interval=None) as socket:
-                socket.send(json.dumps(_config(self._key)))
+                socket.send(json.dumps(_config(self._key, self._context)))
                 threading.Thread(target=self._send_audio, args=(socket,), daemon=True).start()
                 while True:
                     message = json.loads(socket.recv())

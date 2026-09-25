@@ -205,8 +205,10 @@ class Session:
 
             # คลื่นเสียงแบบเดียวกับลูกชุบ ให้เห็นว่าไมค์ได้ยินอยู่ ตอนโหมดพิมพ์ไมค์ปิดหู คลื่นจึงหายเอง
             self._meter = meter.Meter(label=METER_LABEL)
+            # context แบบ spot ให้ตัวถอดเสียงเขียนชื่อตำแหน่งเป็นอังกฤษ ตัวอ่านจะได้อ่านออก
             self._listener = soniox_rt.LiveListener(soniox_api.load_api_key(),
-                                                    device=self._device, meter=self._meter)
+                                                    device=self._device, meter=self._meter,
+                                                    context="spot")
             if not self._listener.wait_ready(AUDIO_START_TIMEOUT):
                 print("เสียงเข้าไม่เริ่มไหล ตรวจสิทธิ์ไมโครโฟน", file=sys.stderr)
                 self._listener = None

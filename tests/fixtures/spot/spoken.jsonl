@@ -1,0 +1,15 @@
+{"id": "01", "spoken": "บัตตัน ออลอิน สิบบิ๊กบลายด์ สมอลบลายด์คอลด้วยอะไร", "source": "paxa-tts", "expected": {"hero": "SB", "stack": 10, "shovers": ["BTN"]}}
+{"id": "02", "spoken": "อยู่ยูทีจี เหลือแปดบิ๊กบลายด์ ควรดันไหม", "source": "paxa-tts", "expected": {"hero": "UTG", "stack": 8, "shovers": []}}
+{"id": "03", "spoken": "คัทออฟแจมมาสิบห้าบิ๊กบลายด์ เราอยู่บิ๊กบลายด์", "source": "paxa-tts", "expected": {"hero": "BB", "stack": 15, "shovers": ["CO"]}}
+{"id": "04", "spoken": "ไฮแจ็คออลอิน บัตตันคอล เราอยู่สมอลบลายด์ ห้าบิ๊กบลายด์", "source": "paxa-tts", "expected": {"hero": "SB", "stack": 5, "shovers": ["BTN", "HJ"]}}
+{"id": "05", "spoken": "เฮดส์อัพ บัตตัน หกบิ๊กบลายด์ ถือแจ็คทูออฟ", "source": "paxa-tts", "expected": {"hero": "BTN", "stack": 6, "players": 2, "hands": ["J2o"]}}
+{"id": "06", "spoken": "บิ๊กบลายด์ เจอสมอลบลายด์ออลอิน เจ็ดจุดห้าบิ๊กบลายด์", "source": "paxa-tts", "expected": {"hero": "BB", "stack": 7.5, "shovers": ["SB"]}}
+{"id": "07", "spoken": "ถือเอซไฟว์ออฟสูท อยู่บัตตันสิบสองบิ๊กบลายด์", "source": "paxa-tts", "expected": {"hero": "BTN", "stack": 12, "hands": ["A5o"]}}
+{"id": "08", "spoken": "ยูทีจีแจม สิบบิ๊กบลายด์ บิ๊กบลายด์ควรคอลด้วยคิงควีนไหม", "source": "paxa-tts", "expected": {"hero": "BB", "stack": 10, "shovers": ["UTG"], "hands": ["KQs", "KQo"]}}
+{"id": "09", "spoken": "โลแจ็คออลอินเก้าบิ๊กบลายด์ บัตตันทำไง", "source": "paxa-tts", "expected": {"hero": "BTN", "stack": 9, "shovers": ["LJ"]}}
+{"id": "10", "spoken": "สมอลบลายด์ ดันสี่บิ๊กบลายด์ได้ไหม บีบีแอนตี้", "source": "paxa-tts", "expected": {"hero": "SB", "stack": 4, "ante_mode": "bb"}}
+{"id": "11", "spoken": "คัทออฟเหลือสิบเอ็ดบิ๊กบลายด์ ควรแจมด้วยควีนเท็นออฟไหม", "source": "paxa-tts", "expected": {"hero": "CO", "stack": 11, "hands": ["QTo"]}}
+{"id": "12", "spoken": "บัตตันยัดหมดสิบสามบิ๊กบลายด์ เราอยู่บิ๊กบลายด์ คอลอะไรได้บ้าง", "source": "paxa-tts", "expected": {"hero": "BB", "stack": 13, "shovers": ["BTN"]}}
+{"id": "13", "spoken": "ยูทีจีบวกหนึ่ง ออลอิน สิบบิ๊กบลายด์ เราอยู่คัทออฟ", "source": "paxa-tts", "expected": {"hero": "CO", "stack": 10, "shovers": ["UTG+1"]}}
+{"id": "14", "spoken": "หกแม็กซ์ บัตตันเจ็ดบิ๊กบลายด์ แจมได้ไหม", "source": "paxa-tts", "expected": {"hero": "BTN", "stack": 7, "players": 6}}
+{"id": "15", "spoken": "ตัวต่อตัว เราอยู่บิ๊กบลายด์ อีกฝั่งออลอินแปดบิ๊กบลายด์", "source": "paxa-tts", "expected": {"hero": "BB", "stack": 8, "shovers": ["SB"], "players": 2}}

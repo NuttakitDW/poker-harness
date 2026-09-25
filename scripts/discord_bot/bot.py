@@ -205,7 +205,8 @@ class Bridge(discord.Client):
             async with message.channel.typing():
                 data = await audio.read()
                 result = await asyncio.to_thread(soniox_api.transcribe_bytes, data,
-                                                 soniox_api.load_api_key(), audio.filename)
+                                                 soniox_api.load_api_key(), audio.filename,
+                                                 "spot")
         except Exception:  # noqa: BLE001 ถอดเสียงพังก็ต้องตอบ ไม่ใช่เงียบหาย
             traceback.print_exc()
             self._log(message, "", "voice", "not_heard", audio=audio.filename)

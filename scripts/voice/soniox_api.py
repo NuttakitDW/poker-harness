@@ -59,11 +59,22 @@ def load_api_key() -> str:
     return keys.require("SONIOX_API", "SONIOX_API_KEY")
 
 
-def transcription_context() -> dict:
-    """บอกโมเดลว่ากำลังฟังเรื่องอะไรและคาดว่าจะเจอศัพท์ตัวไหน
+# ศัพท์ของ spot chart ที่ต้องได้เป็นตัวสะกดอังกฤษ ไม่ใช่คำไทยตามเสียงอย่าง บัตท่อน สมอลไบล์
+SPOT_TERMS = (
+    "UTG", "UTG+1", "Lojack", "Hijack", "Cutoff", "Button", "Small blind", "Big blind",
+    "BB", "SB", "all-in", "jam", "shove", "call", "fold", "push/fold", "heads-up", "6-max",
+    "BB ante", "ante", "offsuit", "suited", "Ace", "King", "Queen", "Jack", "Ten",
+)
+# ตัวอย่างประโยคถาม spot ที่เขียนแบบที่ตัวอ่าน regex อ่านออก ให้ตัวถอดเสียงเห็นรูปแบบที่ต้องการ
+SPOT_TEXT = ("Thai poker players ask push/fold questions mixing Thai and English. "
+             "Write seat names, actions and cards in English and numbers as digits, e.g. "
+             "Button all-in 10 big blinds, Small blind call ด้วยอะไร; "
+             "Cutoff jam 15 big blinds เราอยู่ Big blind; "
+             "UTG all-in แล้ว Button call เราอยู่ Small blind 5 big blinds; "
+             "ถือ Jack 2 offsuit; ถือ Ace King suited; heads-up; BB ante.")
 
-    ศัพท์จาก glossary เดียวกับที่ป้อนให้ Whisper เติมชื่อตำแหน่งและคำเรียกมือที่ใช้ถามชาร์ต
-    """
+
+def _base_context() -> dict:
     return {
         "general": [
             {"key": "domain", "value": DOMAIN},
@@ -71,6 +82,32 @@ def transcription_context() -> dict:
         ],
         "terms": list(lexicon.stream_terms()),
     }
+
+
+def _spot_context() -> dict:
+    """ศัพท์ spot chart ขึ้นก่อน ตามด้วย glossary เดิม และประโยคตัวอย่าง"""
+    base = _base_context()
+    terms = list(dict.fromkeys((*SPOT_TERMS, *base["terms"])))
+    return {**base, "terms": terms, "text": SPOT_TEXT}
+
+
+# general คือ glossary ใช้กับลูกชุบที่ถามได้ทุกเรื่อง spot ใช้กับ make chart และบอท Discord เท่านั้น
+# วัด 2026-09-25: บนคำถาม spot 15 ข้อ (scripts/voice/spot_audio_eval.py) spot อ่านถูกทั้งข้อ
+# 13% -> 40-47% แต่บนคำถามทั่วไป 10 ข้อ spot ทำให้ CER 0.047 -> 0.108 เพราะดึงศัพท์ทั่วไปอย่าง
+# Buy-in ให้กลายเป็นคำไทย จึงแยกใช้ตามงาน ไม่ใช้ spot กับทุกงาน
+CONTEXTS = {
+    "general": _base_context,
+    "spot-terms": lambda: {**_base_context(),
+                           "terms": list(dict.fromkeys((*SPOT_TERMS, *lexicon.stream_terms())))},
+    "spot": _spot_context,
+}
+
+
+def transcription_context(kind: str = "general") -> dict:
+    """บอกโมเดลว่ากำลังฟังเรื่องอะไรและคาดว่าจะเจอศัพท์ตัวไหน kind คือ general หรือ spot"""
+    if kind not in CONTEXTS:
+        raise ValueError(f"ไม่มี context {kind!r} เลือกได้ {sorted(CONTEXTS)}")
+    return CONTEXTS[kind]()
 
 
 def wav_bytes(samples) -> bytes:
@@ -157,7 +194,8 @@ def _discard(path: str, key: str) -> None:
         pass
 
 
-def transcribe_bytes(audio: bytes, key: str, filename: str = "utterance.wav") -> Result:
+def transcribe_bytes(audio: bytes, key: str, filename: str = "utterance.wav",
+                     context: str = "general") -> Result:
     """อัปโหลดเสียงหนึ่งคลิป ถอดเสียง แล้วเก็บกวาดไฟล์กับงานที่ฝากไว้"""
     started = time.perf_counter()
     body, content_type = _multipart(filename, audio)
@@ -171,7 +209,7 @@ def transcribe_bytes(audio: bytes, key: str, filename: str = "utterance.wav") ->
             "model": MODEL,
             "file_id": file_id,
             "language_hints": list(LANGUAGE_HINTS),
-            "context": transcription_context(),
+            "context": transcription_context(context),
         }).get("id", "")
         if not job:
             raise SonioxError("สั่งถอดเสียงแล้วไม่ได้รหัสงานกลับมา")
