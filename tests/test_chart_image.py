@@ -48,5 +48,13 @@ class ChartImageTests(unittest.TestCase):
         self.assertEqual(chart_image.rgb(124), (175, 0, 0))
 
 
+class FontPathTests(unittest.TestCase):
+    def test_defaults_to_the_macos_font(self):
+        self.assertEqual(chart_image.font_path({}), chart_image.FONT_PATH)
+
+    def test_chart_font_overrides_it_on_linux_hosts(self):
+        self.assertEqual(chart_image.font_path({"CHART_FONT": "/fonts/x.ttf"}), "/fonts/x.ttf")
+
+
 if __name__ == "__main__":
     unittest.main()

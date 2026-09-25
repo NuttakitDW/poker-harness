@@ -1,0 +1,21 @@
+# railway up runs with --no-gitignore so the prebuilt caches in tmp/ are uploaded.
+# Everything else ignored here must never leave this machine.
+.env
+.env.*
+.git/
+.venv/
+.venv-voice/
+__pycache__/
+*.pyc
+.DS_Store
+sources/
+bots
+*.zip
+*.pdf
+tests/
+tmp/*
+!tmp/equity.sqlite
+!tmp/equity-tables.npz
+!tmp/pushfold-e2.npz
+!tmp/pushfold-e3.npz
+.ruff_cache/

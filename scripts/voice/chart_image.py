@@ -8,6 +8,7 @@ Discord แสดงสีในข้อความได้แค่ 8 สี
 from __future__ import annotations
 
 import io
+import os
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -32,8 +33,13 @@ def rgb(index: int) -> tuple[int, int, int]:
     return LEVELS[cube // 36], LEVELS[cube // 6 % 6], LEVELS[cube % 6]
 
 
+def font_path(env=os.environ) -> str:
+    """ฟอนต์ที่ใช้วาด เครื่อง Linux ไม่มี Ayuthaya ให้ชี้ฟอนต์ไทยของตัวเองด้วย CHART_FONT"""
+    return env.get("CHART_FONT") or FONT_PATH
+
+
 def _font(size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(FONT_PATH, size)
+    return ImageFont.truetype(font_path(), size)
 
 
 def _grid_top() -> int:

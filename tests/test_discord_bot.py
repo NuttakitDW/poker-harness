@@ -141,5 +141,12 @@ class TerminalCommandTests(unittest.TestCase):
         self.assertEqual(bot.terminal_command("   "), ("skip", ""))
 
 
+class TerminalTests(unittest.TestCase):
+    def test_reads_the_terminal_only_when_there_is_one(self):
+        self.assertTrue(bot.has_terminal(SimpleNamespace(isatty=lambda: True)))
+        self.assertFalse(bot.has_terminal(SimpleNamespace(isatty=lambda: False)))
+        self.assertFalse(bot.has_terminal(None))
+
+
 if __name__ == "__main__":
     unittest.main()

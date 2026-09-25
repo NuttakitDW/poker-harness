@@ -174,7 +174,8 @@ class Bridge(discord.Client):
         print(f"ตามควาย ออนไลน์แล้ว ({self.user}) อยู่ใน {len(self.guilds)} server", flush=True)
         print(f"ลิงก์เชิญบอท: {invite_url(self.application_id)}", flush=True)
         # ต่อใหม่หลังเน็ตหลุดก็เรียก on_ready อีก เปิดตัวอ่านเทอร์มินัลครั้งเดียวพอ
-        if not self._reading:
+        # บนคลาวด์ไม่มีเทอร์มินัล stdin ว่างทันที ถ้าอ่านจะปิดบอทตั้งแต่เริ่ม
+        if not self._reading and has_terminal(sys.stdin):
             self._reading = True
             threading.Thread(target=self._read_terminal, daemon=True).start()
 
@@ -316,6 +317,11 @@ class Bridge(discord.Client):
             print("บอทไม่มีสิทธิ์ส่งข้อความในห้องนี้", flush=True)
         except discord.HTTPException as error:
             print(f"ส่งไม่สำเร็จ: {error}", flush=True)
+
+
+def has_terminal(stream) -> bool:
+    """มีคนนั่งพิมพ์อยู่หน้าเทอร์มินัลหรือไม่ (บน Railway หรือ systemd จะไม่มี)"""
+    return stream is not None and stream.isatty()
 
 
 def main() -> int:
