@@ -23,7 +23,7 @@ import functools
 import numpy as np
 
 from pushfold import cashier, hands, oddsmaker
-from pushfold.floor import IDLE, Tree
+from pushfold.floor import Tree
 
 N = len(hands.CLASSES)
 FIXED, TWO, THREE, SIDE = 0, 1, 2, 3  # what gets multiplied in: nothing, e2, eq3, pw
@@ -74,9 +74,10 @@ def plan(tree: Tree) -> list[SeatPlan]:
         local = {g: i for i, g in enumerate(nodes)}
         rows = []
         for z in tree.terminals:
-            target = -1 if z.actions[seat] == IDLE else local[z.nodes[seat]] * 2 + z.actions[seat]
+            # node -1: the seat made no decision (never got to act, or all-in by posting)
+            target = -1 if z.nodes[seat] < 0 else local[z.nodes[seat]] * 2 + z.actions[seat]
             opp = [j for j in range(tree.spot.n) if j != seat]
-            col = {j: (one if z.actions[j] == IDLE else _column(z, j)) for j in opp}
+            col = {j: (one if z.nodes[j] < 0 else _column(z, j)) for j in opp}
             s = cashier.settle(tree.spot, z.jammers)
             terms = [(FIXED, s.fixed[seat], one, one, ())]
             for layer in s.layers:

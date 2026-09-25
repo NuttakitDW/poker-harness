@@ -2,6 +2,9 @@
 
 Stacks are in big blinds, counted before anything is posted, in preflop action order.
 The last two seats are always SB and BB (heads-up: SB then BB).
+
+A stack too short to cover its ante and blind posts what it has, ante first (the same
+order pokerkit uses), and is all-in by posting: it never acts and always sees the showdown.
 """
 
 from __future__ import annotations
@@ -11,6 +14,7 @@ import math
 
 MIN_PLAYERS, MAX_PLAYERS = 2, 9
 ANTE_MODES = ("each", "bb")
+ALL_IN_EPSILON = 1e-9
 _TAIL = ("LJ", "HJ", "CO", "BTN", "SB", "BB")
 
 
@@ -47,10 +51,6 @@ class Spot:
             raise SpotError(f"ante must be >= 0, got {self.ante}")
         if self.ante_mode not in ANTE_MODES:
             raise SpotError(f"ante_mode must be one of {ANTE_MODES}, got {self.ante_mode!r}")
-        for name, stack, post in zip(self.names, self.stacks, self.posts):
-            if stack <= post:
-                raise SpotError(f"{name} has {stack}bb but must post {post}bb; "
-                                "all-in-by-posting spots are not modelled")
 
     @property
     def n(self) -> int:
@@ -62,13 +62,21 @@ class Spot:
 
     @property
     def blinds(self) -> tuple[float, ...]:
-        return (0.0,) * (self.n - 2) + (self.sb, self.bb)
+        """Blind each seat actually posts: whatever is left after its ante, up to the blind."""
+        due = (0.0,) * (self.n - 2) + (self.sb, self.bb)
+        return tuple(min(blind, stack - ante) for blind, stack, ante in zip(due, self.stacks, self.antes))
 
     @property
     def antes(self) -> tuple[float, ...]:
-        if self.ante_mode == "bb":
-            return (0.0,) * (self.n - 1) + (self.ante,)
-        return (self.ante,) * self.n
+        """Ante each seat actually posts, never more than its stack."""
+        due = ((0.0,) * (self.n - 1) + (self.ante,) if self.ante_mode == "bb"
+               else (self.ante,) * self.n)
+        return tuple(min(ante, stack) for ante, stack in zip(due, self.stacks))
+
+    @property
+    def forced(self) -> tuple[int, ...]:
+        """Seats all-in by posting: nothing left behind, so no decision to make."""
+        return tuple(s for s in range(self.n) if self.stacks[s] - self.posts[s] <= ALL_IN_EPSILON)
 
     @property
     def posts(self) -> tuple[float, ...]:

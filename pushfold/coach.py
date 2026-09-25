@@ -57,7 +57,8 @@ class Result:
 class Library:
     """Solved spots, so a new spot can start from its nearest solved neighbour.
 
-    Neighbours must have the same table size and ante mode (same tree shape).
+    Neighbours must have the same tree shape: table size, ante mode and the same seats
+    all-in by posting (a forced seat has no nodes, so its tree is smaller).
     Distance = sum of stack differences + ante difference, in bb.
     """
 
@@ -72,7 +73,8 @@ class Library:
 
     def nearest(self, spot: Spot) -> Result | None:
         same = [r for r in self._results
-                if r.spot.n == spot.n and r.spot.ante_mode == spot.ante_mode]
+                if r.spot.n == spot.n and r.spot.ante_mode == spot.ante_mode
+                and r.spot.forced == spot.forced]
         if not same:
             return None
         return min(same, key=lambda r: sum(abs(a - b) for a, b in zip(r.spot.stacks, spot.stacks))

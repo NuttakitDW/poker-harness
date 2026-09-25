@@ -24,13 +24,24 @@ class SpotTest(unittest.TestCase):
         bb_ante = Spot((10, 10, 10), ante=1.0, ante_mode="bb")
         self.assertEqual(bb_ante.antes, (0.0, 0.0, 1.0))
 
+    def test_a_short_stack_posts_the_ante_first_then_what_is_left_of_the_blind(self):
+        spot = Spot((10, 10, 1.5), ante=1.0, ante_mode="bb")
+        self.assertEqual(spot.antes, (0.0, 0.0, 1.0))
+        self.assertEqual(spot.blinds, (0.0, 0.5, 0.5))
+        self.assertEqual(spot.forced, (2,))
+
+    def test_a_blind_that_cannot_be_covered_is_all_in(self):
+        self.assertEqual(Spot((10, 0.9)).forced, (1,))
+        self.assertEqual(Spot((0.3, 10)).blinds, (0.3, 1.0))
+        self.assertEqual(Spot((0.3, 10)).forced, (0,))
+        self.assertEqual(Spot((10, 10)).forced, ())
+
     def test_validation(self):
         bad = [
             dict(stacks=(10,)),
             dict(stacks=(10,) * 10),
             dict(stacks=(10, -1)),
             dict(stacks=(10, math.nan)),
-            dict(stacks=(10, 0.9)),                        # BB cannot cover the big blind
             dict(stacks=(10, 10), ante=-0.1),
             dict(stacks=(10, 10), ante_mode="button"),
             dict(stacks=(10, 10), sb=2.0),                 # small blind bigger than big blind
@@ -45,6 +56,27 @@ def expected_terminals(n: int, cap: int = 3) -> int:
 
 
 class FloorTest(unittest.TestCase):
+    def test_a_seat_all_in_by_posting_never_acts_and_is_always_all_in(self):
+        tree = floor.build(Spot((10, 10, 1.5), ante=1.0, ante_mode="bb"))
+        self.assertEqual({n.seat for n in tree.nodes}, {0, 1})
+        self.assertTrue(all(t.actions[2] == floor.JAM for t in tree.terminals))
+        self.assertTrue(any(n.facing for n in tree.nodes if n.seat == 0) is False)
+
+    def test_seats_before_a_forced_small_blind_are_still_first_in(self):
+        tree = floor.build(Spot((10, 0.3, 10)))
+        btn = [n for n in tree.nodes if n.seat == 0]
+        self.assertEqual([n.facing for n in btn], [False])
+        bb = [n for n in tree.nodes if n.seat == 2]
+        self.assertTrue(all(n.facing for n in bb))
+
+    def test_the_forced_seats_count_toward_the_all_in_cap(self):
+        tree = floor.build(Spot((10, 10, 10, 0.3, 1.2)))
+        self.assertTrue(all(len(t.jammers) <= floor.MAX_ALLIN for t in tree.terminals))
+
+    def test_too_many_forced_all_ins_fail_clearly(self):
+        with self.assertRaises(ValueError):
+            floor.build(Spot((0.2,) * 5, ante=0.2))
+
     def test_heads_up_tree(self):
         tree = floor.build(Spot((10, 10)))
         self.assertEqual([(n.seat, n.history) for n in tree.nodes], [(0, ()), (1, (1,))])

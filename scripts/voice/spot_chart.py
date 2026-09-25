@@ -47,6 +47,10 @@ MISSING = {
     "TH": "หา spot ไม่เจอ บอกตำแหน่งด้วย เช่น BB เจอ BTN ออลอิน 10bb",
     "EN": "No spot found. Name a seat, e.g. BB vs BTN shove 10bb",
 }
+ALL_IN_BY_POSTING = {
+    "TH": "ตำแหน่งนี้จ่าย blind กับ ante แล้วหมดตัวพอดี ไม่มีอะไรต้องตัดสินใจ รอดูไพ่ได้เลย",
+    "EN": "That seat is all-in from posting the blind and ante; there is no decision to make",
+}
 PUSH_FOLD_ONLY = {
     "TH": "ตอนนี้ยังไม่มีชาร์ตแบบนี้ หาได้แค่ push/fold ทัวร์นาเมนต์ สแตกไม่เกิน 15bb "
           "หรือบอกว่า push/fold เช่น BTN ออลอิน 10bb",
@@ -79,8 +83,10 @@ Examples  ตอนนี้มีแค่ push/fold ทัวร์นาเ�
   ถามต่อ              ขอ 12bb, เจอ CO แทน  (ใช้ตำแหน่งจากตาก่อน)
 
 Limits
-  สแตก 3-15bb หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
-  ทุกคนสแตกเท่ากัน  BB จ่าย ante 1bb
+  สแตกมากกว่า 0 ถึง 15bb ทศนิยมได้ เช่น 5.5bb  หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
+  สแตกที่บอกคือที่เหลือหลังจ่าย ante  ทุกคนสแตกเท่ากัน
+  ทุกคนจ่าย ante 10% ของ BB  เปลี่ยนได้: ante 12.5%, ante 0.2bb, ไม่มี ante
+  BB จ่าย ante แทนทั้งโต๊ะ: bb ante หรือ live (ค่าเริ่ม 1bb, bb ante 1.5 ก็ได้)
 
 Colours
   แดง shove  เขียว call  น้ำเงิน fold  ยิ่งอ่อนยิ่งเล่นน้อย (เล่นผสม)""",
@@ -107,8 +113,10 @@ Examples  push/fold tournament charts only, chip EV
   follow up           12bb, vs CO instead  (keeps the seats from before)
 
 Limits
-  stacks 3-15bb, or say push/fold; above 15bb is approximate
-  everyone has the same stack; the BB posts a 1bb ante
+  stacks above 0 up to 15bb, decimals fine (5.5bb), or say push/fold; above 15bb is approximate
+  the stack is what is left after the ante; everyone has the same stack
+  everyone antes 10% of the BB; change it: ante 12.5%, ante 0.2bb, no ante
+  big blind ante for the table: bb ante or live (1bb by default, or bb ante 1.5)
 
 Colours
   red shove  green call  blue fold  lighter = mixed, played less often""",
@@ -131,6 +139,8 @@ def reply(prompt: str, classify=spot.systemone_hero, memory=None) -> Reply:
     if found is None:
         return Reply(None, MISSING[spot.language_of(prompt)])
     # ตอบแค่ push/fold ที่แก้สด นอกนั้นบอกว่ายังไม่มี แต่ยังจำตำแหน่งกับสแตกไว้ถามต่อได้
+    if pushfold_chart.applies(found.request) and pushfold_chart.all_in_by_posting(found.request):
+        return Reply(found, ALL_IN_BY_POSTING[found.lang])
     made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None
     if made is None:
         return Reply(found, PUSH_FOLD_ONLY[found.lang])

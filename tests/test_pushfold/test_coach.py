@@ -89,6 +89,22 @@ class ThreeHandedTest(unittest.TestCase):
         self.assertAlmostEqual(float(report.ev.sum()), 0.0, places=8)
 
 
+class AllInByPostingTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.result = coach.solve(Spot((1.5,) * 8, ante=1.0, ante_mode="bb"))
+
+    def test_reaches_the_stop_rule(self):
+        self.assertLess(self.result.exploitability, 0.01)
+
+    def test_zero_sum(self):
+        report = auditor.audit(self.result.tree, self.result.strategy)
+        self.assertAlmostEqual(float(report.ev.sum()), 0.0, places=8)
+
+    def test_everyone_calls_the_forced_big_blind_wider(self):
+        self.assertGreater(self.result.range_pct(0), 0.3)
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -101,6 +117,13 @@ class LibraryTest(unittest.TestCase):
         lib.add(coach.solve(Spot((5, 5))))
         self.assertEqual(lib.nearest(Spot((9, 9.5))).spot.stacks, (10, 10))
         self.assertIsNone(lib.nearest(Spot((10, 10, 10))))
+
+    def test_a_neighbour_with_a_different_tree_is_not_used(self):
+        lib = coach.Library()
+        lib.add(coach.solve(Spot((1.5,) * 3, ante=1.0, ante_mode="bb")))  # BB all-in by posting
+        self.assertIsNone(lib.nearest(Spot((5.5,) * 3, ante=1.0, ante_mode="bb")))
+        again = coach.solve(Spot((5.5,) * 3, ante=1.0, ante_mode="bb"), library=lib)
+        self.assertFalse(again.warm)
 
     def test_solve_with_library_stores_and_warm_starts(self):
         lib = coach.Library()

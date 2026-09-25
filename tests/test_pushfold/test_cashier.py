@@ -1,5 +1,6 @@
 """M4: the Cashier pays out every ending, checked against pokerkit's own side pots."""
 
+import itertools
 import random
 import sys
 import unittest
@@ -48,13 +49,13 @@ class LayerTest(unittest.TestCase):
         rng = np.random.default_rng(5)
         for _ in range(200):
             n = int(rng.integers(2, 10))
-            spot = Spot(tuple(rng.uniform(1.5, 15, n).round(2)), ante=float(rng.choice([0, 0.1, 0.125])))
+            spot = Spot(tuple(rng.uniform(0.2, 15, n).round(2)), ante=float(rng.choice([0, 0.1, 0.125])))
             for t in floor.build(spot).terminals:
                 ranks = {seat: int(rng.integers(0, 3)) for seat in t.alive}
                 self.assertAlmostEqual(float(cashier.settle(spot, t.jammers).net_for(ranks).sum()), 0, places=9)
 
 
-def pokerkit_net(spot_chips, blinds, ante, ante_mode, actions, holes, board):
+def pokerkit_net(spot_chips, blinds, ante, ante_mode, actions, holes, board, forced=()):
     """Play the same all-in sequence in pokerkit, return net chips in our seat order."""
     n = len(spot_chips)
     ours_to_pk = {0: 1, 1: 0} if n == 2 else {**{n - 2: 0, n - 1: 1}, **{p: p + 2 for p in range(n - 2)}}
@@ -69,10 +70,13 @@ def pokerkit_net(spot_chips, blinds, ante, ante_mode, actions, holes, board):
     for i in range(n):
         state.deal_hole("".join(text(c) for c in holes[pk_to_ours[i]]))
     for seat, action in enumerate(actions):
-        if action == floor.IDLE or not state.status or state.actor_index is None:
+        # all-in by posting: pokerkit never gives that seat a turn
+        if action == floor.IDLE or seat in forced or not state.status or state.actor_index is None:
             continue
         assert state.actor_index == ours_to_pk[seat], (state.actor_index, seat)
         if action == floor.FOLD:
+            if not state.can_fold():
+                return None  # nothing to call: pokerkit has no fold here, our tree does (never chosen)
             state.fold()
         elif state.can_complete_bet_or_raise_to():
             state.complete_bet_or_raise_to(state.max_completion_betting_or_raising_to_amount)
@@ -84,6 +88,26 @@ def pokerkit_net(spot_chips, blinds, ante, ante_mode, actions, holes, board):
 
 
 class PokerkitCrossCheck(unittest.TestCase):
+    def test_all_in_for_the_ante_alone_matches_pokerkit_on_every_ending(self):
+        # the BB's whole stack goes on the ante: it can still win the antes, nothing more
+        deals = list(itertools.permutations([(0, 1), (4, 5), (48, 49)]))  # 22, 33, AA
+        board = [8, 13, 22, 27, 39]
+        for chips in ((40, 40), (40, 40, 40), (500, 40, 30), (500, 900, 30)):
+            spot = Spot(tuple(c / 100 for c in chips), ante=1.0, ante_mode="bb")
+            for t in floor.build(spot).terminals:
+                for deal in deals:
+                    holes = list(deal[:len(chips)])
+                    want = pokerkit_net(chips, (50, 100), 100, "bb", t.actions, holes, board, spot.forced)
+                    if want is None:
+                        continue
+                    alive = t.alive
+                    strength = oddsmaker.strength(np.array([holes[s] for s in alive]),
+                                                  np.array([board] * len(alive)))
+                    order = sorted(set(strength.tolist()), reverse=True)
+                    ranks = {seat: order.index(int(v)) + 1 for seat, v in zip(alive, strength)}
+                    got = cashier.settle(spot, t.jammers).net_for(ranks) * 100
+                    np.testing.assert_allclose(got, want, atol=1e-6, err_msg=f"{chips} {t.actions} {deal}")
+
     def test_random_all_ins_match_pokerkit(self):
         rng = random.Random(9)
         checked = 0
@@ -91,9 +115,10 @@ class PokerkitCrossCheck(unittest.TestCase):
             n = rng.randint(2, 7)
             mode = rng.choice(["each", "bb"])
             ante = rng.choice([0, 10, 25]) if mode == "each" else rng.choice([0, 100])
-            chips = tuple(rng.randint(250, 2000) for _ in range(n))
+            # short stacks down to 0.3bb: blinds and antes the player cannot fully cover
+            chips = tuple(rng.randint(30, 2000) for _ in range(n))
             spot = Spot(tuple(c / 100 for c in chips), ante=ante / 100, ante_mode=mode)
-            tree = floor.build(spot, max_allin=n)
+            tree = floor.build(spot, max_allin=max(n, len(spot.forced)))
             terminal = rng.choice(tree.terminals)
             deck = rng.sample(range(52), 2 * n + 5)
             holes = [tuple(deck[2 * i:2 * i + 2]) for i in range(n)]
@@ -104,12 +129,15 @@ class PokerkitCrossCheck(unittest.TestCase):
                                           np.array([board] * len(alive)))
             order = sorted(set(strength.tolist()), reverse=True)
             ranks = {seat: order.index(int(v)) + 1 for seat, v in zip(alive, strength)}
-            want = pokerkit_net(chips, (50, 100), ante, mode, terminal.actions, holes, board)
+            want = pokerkit_net(chips, (50, 100), ante, mode, terminal.actions, holes, board,
+                                spot.forced)
+            if want is None:
+                continue
             # pokerkit pays whole chips; odd chips on split pots may differ by 1.
             np.testing.assert_allclose(ours.net_for(ranks) * 100, want, atol=1.01,
                                        err_msg=f"{spot} {terminal.actions} {ranks}")
             checked += 1
-        self.assertEqual(checked, 300)
+        self.assertGreater(checked, 280)
 
 
 if __name__ == "__main__":

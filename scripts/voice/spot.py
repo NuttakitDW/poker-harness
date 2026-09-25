@@ -245,6 +245,11 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            scenario=new.scenario or base.scenario,
                            players=new.players or base.players,
                            pushfold=new.pushfold or base.pushfold,
+                           # ante 0 คือบอกว่าไม่มี ante ต้องไม่ถูกแทนด้วยค่าของตาก่อน
+                           # เปลี่ยนคนจ่าย ante โดยไม่บอกจำนวน ใช้ค่าเริ่มของแบบใหม่ ไม่ยืมจำนวนเดิม
+                           ante=new.ante if new.ante is not None
+                           else (None if new.ante_mode else base.ante),
+                           ante_mode=new.ante_mode or base.ante_mode,
                            # คู่มือใหม่คนเดียวแทนคนยัดหมดชุดเดิมทั้งหมด
                            shovers=new.shovers or (() if new.villain else base.shovers))
 

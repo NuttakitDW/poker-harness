@@ -89,6 +89,14 @@ _CALLS_AFTER = re.compile(r"\s*(?:call\w*|คอล|โคล)")
 _HERO_BEFORE = re.compile(r"(?:เรา|ผม|ฉัน|i'?m|i\s+am|we'?re|we\s+are|hero)\s*(?:อยู่|นั่ง|เป็น|in|at|on)?"
                           r"\s*(?:ที่|ตำแหน่ง|the)?\s*$")
 
+# ante ต่อคน "ante 12.5%" "ante 0.2bb" หรือไม่มีหน่วย ตั้งแต่ 1 ขึ้นไปถือเป็น % ของ BB ต่ำกว่านั้นเป็น bb
+_ANTE = re.compile(r"(?:ante|แอนตี้|แอนติ)\s*(\d+(?:\.\d+)?)\s*(%|เปอร์เซ็นต์|bb|บีบี)?")
+_NO_ANTE = re.compile(r"no\s*ante|without\s*(?:an\s*)?ante|ไม่มี\s*(?:ante|แอนตี้|แอนติ)")
+# BB จ่าย ante แทนทั้งโต๊ะ "bb ante" "big blind ante" หรือบอกว่าเป็นทัวร์ live (ค่าเริ่ม 1bb)
+# bb ต้องไม่ต่อจากตัวเลข "10bb ante 12.5%" คือสแตก 10bb กับ ante ทุกคน ไม่ใช่ BB ante
+_BB_ANTE = re.compile(r"(?<![\d.])(?<![\d.]\s)(?:bb|big\s*blind|บีบี|บิ๊กบลายด์)\s*-?\s*(?:ante|แอนตี้|แอนติ)")
+_LIVE = re.compile(r"(?<![a-z])live(?![a-z])|ไลฟ์")
+
 # คำบอกว่าดอกเดียวกันหรือต่างดอก ตัวถอดเสียงเขียนได้ทั้งอังกฤษและไทย
 _SUIT_WORD = r"(?i:offsuit|off-suit|suited|ออฟสูท|ออฟ|สูท)"
 # คนไทยอ่าน T ว่าสิบ พูด T8 ว่าสิบแปดแล้วตัวถอดเสียงเขียนเป็น 18 ถือเป็นมือเฉพาะเมื่อตามด้วยคำบอกดอก
@@ -111,6 +119,8 @@ class Request:
     players: int | None = None
     shovers: tuple[str, ...] = ()  # ทุกตำแหน่งที่ยัดหมดมาก่อนคนถาม เรียงตามที่พูด
     pushfold: bool = False
+    ante: float | None = None  # ante ต่อคนที่จ่ายเป็น bb, 0 คือไม่มี ante, None คือไม่ได้บอก
+    ante_mode: str | None = None  # "each" ทุกคนจ่าย, "bb" BB จ่ายแทนทั้งโต๊ะ, None คือไม่ได้บอก
 
     @property
     def usable(self) -> bool:
@@ -244,7 +254,7 @@ def _spaced_blinds(text: str) -> str:
 
 def parse(question: str) -> Request:
     """อ่านคำถามแล้วเดาว่าเป็นสถานการณ์ไหน"""
-    lowered = _fix_seat_typos(question.lower())
+    ante, ante_mode, lowered = _read_ante(_fix_seat_typos(question.lower()))
     stack = _STACK.search(lowered)
 
     game = None
@@ -286,7 +296,7 @@ def parse(question: str) -> Request:
     players = 2 if _HEADS_UP.search(lowered) else int(size.group(1)) if size else None
     return Request(game=game, stack=_stack_value(stack.group(1)) if stack else None,
                    hero=hero, villain=villain, scenario=scenario, players=players, shovers=shovers,
-                   pushfold=bool(_PUSH_FOLD.search(lowered)))
+                   pushfold=bool(_PUSH_FOLD.search(lowered)), ante=ante, ante_mode=ante_mode)
 
 
 def carry(question: str, earlier: list[str]) -> str:
@@ -335,6 +345,25 @@ def hands_in(question: str) -> list[str]:
             names = [f"{high}{low}s", f"{high}{low}o"]
         found.extend(name for name in names if name not in found)
     return found
+
+
+def _read_ante(text: str) -> tuple[float | None, str | None, str]:
+    """(ante เป็น bb, ใครจ่าย, ข้อความที่ตัดคำบอก ante ออกแล้ว)
+
+    ตัดออกเพื่อไม่ให้เลขของ ante ถูกอ่านเป็นสแตก และ bb ใน "bb ante" ถูกอ่านเป็นที่นั่ง BB
+    ante ไม่มีหน่วยของทุกคน ตั้งแต่ 1 ขึ้นไปเป็น % ของ BB ส่วน BB ante ไม่มีหน่วยเป็น bb เสมอ
+    """
+    if _NO_ANTE.search(text):
+        return 0.0, None, _NO_ANTE.sub(" ", text)
+    mode = "bb" if _BB_ANTE.search(text) or _LIVE.search(text) else None
+    text = _BB_ANTE.sub(" ante ", text) if mode else text
+    found = _ANTE.search(text)
+    if not found:
+        return None, mode, text.replace(" ante ", " ")
+    value, unit = float(found.group(1)), found.group(2)
+    as_percent = unit in ("%", "เปอร์เซ็นต์") or (unit is None and value >= 1 and mode is None)
+    ante = value / 100 if as_percent else value
+    return ante, mode or "each", text[:found.start()] + " " + text[found.end():]
 
 
 def _stack_value(text: str) -> float:

@@ -33,8 +33,14 @@ class RoutingTests(unittest.TestCase):
         self.assertFalse(pushfold_chart.applies(request(game="cash")))
         self.assertFalse(pushfold_chart.applies(request(stack=None)))
 
-    def test_a_stack_too_short_to_post_is_not_solved(self):
-        self.assertIsNone(pushfold_chart.solved(request(hero="BB", stack=2)))
+    def test_stacks_below_three_bb_are_solved(self):
+        made = pushfold_chart.solved(request(hero="UTG", stack=1.5))
+        self.assertEqual(made.chart["stack"], 1.5)
+
+    def test_a_hero_all_in_by_posting_has_no_decision(self):
+        self.assertTrue(pushfold_chart.all_in_by_posting(request(hero="BB", stack=1)))
+        self.assertFalse(pushfold_chart.all_in_by_posting(request(hero="UTG", stack=1)))
+        self.assertIsNone(pushfold_chart.solved(request(hero="BB", stack=1)))
 
 
 class DecimalStackTests(unittest.TestCase):
@@ -52,6 +58,75 @@ class DecimalStackTests(unittest.TestCase):
         made = pushfold_chart.solved(request(hero="SB", stack=5.5))
         self.assertEqual(made.chart["stack"], 5.5)
         self.assertIn("all stacks 5.5bb", made.note)
+
+
+class AnteTests(unittest.TestCase):
+    def test_an_ante_is_read_as_a_share_of_the_big_blind(self):
+        for said, ante in (("BTN shove 10bb ante 12.5%", 0.125), ("BTN 10bb ante 0.2bb", 0.2),
+                           ("BTN 10bb ante 20", 0.2), ("BTN 10bb แอนตี้ 15%", 0.15),
+                           ("BTN 10bb no ante", 0.0), ("BTN 10bb ไม่มี ante", 0.0)):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.parse(said).ante, ante)
+
+    def test_the_ante_amount_is_not_read_as_the_stack(self):
+        self.assertEqual(preflop.parse("BTN 10bb ante 0.2bb").stack, 10)
+        self.assertIsNone(preflop.parse("ante 0.2bb").stack)
+
+    def test_no_ante_mentioned_stays_unknown(self):
+        self.assertIsNone(preflop.parse("BTN 10bb").ante)
+
+    def test_a_follow_up_keeps_the_ante(self):
+        import spot
+        merged = spot.merge(preflop.Request(stack=8), preflop.Request(ante=0.2, hero="BTN"))
+        self.assertEqual(merged.ante, 0.2)
+
+    def test_everyone_antes_ten_percent_by_default(self):
+        made = pushfold_chart.solved(request(stack=10))
+        self.assertIn("ante 0.1bb each", made.note)
+
+    def test_the_stated_stack_is_what_is_left_after_the_ante(self):
+        self.assertEqual(pushfold_chart.table(request(stack=1.5)).stacks[0], 1.6)
+        self.assertEqual(pushfold_chart.table(request(stack=1.5, ante=0.0)).stacks[0], 1.5)
+
+    def test_a_one_and_a_half_bb_big_blind_still_has_a_decision(self):
+        self.assertFalse(pushfold_chart.all_in_by_posting(request(hero="BB", stack=1.5)))
+        self.assertIsNotNone(pushfold_chart.solved(request(hero="BB", stack=1.5)))
+
+    def test_a_big_blind_with_less_than_the_blind_behind_is_all_in(self):
+        self.assertTrue(pushfold_chart.all_in_by_posting(request(hero="BB", stack=0.8)))
+
+
+class BigBlindAnteTests(unittest.TestCase):
+    def test_bb_ante_and_live_switch_to_the_big_blind_paying_for_the_table(self):
+        for said in ("BTN shove 10bb bb ante", "BTN shove 10bb big blind ante",
+                     "BTN shove 10bb live tournament", "BTN ออลอิน 10bb ทัวร์ live", "BTN 10bb BB-ante"):
+            with self.subTest(said=said):
+                made = preflop.parse(said)
+                self.assertEqual(made.ante_mode, "bb")
+                self.assertIsNone(made.ante)
+                self.assertEqual((made.hero, made.stack), ("BTN", 10))
+
+    def test_a_bb_ante_amount_without_a_unit_is_in_big_blinds(self):
+        self.assertEqual(preflop.parse("BTN 10bb bb ante 1.5").ante, 1.5)
+        self.assertEqual(preflop.parse("BTN 10bb bb ante 150%").ante, 1.5)
+
+    def test_a_plain_ante_means_everyone_antes(self):
+        self.assertEqual(preflop.parse("BTN 10bb ante 12.5%").ante_mode, "each")
+
+    def test_the_bb_ante_defaults_to_one_big_blind(self):
+        made = pushfold_chart.solved(request(stack=10, ante_mode="bb"))
+        self.assertIn("BB ante 1bb", made.note)
+
+    def test_only_the_big_blind_gets_its_ante_added_back(self):
+        spot = pushfold_chart.table(request(stack=10, ante_mode="bb"))
+        self.assertEqual(spot.stacks, (10.0,) * 7 + (11.0,))
+        self.assertEqual(spot.antes, (0.0,) * 7 + (1.0,))
+
+    def test_switching_to_bb_ante_drops_the_old_per_player_amount(self):
+        import spot
+        merged = spot.merge(preflop.Request(ante_mode="bb"),
+                            preflop.Request(hero="BTN", ante=0.125, ante_mode="each"))
+        self.assertEqual((merged.ante_mode, merged.ante), ("bb", None))
 
 
 class TableSizeTests(unittest.TestCase):
@@ -222,6 +297,7 @@ class SolvedChartTests(unittest.TestCase):
         self.assertIn("8-handed", made.note)
         self.assertIn("10bb", made.note)
         self.assertIn("ante", made.note)
+        self.assertIn("after the ante", made.note)
 
 
 class AnswerTests(SpotTestCase):
@@ -259,9 +335,11 @@ class AnswerTests(SpotTestCase):
                                     memory=found.request)
         self.assertIn("push/fold Nash", text)
 
-    def test_an_unsolvable_spot_says_only_push_fold_is_available(self):
-        text, _ = spot_chart.answer("BTN shove 2bb tournament", color=False, classify=agrees("BTN"))
-        self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["EN"])
+    def test_a_hero_all_in_by_posting_is_told_so(self):
+        self.use_books(book([chart(hero="BB", stack=30)], game="tournament"))
+        text, _ = spot_chart.answer("BB 0.8bb push fold tournament", color=False,
+                                    classify=agrees("BB"))
+        self.assertEqual(text, spot_chart.ALL_IN_BY_POSTING["EN"])
 
 
 if __name__ == "__main__":

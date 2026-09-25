@@ -4,6 +4,8 @@ Every action is all-in or fold. First in: fold or shove. Facing a shove: fold or
 (a call is all-in too; chips nobody can match come back from the Cashier).
 Once `max_allin` players are in, everyone left must fold (we cap showdowns at 3-way).
 If everyone folds to the BB, the BB wins without acting.
+A seat all-in by posting (Spot.forced) never acts: it is JAM in every ending, with no node,
+and it counts toward the cap from the start.
 """
 
 from __future__ import annotations
@@ -58,6 +60,10 @@ class Tree:
 
 
 def build(spot: Spot, max_allin: int = MAX_ALLIN) -> Tree:
+    forced = set(spot.forced)
+    if len(forced) > max_allin:
+        raise ValueError(f"{len(forced)} players are all-in by posting; at most {max_allin} "
+                         "can be in one showdown")
     nodes: list[Node] = []
     terminals: list[Terminal] = []
 
@@ -66,11 +72,14 @@ def build(spot: Spot, max_allin: int = MAX_ALLIN) -> Tree:
         if seat == spot.n:
             terminals.append(Terminal(len(terminals), history, links))
             return
-        jams = history.count(JAM)
+        if seat in forced:
+            walk(history + (JAM,), links + (-1,))
+            return
+        jams = history.count(JAM) + sum(1 for f in forced if f > seat)
         walked = seat == spot.n - 1 and jams == 0
         if walked or jams >= max_allin:
-            rest = spot.n - seat
-            terminals.append(Terminal(len(terminals), history + (IDLE,) * rest, links + (-1,) * rest))
+            rest = tuple(JAM if s in forced else IDLE for s in range(seat, spot.n))
+            terminals.append(Terminal(len(terminals), history + rest, links + (-1,) * len(rest)))
             return
         node = Node(len(nodes), seat, history)
         nodes.append(node)

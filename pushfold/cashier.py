@@ -1,7 +1,8 @@
 """The Cashier: pays out every ending of a hand.
 
 Rules, in chips (big blinds):
-* Antes are dead money. They go to the main pot, which every live player can win.
+* Antes are dead money in a pot every live player can win, even one whose whole stack
+  went on the ante (checked against pokerkit). Usually that is just the main pot.
 * A player who shoves puts in everything left after the ante; blinds count toward it.
 * Pots are layered by contribution. A layer goes to the best hand among the live players
   who put in at least that much. A layer nobody live reached goes back to whoever paid it,
@@ -69,6 +70,8 @@ def settle(spot: Spot, jammers: tuple[int, ...]) -> Settlement:
     dead = sum(spot.antes)
     if len(alive) == 1:
         fixed[alive[0]] += dead
-    elif dead:
+    elif dead and pots and pots[0][1] == alive:
         pots[0][0] += dead                      # main pot: every live seat is eligible
+    elif dead:
+        pots.insert(0, [dead, alive])           # a live seat all-in for the ante alone
     return Settlement(fixed, tuple(Layer(float(a), e) for a, e in pots))
