@@ -29,6 +29,7 @@ FIXTURE_DIR = ROOT / "tests" / "fixtures" / "spot"
 LABELS = FIXTURE_DIR / "recorded.jsonl"
 VOICE_DIR = FIXTURE_DIR / "voice"
 SAMPLE_RATE = 16_000
+FFMPEG_TIMEOUT_SECONDS = 30
 SEED = 7
 EIGHT_MAX = ("UTG", "UTG+1", "LJ", "HJ", "CO", "BTN", "SB", "BB")
 STACKS = (3, 4, 5, 6.5, 7, 7.5, 8, 9, 10, 11, 12, 12.5, 13, 14, 15)
@@ -186,37 +187,56 @@ def save(labels: pathlib.Path, scenario: Scenario, audio: str, heard: str) -> No
         handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def _record(wav: pathlib.Path) -> float:
-    """อัดจากไมค์ Enter เริ่ม Enter หยุด คืนความยาวเป็นวินาที"""
-    import numpy
-    import sounddevice
-    import wave
+class Mic:
+    """เปิดไมค์ครั้งเดียวตลอดการอัด Enter แค่สลับว่าเก็บเสียงหรือไม่
 
-    chunks: list = []
-    stop = threading.Event()
+    เดิมเปิดปิด sounddevice.InputStream ทุกข้อ แล้วค้างตอนปิด (PortAudio กับ CoreAudio รอ lock กัน
+    ใน AudioOutputUnitStop กด Ctrl+C ก็ไม่หลุด) จึงใช้ listen.frames ตัวเดียวกับ make voice
+    ที่เปิดสายค้างไว้ และไม่ปิดสายเลยจนโปรแกรมจบ
+    """
 
-    def collect(data, _frames, _time, _status):
-        chunks.append(data.copy())
+    def __init__(self) -> None:
+        import listen
 
-    input("  Enter เพื่อเริ่มอัด ")
-    with sounddevice.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16",
-                                 callback=collect):
+        self._listen = listen
+        self._on = threading.Event()
+        self._chunks: list = []
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self) -> None:
+        for frame in self._listen.frames():
+            if self._on.is_set():
+                self._chunks.append(frame)
+
+    def record(self, wav: pathlib.Path) -> float:
+        """Enter เริ่ม Enter หยุด เขียน wav 16k mono คืนความยาวเป็นวินาที"""
+        import numpy
+        import wave
+
+        input("  Enter เพื่อเริ่มอัด ")
+        self._chunks = []
+        self._on.set()
         print("  กำลังอัด... พูดได้เลย แล้วกด Enter เมื่อพูดจบ", flush=True)
         input()
-        stop.set()
-    audio = numpy.concatenate(chunks) if chunks else numpy.zeros((0, 1), dtype="int16")
-    with wave.open(str(wav), "wb") as handle:
-        handle.setnchannels(1)
-        handle.setsampwidth(2)
-        handle.setframerate(SAMPLE_RATE)
-        handle.writeframes(audio.tobytes())
-    return len(audio) / SAMPLE_RATE
+        self._on.clear()
+        print("  หยุดอัดแล้ว", flush=True)
+        samples = (numpy.concatenate(self._chunks) if self._chunks
+                   else numpy.zeros(0, dtype=numpy.float32))
+        pcm = (numpy.clip(samples, -1.0, 1.0) * 32767).astype("<i2")
+        with wave.open(str(wav), "wb") as handle:
+            handle.setnchannels(1)
+            handle.setsampwidth(2)
+            handle.setframerate(SAMPLE_RATE)
+            handle.writeframes(pcm.tobytes())
+        return len(pcm) / SAMPLE_RATE
 
 
 def _to_ogg(wav: pathlib.Path, ogg: pathlib.Path) -> None:
     ogg.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(wav),
-                    "-c:a", "libopus", "-b:a", "24k", str(ogg)], check=True)
+    # -nostdin: ffmpeg ไม่อ่านคีย์บอร์ดจากเทอร์มินัล ไม่งั้นค้างหรือกิน Enter ของผู้อัด
+    subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+                    "-i", str(wav), "-c:a", "libopus", "-b:a", "24k", str(ogg)],
+                   check=True, stdin=subprocess.DEVNULL, timeout=FFMPEG_TIMEOUT_SECONDS)
 
 
 def _transcribe(ogg: pathlib.Path) -> str:
@@ -226,15 +246,16 @@ def _transcribe(ogg: pathlib.Path) -> str:
                                        "spot").text
 
 
-def _take(scenario: Scenario, scratch: pathlib.Path) -> str:
+def _take(scenario: Scenario, scratch: pathlib.Path, mic: Mic) -> str:
     """อัดหนึ่งข้อจนผู้อัดพอใจ คืน keep, skip หรือ quit"""
     wav = scratch / f"{scenario.id}.wav"
     ogg = VOICE_DIR / f"{scenario.id}.ogg"
     while True:
-        seconds = _record(wav)
+        seconds = mic.record(wav)
         if seconds < 0.5:
             print("  สั้นเกินไป อัดใหม่อีกครั้ง")
             continue
+        print(f"  ได้เสียง {seconds:.1f} วินาที กำลังแปลงไฟล์...", flush=True)
         _to_ogg(wav, ogg)
         print("  กำลังถอดเสียง...", flush=True)
         try:
@@ -263,12 +284,13 @@ def main() -> int:
     total = len(scenarios())
     print(f"อัดคำถาม spot  เหลือ {len(pending)}/{total} ข้อ  (ปิดได้ทุกเมื่อ รอบหน้าทำต่อ)")
     print("พูดด้วยคำของตัวเองตามการ์ด ไม่ต้องอ่านตามตัวอักษร ให้ครบทุกอย่างบนการ์ด\n")
+    mic = Mic()
     with tempfile.TemporaryDirectory() as folder:
         for number, scenario in enumerate(pending, start=total - len(pending) + 1):
             print(f"\n({number}/{total})")
             print(card(scenario))
             try:
-                result = _take(scenario, pathlib.Path(folder))
+                result = _take(scenario, pathlib.Path(folder), mic)
             except (KeyboardInterrupt, EOFError):
                 print("\nหยุดแล้ว ข้อที่เก็บไปแล้วอยู่ครบ")
                 return 0

@@ -47,6 +47,10 @@ MISSING = {
     "TH": "หา spot ไม่เจอ บอกตำแหน่งด้วย เช่น BB เจอ BTN ออลอิน 10bb",
     "EN": "No spot found. Name a seat, e.g. BB vs BTN shove 10bb",
 }
+SEAT_NOT_AT_TABLE = {
+    "TH": "โต๊ะ {players} คนไม่มีตำแหน่ง {seat} มีแค่ {seats} ลองถามใหม่ด้วยตำแหน่งเหล่านี้",
+    "EN": "A {players}-handed table has no {seat}; the seats are {seats}",
+}
 ALL_IN_BY_POSTING = {
     "TH": "ตำแหน่งนี้จ่าย blind กับ ante แล้วหมดตัวพอดี ไม่มีอะไรต้องตัดสินใจ รอดูไพ่ได้เลย",
     "EN": "That seat is all-in from posting the blind and ante; there is no decision to make",
@@ -137,7 +141,7 @@ class Reply:
     message: str | None = None  # ข้อความแทนชาร์ต เช่นหาไม่เจอหรือยังไม่มีชาร์ตแบบนี้
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
     # ชนิดคำตอบ ใช้ในบันทึกคำถามเพื่อหาประโยคที่ตัวอ่านยังอ่านไม่ออก
-    # chart | not_found | push_fold_only | all_in_by_posting
+    # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table
     kind: str = "chart"
 
 
@@ -147,6 +151,11 @@ def reply(prompt: str, memory=None) -> Reply:
     if found is None:
         return Reply(None, MISSING[spot.language_of(prompt)], kind="not_found")
     # ตอบแค่ push/fold ที่แก้สด นอกนั้นบอกว่ายังไม่มี แต่ยังจำตำแหน่งกับสแตกไว้ถามต่อได้
+    missing = pushfold_chart.missing_seat(found.request) if pushfold_chart.applies(found.request) else None
+    if missing:
+        seat, seats = missing
+        text = SEAT_NOT_AT_TABLE[found.lang].format(players=len(seats), seat=seat, seats=", ".join(seats))
+        return Reply(found, text, kind="seat_not_at_table")
     if pushfold_chart.applies(found.request) and pushfold_chart.all_in_by_posting(found.request):
         return Reply(found, ALL_IN_BY_POSTING[found.lang], kind="all_in_by_posting")
     made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None

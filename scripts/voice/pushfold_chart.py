@@ -97,6 +97,19 @@ def _solve(stack: float, players: int, ante: float, mode: str) -> coach.Result:
     return coach.solve(_spot(stack, players, ante, mode), library=_LIBRARY)
 
 
+def missing_seat(request: preflop.Request) -> tuple[str, tuple[str, ...]] | None:
+    """(ตำแหน่งที่ไม่มีในโต๊ะขนาดนี้, ตำแหน่งที่มี) เช่นถาม UTG ที่โต๊ะ 4 คน คืน None ถ้าครบ"""
+    try:
+        names = table(request).names
+    except SpotError:
+        return None
+    asked = (request.hero, request.villain, *request.shovers)
+    for seat in asked:
+        if seat and _seat(names, seat) not in names:
+            return seat, tuple(_label(names, name) for name in names)
+    return None
+
+
 def all_in_by_posting(request: preflop.Request) -> bool:
     """ผู้ถามจ่าย blind กับ ante แล้วหมดตัวพอดี ไม่มีอะไรให้ตัดสินใจ เช่น BB ที่เหลือไม่ถึง 1bb หลัง ante"""
     try:

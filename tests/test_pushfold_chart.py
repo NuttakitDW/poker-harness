@@ -140,6 +140,21 @@ class AnteTests(unittest.TestCase):
         self.assertTrue(pushfold_chart.all_in_by_posting(request(hero="BB", stack=0.8)))
 
 
+class SeatAtTableTests(unittest.TestCase):
+    def test_a_seat_missing_at_that_table_size_is_named_with_the_seats_there(self):
+        self.assertEqual(pushfold_chart.missing_seat(request(hero="UTG", stack=5, players=4)),
+                         ("UTG", ("CO", "BTN", "SB", "BB")))
+
+    def test_a_shover_missing_at_that_table_size_is_caught_too(self):
+        missing = pushfold_chart.missing_seat(request(hero="BB", villain="UTG", shovers=("UTG",),
+                                                      stack=5, players=4))
+        self.assertEqual(missing[0], "UTG")
+
+    def test_seats_that_exist_are_fine(self):
+        self.assertIsNone(pushfold_chart.missing_seat(request(hero="CO", stack=5, players=4)))
+        self.assertIsNone(pushfold_chart.missing_seat(request(hero="BTN", stack=5, players=2)))
+
+
 class BigBlindAnteTests(unittest.TestCase):
     def test_bb_ante_and_live_switch_to_the_big_blind_paying_for_the_table(self):
         for said in ("BTN shove 10bb bb ante", "BTN shove 10bb big blind ante",
@@ -371,6 +386,13 @@ class AnswerTests(SpotTestCase):
         self.assertEqual(spot_chart.reply("ICM คืออะไร").kind, "not_found")
         self.use_books(book([chart(hero="BB", stack=30)], game="tournament"))
         self.assertEqual(spot_chart.reply("BB 0.8bb push fold tournament").kind, "all_in_by_posting")
+
+    def test_a_seat_not_at_the_table_is_told_which_seats_exist(self):
+        self.use_books(book([chart(hero="UTG", stack=30)], game="tournament"))
+        made = spot_chart.reply("utg 5bb โต๊ะ 4 คน")
+        self.assertEqual(made.kind, "seat_not_at_table")
+        self.assertIn("UTG", made.message)
+        self.assertIn("CO, BTN, SB, BB", made.message)
 
     def test_deeper_stacks_say_only_push_fold_is_available(self):
         text, found = spot_chart.answer("BTN open 30bb tournament", color=False)
