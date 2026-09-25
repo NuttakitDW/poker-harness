@@ -67,5 +67,25 @@ class ReviewTests(unittest.TestCase):
         self.assertIn("voice", text)
 
 
+class RetentionTests(unittest.TestCase):
+    def test_files_older_than_the_retention_are_deleted(self):
+        with tempfile.TemporaryDirectory() as folder:
+            old = Path(folder) / "discord-20260601.jsonl"
+            kept = Path(folder) / "discord-20260701.jsonl"
+            other = Path(folder) / "voice-20200101.jsonl"
+            for path in (old, kept, other):
+                path.write_text("{}\n", encoding="utf-8")
+            question_log.prune(Path(folder), today=datetime.date(2026, 9, 25))
+            self.assertEqual((old.exists(), kept.exists(), other.exists()), (False, True, True))
+
+    def test_recording_prunes_old_files(self):
+        with tempfile.TemporaryDirectory() as folder:
+            old = Path(folder) / "discord-20250101.jsonl"
+            old.write_text("{}\n", encoding="utf-8")
+            question_log.record(question_log.entry(question="q", source="text", kind="chart"),
+                                when=WHEN, folder=Path(folder))
+            self.assertFalse(old.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

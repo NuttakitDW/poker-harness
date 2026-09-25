@@ -148,5 +148,27 @@ class TerminalTests(unittest.TestCase):
         self.assertFalse(bot.has_terminal(None))
 
 
+class PrivacyTests(unittest.TestCase):
+    def test_privacy_notice_in_both_languages(self):
+        for text in ("!privacy", "/privacy", "!privacy th", "!privacy en"):
+            notice = bot.privacy_message(text)
+            self.assertIsNotNone(notice, text)
+            self.assertLessEqual(len(notice), 2000)
+            self.assertIn(spot_chart.CONTACT, notice)
+            self.assertIn(str(bot.question_log.KEEP_DAYS), notice)
+        self.assertIn("Soniox", bot.privacy_message("!privacy en"))
+        self.assertIsNone(bot.privacy_message("!privacyx"))
+
+    def test_the_help_points_to_the_privacy_notice(self):
+        for lang in ("th", "en"):
+            self.assertIn("!privacy", bot.help_message(f"!help {lang}"))
+
+    def test_the_log_does_not_keep_who_asked(self):
+        message = SimpleNamespace(guild=SimpleNamespace(name="S"),
+                                  channel=SimpleNamespace(name="general"),
+                                  author=SimpleNamespace(display_name="nut", id=1))
+        self.assertEqual(bot.log_place(message), {"server": "S", "channel": "general"})
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -13,6 +13,7 @@
     ไฟล์เสียงที่แนบในห้องต้องมี @ตามควาย หรือ !chart กำกับ ใน DM ไม่ต้อง
     !new       ลืมตำแหน่งกับสแตกที่จำไว้ (จำแยกตามคนและห้อง)
     !help      วิธีใช้   !help en ภาษาอังกฤษ
+    !privacy   เก็บข้อมูลอะไรบ้าง   !privacy en ภาษาอังกฤษ
 
 ต้องมี DISCORD_BOT_TOKEN ใน .env (DISCORD_CHANNEL_ID ไม่ใส่ก็ได้)
 
@@ -52,6 +53,7 @@ QUIT_COMMANDS = ("/q", "/quit")
 PING, PONG = "ping", "pong"
 CHART_PREFIX, NEW_COMMAND, HELP_PREFIX = "!chart", "!new", "!help"
 CONTACT_COMMANDS = ("!contact", "/contact")
+PRIVACY_COMMANDS = ("!privacy", "/privacy")
 DISCORD_HELP = {
     "th": """ตามควาย · วิธีใช้ใน Discord
 ถามตำแหน่งกับสแตก ได้รูปชาร์ต push/fold ที่ solver แก้สด
@@ -64,23 +66,59 @@ Commands
   !new                ลืม spot เดิม (จำแยกตามคนและห้อง)
   !help [th|en]       วิธีใช้นี้  (!help en ภาษาอังกฤษ)
   !contact            อีเมลติดต่อผู้พัฒนา
+  !privacy            บอทเก็บข้อมูลอะไรบ้าง
   ping                เช็คว่าบอทออนไลน์อยู่
 
 ตัวอย่างข้างล่าง ใส่หลัง @ตามควาย หรือ !chart""",
     "en": """ตามควาย · How to use in Discord
-Name a seat and a stack, get a push/fold chart image solved on the spot
+Name a seat and a stack, get a solved push/fold chart
 
 Commands
   @ตามควาย <question>  ask in a channel
   !chart <question>    ask in a channel without a mention
-  DM                   send the question as is, no prefix needed
-  voice message        hold the mic in the mobile app and say the question
-  !new                 forget the remembered spot (kept per person and channel)
-  !help [th|en]        this help  (!help alone is Thai)
+  DM                   just send the question, no prefix
+  voice message        hold the mic in the mobile app and ask
+  !new                 forget the remembered spot
+  !help [th|en]        this help (default Thai)
   !contact             the developer's email
+  !privacy             what the bot keeps about you
   ping                 check the bot is online
 
 Put the examples below after @ตามควาย or !chart""",
+}
+PRIVACY = {
+    "th": f"""ตามควาย · ความเป็นส่วนตัว
+เก็บอะไร: ข้อความคำถามชาร์ต (ถ้าเป็นเสียงคือข้อความที่ถอดได้) เวลา ชื่อ server กับห้อง และ spot ที่อ่านได้
+ไม่เก็บ: ชื่อหรือไอดีของคนถาม ข้อความอื่นในห้อง และไฟล์เสียง
+spot ล่าสุดจำไว้ในหน่วยความจำเท่านั้น หายเมื่อพิมพ์ !new หรือบอทรีสตาร์ท
+
+เพื่ออะไร: ตอบคำถาม และหาคำถามที่บอทยังอ่านไม่ออกเพื่อปรับปรุง (ประโยชน์โดยชอบด้วยกฎหมาย ตาม PDPA มาตรา 24(5))
+เก็บนานเท่าไร: {question_log.KEEP_DAYS} วัน แล้วลบอัตโนมัติ
+
+ส่งต่อให้ใคร:
+  Discord  ข้อความทั้งหมดผ่าน Discord อยู่แล้ว
+  Soniox   ไฟล์เสียงส่งไปถอดเป็นข้อความ แล้วบอทสั่งลบไฟล์กับผลถอดที่ Soniox ทันที
+  Railway  เครื่องที่บอทรัน อยู่นอกประเทศไทย
+ไม่ขาย ไม่ใช้โฆษณา
+
+สิทธิ์ของคุณ: ขอดู ขอลบ หรือคัดค้านการเก็บ ส่งอีเมลมาที่ {spot_chart.CONTACT}
+ถ้าไม่ต้องการให้เก็บ อย่าถามบอท ข้อความทั่วไปในห้องบอทไม่ได้บันทึก""",
+    "en": f"""ตามควาย · Privacy
+What we keep: the text of chart questions (for voice, the transcript), the time, the server and channel name, and the spot the bot read
+What we don't keep: your name or user ID, other messages in the channel, or audio files
+Your last spot is held in memory only, and is gone after !new or a restart
+
+Why: to answer you, and to find questions the bot could not read so it can improve (legitimate interest, Thai PDPA s.24(5))
+How long: {question_log.KEEP_DAYS} days, then deleted automatically
+
+Who else sees it:
+  Discord  every message already passes through Discord
+  Soniox   voice messages are sent for transcription; the bot deletes the file and transcript there right after
+  Railway  hosts the bot, outside Thailand
+Never sold, never used for ads
+
+Your rights: ask to see, delete, or object, by email to {spot_chart.CONTACT}
+If you don't want anything kept, don't ask the bot; ordinary chat is not recorded""",
 }
 FAILED = "ขอโทษ ทำชาร์ตไม่สำเร็จ ลองถามใหม่อีกทีนะ"
 NOT_HEARD = "ถอดเสียงไม่ออก ลองพูดใหม่ชัด ๆ หรือพิมพ์มาแทนนะ"
@@ -145,6 +183,20 @@ def help_message(text: str) -> str | None:
             f"{spot_chart.COPYRIGHT}\n```")
 
 
+def privacy_message(text: str) -> str | None:
+    """ประกาศความเป็นส่วนตัว ถ้าข้อความเป็น !privacy หรือ /privacy ตามด้วย th หรือ en ได้"""
+    words = text.strip().lower().split()
+    if not words or words[0] not in PRIVACY_COMMANDS or words[1:] not in ([], ["th"], ["en"]):
+        return None
+    return f"```\n{PRIVACY[words[1] if len(words) == 2 else 'th']}\n```"
+
+
+def log_place(message) -> dict:
+    """ที่มาของคำถามสำหรับบันทึก ตั้งใจไม่เก็บว่าใครถาม"""
+    return {"server": message.guild.name if message.guild else None,
+            "channel": getattr(message.channel, "name", None)}
+
+
 def terminal_command(line: str) -> tuple[str, str]:
     """แปลบรรทัดที่พิมพ์ในเทอร์มินัลเป็น (คำสั่ง, ค่า)"""
     text = line.strip()
@@ -168,6 +220,7 @@ class Bridge(discord.Client):
         super().__init__(intents=intents)
         self.target = channel_id
         self._reading = False
+        self.terminal = has_terminal(sys.stdin)
         self.memory: dict[tuple[int, int], object] = {}  # (ห้อง, คน) -> สิ่งที่บอกไว้ตาก่อน
 
     async def on_ready(self) -> None:
@@ -175,7 +228,7 @@ class Bridge(discord.Client):
         print(f"ลิงก์เชิญบอท: {invite_url(self.application_id)}", flush=True)
         # ต่อใหม่หลังเน็ตหลุดก็เรียก on_ready อีก เปิดตัวอ่านเทอร์มินัลครั้งเดียวพอ
         # บนคลาวด์ไม่มีเทอร์มินัล stdin ว่างทันที ถ้าอ่านจะปิดบอทตั้งแต่เริ่ม
-        if not self._reading and has_terminal(sys.stdin):
+        if not self._reading and self.terminal:
             self._reading = True
             threading.Thread(target=self._read_terminal, daemon=True).start()
 
@@ -184,7 +237,9 @@ class Bridge(discord.Client):
             return
         guild = message.guild.name if message.guild else None
         channel = getattr(message.channel, "name", None)
-        print(incoming(guild, channel, message.author.display_name, message.content), flush=True)
+        # บนเซิร์ฟเวอร์ไม่มีใครอ่าน และ log ของ Railway จะเก็บข้อความทุกคนไว้ จึงพิมพ์เฉพาะตอนมีเทอร์มินัล
+        if self.terminal:
+            print(incoming(guild, channel, message.author.display_name, message.content), flush=True)
         self.target = message.channel.id
         text = message.content.strip()
         key = (message.channel.id, message.author.id)
@@ -197,6 +252,8 @@ class Bridge(discord.Client):
             await message.reply(f"{spot_chart.CONTACT}\n{spot_chart.COPYRIGHT}")
         elif help_message(text):
             await message.reply(help_message(text))
+        elif privacy_message(text):
+            await message.reply(privacy_message(text))
         else:
             audio = audio_attachment(message.attachments)
             direct = message.guild is None
@@ -234,9 +291,7 @@ class Bridge(discord.Client):
         try:
             question_log.record(question_log.entry(
                 question=question, source=source, kind=kind, request=request,
-                server=message.guild.name if message.guild else None,
-                channel=getattr(message.channel, "name", None),
-                author=message.author.display_name, **fields))
+                **log_place(message), **fields))
         except OSError as error:
             print(f"จดบันทึกคำถามไม่ได้: {error}", flush=True)
 
