@@ -179,6 +179,15 @@ class HandTests(unittest.TestCase):
     def test_digits_without_a_suit_word_are_not_a_hand(self):
         self.assertEqual(preflop.hands_in("เหลือ 18 คน 98 เปอร์เซ็นต์"), [])
 
+    def test_a_pocket_pair_in_digits_is_a_hand(self):
+        self.assertEqual(preflop.hands_in("99"), ["99"])
+        self.assertEqual(preflop.hands_in("hold 55 vs CO 12bb"), ["55"])
+
+    def test_a_repeated_digit_count_is_not_a_hand(self):
+        for said in ("เหลือ 55 คน", "22 left", "33% paid", "icm 33/33/33", "field 88", "avg 22"):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.hands_in(said), [])
+
     def test_no_suit_word_means_both_shapes(self):
         self.assertEqual(preflop.hands_in("AK ล่ะ"), ["AKs", "AKo"])
 

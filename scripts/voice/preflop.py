@@ -157,6 +157,19 @@ _TEN = re.compile(r"(?<!\d)10(?!\d)")
 # ตัวอักษรไพ่ต้องเป็นตัวใหญ่ ไม่งั้นคำอังกฤษอย่าง at จะกลายเป็นมือ AT
 _HAND = re.compile(rf"(?<![A-Za-z0-9])([AKQJT2-9])\s?[,\-]?\s?([AKQJT2-9])"
                    rf"(?:\s*({_SUIT_WORD})|([so]))?(?![A-Za-z0-9])")
+# เลขคู่ติดกันอย่าง 99 คือพ็อกเก็ตแพร์ เว้นแต่อยู่ในบริบทตัวเลข เช่น เหลือ 55 คน, 33/33/33, field 88
+_COUNT_BEFORE = re.compile(r"(?i)(?:[/.]|field(?:\s*size)?|entrants?|avg|average|เฉลี่ย|paid|itm"
+                           r"|จ่าย(?:รางวัล)?|ante|เหลือ|คนลง(?:แข่ง)?|ผู้เข้าแข่ง(?:ขัน)?)\s*$")
+_COUNT_AFTER = re.compile(r"(?i)\s*(?:[%/.]|เปอร์|percent|คน|left|players?|remain|handed|max"
+                          r"|entrants?|runners?|entries|paid|itm)")
+
+
+def _digit_pair(text: str, match: re.Match) -> bool:
+    """เลขเดียวกันสองตัวติดกันที่ไม่ได้เป็นจำนวนคน เปอร์เซ็นต์ หรือรางวัล"""
+    first, second = match.group(1), match.group(2)
+    return (first == second and first.isdigit() and match.end(2) - match.start(1) == 2
+            and not _COUNT_BEFORE.search(text[:match.start()])
+            and not _COUNT_AFTER.match(text, match.end()))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -438,7 +451,7 @@ def hands_in(question: str) -> list[str]:
         if word:
             suit = "o" if any(hint in word.lower() for hint in _OFFSUIT_HINTS) else "s"
         # ตัวเลขล้วนไม่มีคำบอกดอก เช่น 98 เปอร์เซ็นต์ ไม่ใช่มือ
-        if suit is None and first.isdigit() and second.isdigit():
+        if suit is None and first.isdigit() and second.isdigit() and not _digit_pair(text, match):
             continue
         high, low = sorted((first, second), key=STRENGTH.get)
         if high == low:
