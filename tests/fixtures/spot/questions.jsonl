@@ -1,0 +1,28 @@
+{"question": "BTN shove 10bb tournament", "source": "session", "expected": {"hero": "BTN", "stack": 10, "shovers": []}}
+{"question": "BB เจอ SB ออลอิน 8bb ถือ K7o", "source": "session", "expected": {"hero": "BB", "stack": 8, "shovers": ["SB"], "hands": ["K7o"]}}
+{"question": "อืม ขอฉาด Push/fold 16 Big blind Call open jam จากตําแหน่ง small blind คน jam เป็น UTG", "source": "session", "expected": {"hero": "SB", "stack": 16, "shovers": ["UTG"]}}
+{"question": "Cutoff แจมมา 16 Big blind, small blind call ด้วยอะไร?", "source": "session", "expected": {"hero": "SB", "stack": 16, "shovers": ["CO"]}}
+{"question": "UTG all-in 5 Big blind Button all-in 5 Big blind เราอยู่ small blind เราทํายังไง", "source": "session", "expected": {"hero": "SB", "stack": 5, "shovers": ["BTN", "UTG"]}}
+{"question": "เราอยู่ตําแหน่ง Small blind UTG all-in มา 5 BB เอ่อ แล้วก็ button call เราต้องเล่นยังไง", "source": "session", "expected": {"hero": "SB", "stack": 5, "shovers": ["BTN", "UTG"]}}
+{"question": "sb เจอ BTBN all in 5bb", "source": "session", "expected": {"hero": "SB", "stack": 5, "shovers": ["BTN"]}}
+{"question": "ที่ตําแหน่ง Button 5 Big blind.", "source": "session", "expected": {"hero": "BTN", "stack": 5, "shovers": []}}
+{"question": "Heads-up ที่ตําแหน่ง Button 5 Big blind.", "source": "session", "expected": {"hero": "BTN", "stack": 5, "players": 2}}
+{"question": "ขอ 12.2 บิ๊กบาย บัตท่อนโอเพ่นมา โอเพ่นแจมมา สมอลไบล์ทํายังไง", "source": "discord-voice", "expected": {"hero": "SB", "stack": 12.2, "shovers": ["BTN"]}}
+{"question": "10 บิ๊กไบร์ท UTG แจม บัตท่อนแจม มาถึงตําแหน่งบิ๊กไบร์ท.", "source": "discord-voice", "expected": {"hero": "BB", "stack": 10, "shovers": ["BTN", "UTG"]}}
+{"question": "4.4 บิ๊กบาย บัตท่อน แจม บิ๊กบายทำอะไร?", "source": "discord-voice", "expected": {"hero": "BB", "stack": 4.4, "shovers": ["BTN"]}}
+{"question": "Jack 2 off.", "source": "discord-voice", "expected": {"hands": ["J2o"]}}
+{"question": "BTN shove 10bb live tournament", "source": "session", "expected": {"hero": "BTN", "stack": 10, "ante_mode": "bb"}}
+{"question": "BTN shove 10bb ante 12.5%", "source": "session", "expected": {"hero": "BTN", "stack": 10, "ante": 0.125, "ante_mode": "each"}}
+{"question": "BTN shove 10bb no ante", "source": "session", "expected": {"hero": "BTN", "stack": 10, "ante": 0.0}}
+{"question": "SB shove 5.5bb", "source": "session", "expected": {"hero": "SB", "stack": 5.5}}
+{"question": "BB เจอ SB ออลอิน 7.25bb", "source": "session", "expected": {"hero": "BB", "stack": 7.25, "shovers": ["SB"]}}
+{"question": "SB vs UGT shove 5bb", "source": "session", "expected": {"hero": "SB", "stack": 5, "shovers": ["UTG"]}}
+{"question": "BB vs cutof jam 8bb", "source": "session", "expected": {"hero": "BB", "stack": 8, "shovers": ["CO"]}}
+{"question": "UTG shove, BTN shove, I'm in the SB 5bb", "source": "session", "expected": {"hero": "SB", "stack": 5, "shovers": ["BTN", "UTG"]}}
+{"question": "6-max CO 10bb push fold", "source": "session", "expected": {"hero": "CO", "stack": 10, "players": 6}}
+{"question": "BB 10bb bb ante vs SB shove", "source": "session", "expected": {"hero": "BB", "stack": 10, "shovers": ["SB"], "ante_mode": "bb"}}
+{"question": "BTN 10bb BB-ante", "source": "session", "expected": {"hero": "BTN", "stack": 10, "ante_mode": "bb"}}
+{"question": "Queen ten off", "source": "session", "expected": {"hands": ["QTo"]}}
+{"question": "ICM คืออะไร", "source": "session", "expected": {"hero": null, "stack": null}}
+{"question": "บัตตันเหลือ 8 บิ๊ก ถือ A5 ออฟ ควรดันไหม", "source": "synthetic", "expected": {"hero": "BTN", "stack": 8, "shovers": [], "hands": ["A5o"]}, "known_gap": "stack unit บิ๊ก without blind"}
+{"question": "ตัวต่อตัว ผมอยู่บิ๊กไบร์ท อีกฝั่งยัดหมด 7 บีบี คอลด้วยอะไร", "source": "synthetic", "expected": {"hero": "BB", "stack": 7, "shovers": ["SB"], "players": 2}, "known_gap": "อีกฝั่ง = the other seat heads-up"}
