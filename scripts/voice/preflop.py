@@ -110,7 +110,7 @@ _ICM_WORD = re.compile(r"(?<![a-z])icm(?![a-z])|ไอซีเอ็ม")
 # ช่วงของทัวร์ที่เรียกชื่อ bubble คือเกือบถึงเงิน final table คือทุกคนที่เหลืออยู่โต๊ะนี้
 _BUBBLE = re.compile(r"bubble|บับเบิ้?ล")
 _FINAL_TABLE = re.compile(r"final\s*table|(?<![a-z])ft(?![a-z])|ไฟนอล\s*เทเบิ้?ล|โต๊ะสุดท้าย")
-_CHIP_EV = re.compile(r"chip\s*-?\s*ev|ชิป\s*อีวี")
+_CHIP_EV = re.compile(r"chip\s*-?\s*ev|(?<![a-z])c\s*-?\s*ev(?![a-z])|ชิป\s*อีวี")  # cev = chip ev
 DEFAULT_PAYOUTS = (50, 30, 20)
 
 # ช่วงของทัวร์ "50% left" "เหลือ 50%" "80% field" "field 80%" "120 left" "เหลือ 120 คน" คนลง "field 1000" "300 entrants"

@@ -3,6 +3,7 @@
 from pathlib import Path
 import re
 import sys
+import dataclasses
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -385,6 +386,24 @@ class PayoutWordsTests(unittest.TestCase):
     def test_chip_ev_is_said_explicitly_or_left_out(self):
         self.assertEqual(preflop.parse("BTN 10bb chip ev").payouts, ())
         self.assertIsNone(preflop.parse("BTN 10bb").payouts)
+
+    def test_cev_is_short_for_chip_ev(self):
+        for said in ("Cev 10bb btn", "BTN 10bb cEV", "BTN 10bb c-ev"):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.parse(said).payouts, ())
+        self.assertIsNone(preflop.parse("BTN 10bb ICM").payouts)
+
+    def test_saying_icm_after_chip_ev_switches_back_to_icm(self):
+        import spot
+        switched = spot.merge(preflop.parse("Icm"), preflop.Request(stack=10, hero="BTN", payouts=()))
+        self.assertIsNone(switched.payouts)
+        self.assertTrue(switched.icm)
+        self.assertIn("ICM", pushfold_chart.solved(dataclasses.replace(switched, game="tournament")).note)
+
+    def test_saying_icm_keeps_real_payouts_from_before(self):
+        import spot
+        kept = spot.merge(preflop.parse("icm"), preflop.Request(stack=10, payouts=(60, 40)))
+        self.assertEqual(kept.payouts, (60, 40))
 
     def test_a_follow_up_keeps_the_payouts_until_chip_ev_is_asked(self):
         import spot

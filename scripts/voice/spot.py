@@ -188,7 +188,9 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            else (None if new.ante_mode else base.ante),
                            ante_mode=new.ante_mode or base.ante_mode,
                            # () คือขอ chip EV ต้องไม่ถูกแทนด้วยรางวัลของตาก่อน
-                           payouts=new.payouts if new.payouts is not None else base.payouts,
+                           # พูด icm หลังขอ chip EV คือกลับไปใช้ ICM แต่รางวัลจริงที่บอกไว้ยังใช้ต่อ
+                           payouts=new.payouts if new.payouts is not None
+                           else (None if new.icm and base.payouts == () else base.payouts),
                            icm=new.icm or (base.icm and new.payouts is None),
                            # บอกเหลือเป็น % หรือเป็นจำนวนคน อย่างใดอย่างหนึ่ง ของใหม่แทนของเดิม
                            # bubble หรือ final table ใหม่แทนจำนวนคนเหลือเดิม และกลับกัน
