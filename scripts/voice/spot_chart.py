@@ -136,19 +136,22 @@ class Reply:
     found: "spot.Spot | None"   # spot ที่เจอ ใช้เป็นความจำตาถัดไป ถ้ามีชาร์ตจะเป็นชาร์ตที่แก้แล้ว
     message: str | None = None  # ข้อความแทนชาร์ต เช่นหาไม่เจอหรือยังไม่มีชาร์ตแบบนี้
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
+    # ชนิดคำตอบ ใช้ในบันทึกคำถามเพื่อหาประโยคที่ตัวอ่านยังอ่านไม่ออก
+    # chart | not_found | push_fold_only | all_in_by_posting
+    kind: str = "chart"
 
 
 def reply(prompt: str, memory=None) -> Reply:
     """ชาร์ตของคำถามหนึ่ง หรือข้อความบอกว่าทำไมไม่มีชาร์ต"""
     found = spot.lookup(prompt, memory=memory)
     if found is None:
-        return Reply(None, MISSING[spot.language_of(prompt)])
+        return Reply(None, MISSING[spot.language_of(prompt)], kind="not_found")
     # ตอบแค่ push/fold ที่แก้สด นอกนั้นบอกว่ายังไม่มี แต่ยังจำตำแหน่งกับสแตกไว้ถามต่อได้
     if pushfold_chart.applies(found.request) and pushfold_chart.all_in_by_posting(found.request):
-        return Reply(found, ALL_IN_BY_POSTING[found.lang])
+        return Reply(found, ALL_IN_BY_POSTING[found.lang], kind="all_in_by_posting")
     made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None
     if made is None:
-        return Reply(found, PUSH_FOLD_ONLY[found.lang])
+        return Reply(found, PUSH_FOLD_ONLY[found.lang], kind="push_fold_only")
     return Reply(dataclasses.replace(found, book=made.book, chart=made.chart), note=made.note)
 
 

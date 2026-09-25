@@ -136,10 +136,28 @@ def soniox_realtime(path, device: str = "auto", language: str | None = "th") -> 
     return Transcript(result.text, result.seconds, result.audio_seconds)
 
 
+def paxa(path, device: str = "auto", language: str | None = "th") -> Transcript:
+    """Paxa ทางไฟล์ อัปโหลดทั้งไฟล์แล้วรอผลครั้งเดียว"""
+    import paxa_stt
+
+    result = paxa_stt.transcribe(path, live=False)
+    return Transcript(result.text, result.seconds, result.audio_seconds)
+
+
+def paxa_realtime(path, device: str = "auto", language: str | None = "th") -> Transcript:
+    """Paxa ทางสตรีม ทางเดียวกับที่ใช้คุยสด"""
+    import paxa_stt
+
+    result = paxa_stt.transcribe(path)
+    return Transcript(result.text, result.seconds, result.audio_seconds)
+
+
 ENGINES: dict[str, Callable[..., Transcript]] = {
     "typhoon": typhoon,
     "whisper": whisper,
     "whisper-biased": whisper_biased,
     "soniox": soniox,
     "soniox-rt": soniox_realtime,
+    "paxa": paxa,
+    "paxa-rt": paxa_realtime,
 }

@@ -90,8 +90,13 @@ def respond(question: str, language: str, voice: str, silent: bool,
     return first_audio or (time.perf_counter() - began), " ".join(spoken_parts), pages
 
 
-# ตัวถอดเสียงตัวเดียวที่ฟังไมค์เองได้ ตัวอื่นต้องให้ VAD ในเครื่องตัดประโยคให้ก่อน
+# ตัวถอดเสียงทางสตรีมฟังไมค์เองได้ ตัวอื่นต้องให้ VAD ในเครื่องตัดประโยคให้ก่อน
+# ค่าเริ่มเป็น Soniox Paxa เลือกได้ด้วย --engine paxa-rt
+# เทียบ 2026-09-25 บนเสียงจริง 10 ไฟล์: Soniox แม่นกว่า (CER 0.047 vs 0.149) เร็วกว่าตอนคุยสด
+# (1.4 vs 2.0 วินาทีหลังพูดจบ) และถูกกว่าราว 6 เท่า ผลอยู่ใน tmp/stt/bake-*.json
 STREAMING_ENGINE = "soniox-rt"
+# engine ทางสตรีม -> ชื่อที่ใช้คิดเงิน
+STREAMING_ENGINES = {"paxa-rt": "paxa-stt-rt", "soniox-rt": "soniox-stt-rt"}
 
 ECHO_TAIL_SECONDS = 0.45
 AUDIO_START_TIMEOUT = 30.0
@@ -163,10 +168,22 @@ def warm_up(engine: str) -> float:
     return time.perf_counter() - began
 
 
-def _bill_turn(listener, billed: float, final: bool) -> float:
+def streaming_listener(engine: str = STREAMING_ENGINE, **options):
+    """ตัวฟังไมค์ทางสตรีมของ engine นั้น Soniox เป็นค่าเริ่ม Paxa เป็นตัวเลือก"""
+    if engine == "paxa-rt":
+        import paxa_stt
+
+        return paxa_stt.LiveListener(paxa_stt.load_api_key(), **options)
+    import soniox_api
+    import soniox_rt
+
+    return soniox_rt.LiveListener(soniox_api.load_api_key(), **options)
+
+
+def _bill_turn(listener, billed: float, final: bool, engine: str = STREAMING_ENGINE) -> float:
     """คิดเงินสายถอดเสียงที่เปิดค้างถึงตอนนี้ แล้วจดยอดรวม คืนวินาทีที่คิดแล้ว"""
     streamed = getattr(listener, "streamed_seconds", 0.0)
-    billed = costs.charge_stream("soniox-stt-rt", streamed, billed)
+    billed = costs.charge_stream(STREAMING_ENGINES.get(engine, "soniox-stt-rt"), streamed, billed)
     journal.note("cost", **costs.summary(final=final))
     return billed
 
@@ -203,13 +220,9 @@ def live(args: argparse.Namespace) -> int:
     # คลื่นตอนพูดบอกผู้ใช้ว่าเสียงเข้าแล้ว จะได้ไม่พูดซ้ำเพราะคิดว่าไมค์ไม่ติด
     meter = None if args.no_meter else wave.Meter()
     # ตัวถอดเสียงทางสตรีมฟังไมค์เองและตัดประโยคเอง จึงไม่ต้องผ่าน VAD ในเครื่อง
-    if args.engine == STREAMING_ENGINE:
-        import soniox_api
-        import soniox_rt
-
-        listener = soniox_rt.LiveListener(soniox_api.load_api_key(),
-                                          device=args.input_device, source=source,
-                                          meter=meter)
+    if args.engine in STREAMING_ENGINES:
+        listener = streaming_listener(args.engine, device=args.input_device, source=source,
+                                      meter=meter)
     else:
         listener = listen.Listener(device=args.input_device, source=source, meter=meter)
     player: playback.SpeechQueue | None = None
@@ -227,7 +240,7 @@ def live(args: argparse.Namespace) -> int:
 
     tools.warm_up()
     # ตัวถอดเสียงในเครื่องต้องโหลดโมเดลก่อน ส่วนทางสตรีมพร้อมใช้ทันทีที่เปิดสาย
-    if args.engine != STREAMING_ENGINE:
+    if args.engine not in STREAMING_ENGINES:
         print("กำลังอุ่นเครื่องถอดเสียง โหลดโมเดลครั้งเดียว รอสักครู่")
         try:
             journal.note("warm-up", seconds=round(warm_up(args.engine), 2), engine=args.engine)
@@ -422,7 +435,7 @@ def live(args: argparse.Namespace) -> int:
                          first_audio=round(first, 2), synth_first=round(synth_first, 2),
                          total=round(time.perf_counter() - began, 2),
                          barged=barged, brief=brief, text=" ".join(spoken_parts))
-            billed = _bill_turn(listener, billed, final=False)
+            billed = _bill_turn(listener, billed, final=False, engine=args.engine)
             if not full_duplex:
                 if player:
                     player.wait_idle()
@@ -434,7 +447,7 @@ def live(args: argparse.Namespace) -> int:
     finally:
         if meter is not None:
             meter.stop()
-        _bill_turn(listener, billed, final=True)
+        _bill_turn(listener, billed, final=True, engine=args.engine)
         journal.note("end")
         journal.stop()
         if watch:

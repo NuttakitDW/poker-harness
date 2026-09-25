@@ -43,6 +43,50 @@ class RoutingTests(unittest.TestCase):
         self.assertIsNone(pushfold_chart.solved(request(hero="BB", stack=1)))
 
 
+class ThaiSpellingTests(unittest.TestCase):
+    """Real Discord voice messages: English seat words written the way they sound in Thai."""
+
+    def test_a_button_open_jam_asked_from_the_small_blind(self):
+        made = preflop.parse("ขอ 12.2 บิ๊กบาย บัตท่อนโอเพ่นมา โอเพ่นแจมมา สมอลไบล์ทํายังไง")
+        self.assertEqual((made.stack, made.hero, made.villain), (12.2, "SB", "BTN"))
+        self.assertTrue(made.pushfold)
+
+    def test_two_jams_asked_from_the_big_blind(self):
+        made = preflop.parse("10 บิ๊กไบร์ท UTG แจม บัตท่อนแจม มาถึงตําแหน่งบิ๊กไบร์ท.")
+        self.assertEqual((made.stack, made.hero, made.shovers), (10, "BB", ("UTG", "BTN")))
+
+    def test_other_sounded_out_spellings_are_read(self):
+        for said, seat in (("บัตทอน shove 10bb", "BTN"), ("สมอลไบ shove 10bb", "SB"),
+                           ("บิ๊กไบล์ เจอ SB ออลอิน 8bb", "BB"), ("สมอลบลายด์ shove 10bb", "SB")):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.parse(said).hero, seat)
+
+    def test_a_sounded_out_big_blind_after_a_number_is_the_stack(self):
+        self.assertEqual(preflop.parse("BTN ออลอิน 8 บิ๊กไบร์ท").stack, 8)
+        self.assertEqual(preflop.parse("BTN ออลอิน 8 บิ๊กไบร์ท").hero, "BTN")
+
+
+class SpokenHandTests(unittest.TestCase):
+    """Voice transcripts name the cards in words: "Jack 2 off", "แจ็ค 2 ออฟ"."""
+
+    def test_card_names_and_off_are_read_as_a_hand(self):
+        for said, hands in (("Jack 2 off.", ["J2o"]), ("Ace King suited", ["AKs"]),
+                            ("แจ็ค 2 ออฟ", ["J2o"]), ("ถือ คิง ควีน", ["KQs", "KQo"]),
+                            ("pocket jacks", ["JJ"]), ("Queen ten off", ["QTo"]),
+                            ("เอซ 5 suit", ["A5s"])):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.hands_in(said), hands)
+
+    def test_ten_big_blinds_is_not_a_hand(self):
+        self.assertEqual(preflop.hands_in("BTN shove ten big blinds"), [])
+
+    def test_a_hand_alone_follows_up_on_the_last_chart(self):
+        _, first = spot_chart.answer("4.4bb บัตท่อน แจม บิ๊กบายทำอะไร", color=False)
+        text, found = spot_chart.answer("Jack 2 off.", color=False, memory=first.request)
+        self.assertEqual(found.hands, ("J2o",))
+        self.assertIn("J2o = ", text)
+
+
 class DecimalStackTests(unittest.TestCase):
     def test_a_decimal_stack_is_read(self):
         for said, stack in (("SB shove 5.5bb", 5.5), ("BTN ออลอิน 7.25 บีบี", 7.25),
@@ -320,6 +364,13 @@ class AnswerTests(SpotTestCase):
     def test_reply_explains_when_there_is_no_chart(self):
         made = spot_chart.reply("BTN open 30bb tournament")
         self.assertEqual(made.message, spot_chart.PUSH_FOLD_ONLY["EN"])
+        self.assertEqual(made.kind, "push_fold_only")
+
+    def test_reply_names_every_kind_of_answer(self):
+        self.assertEqual(spot_chart.reply("BTN shove 10bb tournament").kind, "chart")
+        self.assertEqual(spot_chart.reply("ICM คืออะไร").kind, "not_found")
+        self.use_books(book([chart(hero="BB", stack=30)], game="tournament"))
+        self.assertEqual(spot_chart.reply("BB 0.8bb push fold tournament").kind, "all_in_by_posting")
 
     def test_deeper_stacks_say_only_push_fold_is_available(self):
         text, found = spot_chart.answer("BTN open 30bb tournament", color=False)

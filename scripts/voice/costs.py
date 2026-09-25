@@ -29,6 +29,12 @@ DEEPSEEK_PEAK_HOURS = ((1, 4), (6, 10))
 
 # Paxa ขาย 15 เครดิตต่อพันตัวอักษร ราคาหน้าเว็บคิดเป็น 499 บาทต่อล้านตัวอักษร
 PAXA_THB_PER_M_CHARS = 499.0
+# ราคาเดียวกันคิดเป็นเครดิต ใช้กับการถอดเสียงของ Paxa ที่รายงานยอดเป็นเครดิต
+PAXA_CREDITS_PER_K_CHARS = 15.0
+PAXA_THB_PER_CREDIT = PAXA_THB_PER_M_CHARS / (PAXA_CREDITS_PER_K_CHARS * 1000)
+# ถอดเสียงทางสตรีมคิดทุกวินาทีที่ส่งเข้าไป รวมช่วงเงียบ วัดจากยอด charged จริง 2026-09-25
+# (1.2 เครดิตต่อเสียง 5.72 วินาที) หน้าเว็บบอก 8.33 เครดิตต่อนาทีซึ่งถูกกว่า ใช้ค่าที่วัดได้ไว้ก่อน
+PAXA_STT_RT_CREDITS_PER_SECOND = 0.21
 
 # Soniox คิดตามวินาทีเสียงที่ส่งเข้าไป ทางสตรีมคิดทุกวินาทีที่สายเปิดส่งเสียง รวมช่วงเงียบ
 SONIOX_RT_PER_HOUR = 0.12
@@ -47,6 +53,8 @@ SPOKEN_CHARS_PER_SECOND = 13.0
 UNITS = {
     "deepseek": "token",
     "paxa-tts": "char",
+    "paxa-stt": "second",
+    "paxa-stt-rt": "second",
     "soniox-tts": "char",
     "soniox-stt-rt": "second",
     "soniox-stt-async": "second",
@@ -93,6 +101,16 @@ def paxa_usd(chars: int) -> float:
     return chars * PAXA_THB_PER_M_CHARS / 1_000_000 / THB_PER_USD
 
 
+def paxa_credits_usd(credits: float) -> float:
+    """ราคาเครดิตของ Paxa ที่บริการรายงานกลับมา เช่นตอนถอดเสียง"""
+    return credits * PAXA_THB_PER_CREDIT / THB_PER_USD
+
+
+def paxa_stt_usd(seconds: float) -> float:
+    """ราคาถอดเสียงทางสตรีมของ Paxa ตามวินาทีเสียงที่ส่งไป"""
+    return paxa_credits_usd(seconds * PAXA_STT_RT_CREDITS_PER_SECOND)
+
+
 def soniox_tts_usd(chars: int) -> float:
     """ราคาสังเคราะห์เสียงของ Soniox ค่าข้อความบวกค่าเสียงที่เดาจากความยาวข้อความ"""
     text = chars * SONIOX_TTS_TOKENS_PER_CHAR * SONIOX_TTS_TEXT_PER_M_TOKENS / 1_000_000
@@ -122,6 +140,11 @@ def record(api: str, usd: float, *, quantity: float, seconds: float, **fields) -
                  quantity=round(quantity, 2), seconds=round(seconds, 2), **fields)
 
 
+def stream_usd(api: str, seconds: float) -> float:
+    """ราคาสายถอดเสียงที่เปิดค้างตามวินาทีเสียง แต่ละเจ้าคิดคนละอัตรา"""
+    return paxa_stt_usd(seconds) if api.startswith("paxa") else soniox_stt_usd(seconds)
+
+
 def charge_stream(api: str, streamed: float, charged: float) -> float:
     """คิดเงินวินาทีเสียงที่ส่งเข้าสายเพิ่มจากที่คิดไปแล้ว คืนยอดวินาทีที่คิดแล้วใหม่
 
@@ -131,7 +154,7 @@ def charge_stream(api: str, streamed: float, charged: float) -> float:
     fresh = streamed - charged
     if fresh <= 0:
         return charged
-    record(api, soniox_stt_usd(fresh), quantity=fresh, seconds=fresh)
+    record(api, stream_usd(api, fresh), quantity=fresh, seconds=fresh)
     return streamed
 
 

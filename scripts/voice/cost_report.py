@@ -27,7 +27,8 @@ TYPICAL_CACHE_HIT_SHARE = 0.4
 TYPICAL_OUTPUT_TOKENS = 280
 # ข้อความที่ส่งไปสังเคราะห์ยาวกว่าที่โชว์ เพราะตัวเลขและคำย่อถูกแปลงเป็นคำอ่าน
 SPOKEN_EXPANSION = 1.15
-STREAMING_ENGINE = "soniox-rt"
+# engine ทางสตรีม -> ชื่อที่ใช้คิดเงิน บันทึกเก่าใช้ Soniox ตั้งแต่ 2026-09-25 เป็น Paxa
+STREAMING_ENGINES = {"soniox-rt": "soniox-stt-rt", "paxa-rt": "paxa-stt-rt"}
 # ตัวอย่างการใช้งานต่อผู้ใช้ ชั่วโมงต่อปี
 USAGE_PROFILES = (
     ("เบา: 15 นาที 3 วันต่อสัปดาห์", 15 / 60 * 3 * 52),
@@ -61,8 +62,9 @@ def _guess(records: list[dict], minutes: float) -> dict:
     guessed[f"{start.get('tts', 'paxa')}-tts"] = (
         costs.soniox_tts_usd(round(chars)) if start.get("tts") == "soniox"
         else costs.paxa_usd(round(chars)))
-    if start.get("engine") == STREAMING_ENGINE:
-        guessed["soniox-stt-rt"] = costs.soniox_stt_usd(minutes * 60)
+    api = STREAMING_ENGINES.get(start.get("engine"))
+    if api:
+        guessed[api] = costs.stream_usd(api, minutes * 60)
     return guessed
 
 

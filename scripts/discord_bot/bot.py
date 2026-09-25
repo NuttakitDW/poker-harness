@@ -3,12 +3,13 @@
 บอทเป็นฝ่ายต่อออกไปหา Discord เอง ไม่ต้องเปิด port ไม่ต้องมี server สาธารณะ
 ข้อความที่คนพิมพ์ในห้องที่บอทเห็นจะขึ้นในเทอร์มินัลนี้
 พิมพ์ในเทอร์มินัลแล้วกด Enter จะส่งไปห้องล่าสุดที่มีคนพิมพ์มา หรือห้อง DISCORD_CHANNEL_ID
-ในห้อง Discord พิมพ์ ping บอทตอบ pong จาก Mac
+ในห้อง Discord พิมพ์ ping บอทตอบ pong
 
 ถามชาร์ต push/fold จาก Discord ได้ ตอบเป็นรูปชาร์ตแบบเดียวกับ make chart
     @ตามควาย BTN shove 10bb     หรือ   !chart BTN shove 10bb
     ใน DM พิมพ์คำถามตรง ๆ ได้เลย
     ข้อความเสียง (กดไมค์ค้างในแอปมือถือ) ถอดเป็นข้อความด้วย Soniox แล้วตอบเป็นชาร์ต
+    ทุกคำถามชาร์ตถูกบันทึกลง tmp/logs/discord-YYYYMMDD.jsonl ดูที่พลาดด้วย make bot-review
     ไฟล์เสียงที่แนบในห้องต้องมี @ตามควาย หรือ !chart กำกับ ใน DM ไม่ต้อง
     !new       ลืมตำแหน่งกับสแตกที่จำไว้ (จำแยกตามคนและห้อง)
     !help      วิธีใช้   !help en ภาษาอังกฤษ
@@ -39,6 +40,7 @@ import discord
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "voice"))
 
 import chart_image  # noqa: E402
+import question_log  # noqa: E402
 import keys  # noqa: E402
 import soniox_api  # noqa: E402
 import spot_chart  # noqa: E402
@@ -46,7 +48,7 @@ import spot_chart  # noqa: E402
 # ดูห้อง ส่งข้อความ ฝังลิงก์ แนบไฟล์ อ่านประวัติ พอสำหรับส่งชาร์ตเป็นรูปในขั้นต่อไป
 PERMISSIONS = 1024 | 2048 | 16384 | 32768 | 65536
 QUIT_COMMANDS = ("/q", "/quit")
-PING, PONG = "ping", "pong จาก Mac"
+PING, PONG = "ping", "pong"
 CHART_PREFIX, NEW_COMMAND, HELP_PREFIX = "!chart", "!new", "!help"
 DISCORD_HELP = {
     "th": """ตามควาย · วิธีใช้ใน Discord
@@ -206,24 +208,43 @@ class Bridge(discord.Client):
                                                  soniox_api.load_api_key(), audio.filename)
         except Exception:  # noqa: BLE001 ถอดเสียงพังก็ต้องตอบ ไม่ใช่เงียบหาย
             traceback.print_exc()
+            self._log(message, "", "voice", "not_heard", audio=audio.filename)
             await message.reply(NOT_HEARD)
             return
         print(f"  ถอดเสียงได้: {result.text!r} ({result.seconds:.1f}s)", flush=True)
         if not result.text:
+            self._log(message, "", "voice", "not_heard", audio=audio.filename)
             await message.reply(NOT_HEARD)
             return
-        await self._chart(message, result.text, key, heard=heard_line(result.text))
+        await self._chart(message, result.text, key, heard=heard_line(result.text),
+                          audio=audio.filename)
+
+    def _log(self, message: discord.Message, question: str, source: str, kind: str,
+             request=None, **fields) -> None:
+        """จดคำถามลงบันทึก พังก็แค่เตือน ไม่ให้การจดทำให้ตอบไม่ได้"""
+        try:
+            question_log.record(question_log.entry(
+                question=question, source=source, kind=kind, request=request,
+                server=message.guild.name if message.guild else None,
+                channel=getattr(message.channel, "name", None),
+                author=message.author.display_name, **fields))
+        except OSError as error:
+            print(f"จดบันทึกคำถามไม่ได้: {error}", flush=True)
 
     async def _chart(self, message: discord.Message, question: str, key: tuple[int, int],
-                     heard: str | None = None) -> None:
+                     heard: str | None = None, audio: str | None = None) -> None:
         """แก้ชาร์ตในเธรดแยก gateway จะได้ไม่ค้างระหว่าง solver คิด แล้วตอบเป็นรูป
 
         heard คือบรรทัดบอกว่าถอดเสียงได้ว่าอะไร ให้ผู้ถามเห็นถ้าบอทได้ยินผิด
         """
+        source = "voice" if audio else "text"
+        extra = {"audio": audio} if audio else {}
         try:
             async with message.channel.typing():
                 made = await asyncio.to_thread(spot_chart.reply, question,
                                                memory=self.memory.get(key))
+                self._log(message, question, source, made.kind,
+                          made.found.request if made.found else None, **extra)
                 if made.found is not None:
                     self.memory[key] = made.found.request
                 if made.message is not None:
@@ -234,8 +255,9 @@ class Bridge(discord.Client):
                                               found.hands, found.lang, (made.note,))
                 await message.reply(heard,
                                     file=discord.File(io.BytesIO(png), filename="chart.png"))
-        except Exception:  # noqa: BLE001 บอทต้องไม่ตายเพราะคำถามเดียว เก็บรายละเอียดไว้ในเทอร์มินัล
+        except Exception as error:  # noqa: BLE001 บอทต้องไม่ตายเพราะคำถามเดียว เก็บรายละเอียดไว้ในเทอร์มินัล
             traceback.print_exc()
+            self._log(message, question, source, "error", error=repr(error), **extra)
             await message.reply(FAILED)
 
     def _read_terminal(self) -> None:

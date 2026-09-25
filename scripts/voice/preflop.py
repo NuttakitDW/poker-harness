@@ -61,7 +61,7 @@ CASH_WORDS = ("cash", "แคช", "เงินสด", "ring", "ริงเ�
 # ชาร์ตที่เจอคู่มือ ช่อง raise คือการรีเรสกลับหนึ่งขั้นจากสถานการณ์นั้น
 RAISE_MEANS = {"RFI": "3-bet", "Limp": "iso-raise", "3-Bet": "4-bet", "4-Bet": "5-bet"}
 # คำที่ตามหลังชื่อตำแหน่งทันที บอกว่าตำแหน่งนั้นเปิดหรือ 3-bet
-_OPENS = re.compile(r"\s*(?:เปิด|open|raise\s*first|rfi)")
+_OPENS = re.compile(r"\s*(?:เปิด|โอเพ่น|โอเพน|open|raise\s*first|rfi)")
 _THREE_BETS = re.compile(r"\s*(?:3\s*-?\s*bet|three\s*bet|ทรีเบ็ท|สามเบ็ท)")
 # "โดน 3-bet" หรือ "โดน BB 3-bet" แปลว่าคนถามคือคนเปิดที่ถูก 3-bet กลับ
 _FACING_THREE_BET = re.compile(r"(?:โดน|เจอ).{0,15}?(?:3bet|threebet|ทรีเบ็ท|สามเบ็ท)")
@@ -98,7 +98,16 @@ _BB_ANTE = re.compile(r"(?<![\d.])(?<![\d.]\s)(?:bb|big\s*blind|บีบี|บ
 _LIVE = re.compile(r"(?<![a-z])live(?![a-z])|ไลฟ์")
 
 # คำบอกว่าดอกเดียวกันหรือต่างดอก ตัวถอดเสียงเขียนได้ทั้งอังกฤษและไทย
-_SUIT_WORD = r"(?i:offsuit|off-suit|suited|ออฟสูท|ออฟ|สูท)"
+_SUIT_WORD = r"(?i:offsuit|off-suit|off|suited|suit|ออฟสูท|ออฟ|สูท)"
+# ข้อความเสียงเรียกไพ่เป็นคำ "Jack 2 off" "แจ็ค 2 ออฟ" แปลงเป็นตัวอักษรไพ่ก่อนหามือ
+# พหูพจน์คือคู่ "pocket jacks" เป็น JJ ส่วน "ten big blinds" ไม่มีไพ่ใบที่สอง จึงไม่กลายเป็นมือ
+_CARD_WORDS = (
+    (r"aces", "AA"), (r"kings", "KK"), (r"queens", "QQ"), (r"jacks", "JJ"), (r"tens", "TT"),
+    (r"ace|เอซ", "A"), (r"king|คิง", "K"), (r"queen|ควีน", "Q"), (r"jack|แจ็ค|แจ๊ค|แจค", "J"),
+    (r"ten|เท็น", "T"),
+)
+_CARD_WORD_PATTERNS = tuple((re.compile(rf"(?i)(?<![a-z])(?:{words})(?![a-z])"), rank)
+                            for words, rank in _CARD_WORDS)
 # คนไทยอ่าน T ว่าสิบ พูด T8 ว่าสิบแปดแล้วตัวถอดเสียงเขียนเป็น 18 ถือเป็นมือเฉพาะเมื่อตามด้วยคำบอกดอก
 _TEEN_HAND = re.compile(rf"(?<!\d)1([2-9])(?=\s*{_SUIT_WORD})")
 _TEN = re.compile(r"(?<!\d)10(?!\d)")
@@ -229,13 +238,29 @@ def _one_edit(a: str, b: str) -> bool:
     return any(long[:i] + long[i + 1:] == short for i in range(len(long)))
 
 
+# ตัวถอดเสียงเขียนชื่อตำแหน่งอังกฤษเป็นไทยตามเสียงได้หลายแบบ ข้อความเสียงจริงจาก Discord:
+# "บัตท่อน" "สมอลไบล์" "บิ๊กไบร์ท" จึงแปลงเป็นชื่อมาตรฐานก่อนอ่าน "10 บิ๊กไบร์ท" จะได้เป็นสแตกด้วย
+_BLIND_SOUND = r"(?:บลาย|บาย|ไบล์|ไบล|ไบร์ท|ไบรท์|ไบร์|ไบ)(?:ด์|ส์|ท์)?"
+_SOUNDED_SEATS = (
+    (re.compile(rf"สมอล\s*{_BLIND_SOUND}"), "sb"),
+    (re.compile(rf"บิ๊?ก\s*{_BLIND_SOUND}"), "bb"),
+    (re.compile(r"บั[ตท](?:ตัน|ท่อน|ทอน|ต้น|ต้อน|ทั่น|ตั้น|ท้อน)"), "btn"),
+)
+
+
+def _sounded_out_seats(text: str) -> str:
+    for pattern, seat in _SOUNDED_SEATS:
+        text = pattern.sub(f" {seat} ", text)
+    return text
+
+
 def _fix_seat_typos(text: str) -> str:
     def fix(match: re.Match) -> str:
         word = match.group(0)
         if word in POSITION_WORDS or word in _NOT_SEATS:
             return word
         return next((seat for seat in _TYPO_TARGETS if _one_edit(word, seat)), word)
-    return _WORD.sub(fix, text)
+    return _WORD.sub(fix, _sounded_out_seats(text))
 
 
 def normalize_seats(text: str) -> str:
@@ -326,6 +351,8 @@ def carry(question: str, earlier: list[str]) -> str:
 def hands_in(question: str) -> list[str]:
     """มือที่ผู้ใช้ถามถึง เช่น A8o หรือ KQs ถ้าไม่บอกดอกคืนทั้ง suited และ offsuit"""
     text = _STACK.sub(" ", question)
+    for pattern, rank in _CARD_WORD_PATTERNS:
+        text = pattern.sub(rank, text)
     text = _TEN.sub("T", _TEEN_HAND.sub(r"T\1", text))
     found: list[str] = []
     for match in _HAND.finditer(text):
