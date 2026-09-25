@@ -113,11 +113,13 @@ _FINAL_TABLE = re.compile(r"final\s*table|(?<![a-z])ft(?![a-z])|ไฟนอล\
 _CHIP_EV = re.compile(r"chip\s*-?\s*ev|ชิป\s*อีวี")
 DEFAULT_PAYOUTS = (50, 30, 20)
 
-# ช่วงของทัวร์ "50% left" "เหลือ 50%" "120 left" "เหลือ 120 คน" คนลง "field 1000" "300 entrants"
+# ช่วงของทัวร์ "50% left" "เหลือ 50%" "80% field" "field 80%" "120 left" "เหลือ 120 คน" คนลง "field 1000" "300 entrants"
 # จ่ายกี่ % "paid 12%" สแตกเฉลี่ยโต๊ะอื่น "avg 25bb" ตัดออกก่อนอ่านสแตก ขนาดโต๊ะ และรางวัล
 _NUMBER = r"(\d+(?:\.\d+)?)"
 _PERCENT = r"\s*(?:%|เปอร์เซ็นต์)"
 _LEFT_PCT = re.compile(rf"{_NUMBER}{_PERCENT}\s*(?:of\s*(?:the\s*)?field\s*)?(?:left|remain\w*)"
+                       rf"|{_NUMBER}{_PERCENT}\s*(?:of\s*(?:the\s*)?)?field(?!\s*size)"
+                       rf"|field\s*{_NUMBER}{_PERCENT}"
                        rf"|(?:คง)?เหลือ\s*{_NUMBER}{_PERCENT}")
 _LEFT_COUNT = re.compile(r"(?<![\d.])(\d+)\s*(?:players?\s*)?(?:left|remain\w*)(?![a-z])"
                          r"|(?:คง)?เหลือ\s*(\d+)\s*คน")

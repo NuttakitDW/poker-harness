@@ -402,6 +402,17 @@ class StageWordsTests(unittest.TestCase):
                 made = preflop.parse(said)
                 self.assertEqual((made.left_pct, made.stack), (50, 10))
 
+    def test_a_share_of_the_field_without_left_is_read(self):
+        for said in ("SB vs UTG shove 13bb 80% field", "SB vs UTG shove 13bb 80% of field",
+                     "SB vs UTG shove 13bb field 80%", "SB vs UTG shove 13bb 80 เปอร์เซ็นต์ field"):
+            with self.subTest(said=said):
+                made = preflop.parse(said)
+                self.assertEqual((made.left_pct, made.entrants, made.stack), (80, None, 13))
+
+    def test_field_with_a_plain_number_is_still_the_field_size(self):
+        made = preflop.parse("BTN 10bb 50% left field 800")
+        self.assertEqual((made.left_pct, made.entrants), (50, 800))
+
     def test_players_left_is_read_without_touching_the_table_size(self):
         made = preflop.parse("BTN 10bb 120 left 6-max")
         self.assertEqual((made.players_left, made.players), (120, 6))
