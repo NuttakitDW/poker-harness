@@ -11,6 +11,23 @@ import bot  # noqa: E402
 import spot_chart  # noqa: E402
 
 
+class ContactTests(unittest.TestCase):
+    def test_contact_is_the_developer_email(self):
+        self.assertEqual(spot_chart.CONTACT, "nuttakitkundum@gmail.com")
+
+    def test_discord_accepts_both_prefixes(self):
+        self.assertIn("!contact", bot.CONTACT_COMMANDS)
+        self.assertIn("/contact", bot.CONTACT_COMMANDS)
+
+    def test_the_help_lists_contact(self):
+        self.assertIn("/contact", spot_chart.HELP_TEXT["en"])
+        self.assertIn("!contact", bot.help_message("!help en"))
+
+    def test_the_help_ends_with_the_copyright(self):
+        self.assertTrue(spot_chart.HELP_TEXT["th"].endswith(spot_chart.COPYRIGHT))
+        self.assertIn("Nuttakit Kundum", bot.help_message("!help"))
+
+
 class InviteTests(unittest.TestCase):
     def test_the_invite_link_asks_for_the_bot_scope_and_chat_permissions(self):
         url = bot.invite_url(1234)

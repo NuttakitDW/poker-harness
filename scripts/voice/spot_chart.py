@@ -12,6 +12,7 @@
     /t      สลับเป็นโหมดพิมพ์
     /n      เริ่ม spot ใหม่ ลืมตำแหน่งและสแตกที่คุยกันมา
     /help   วิธีใช้ภาษาไทย  /help en ภาษาอังกฤษ
+    /contact  อีเมลติดต่อผู้พัฒนา
     /q      ออก
 
 ตอนนี้ตอบได้แค่ชาร์ต push/fold ทัวร์นาเมนต์ที่ solver แก้สด สแตกไม่เกิน 15bb หรือพูดว่า push/fold
@@ -32,6 +33,7 @@ import threading
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 import chart_grid  # noqa: E402
+import mario  # noqa: E402
 import pushfold_chart  # noqa: E402
 import spot  # noqa: E402
 from engines import usable_text  # noqa: E402
@@ -40,6 +42,9 @@ VOICE_COMMANDS = ("/v", "/voice")
 TEXT_COMMANDS = ("/t", "/text")
 NEW_COMMANDS = ("/n", "/new")
 QUIT_COMMANDS = ("/q", "/quit", "exit", "quit", "ออก")
+CONTACT_COMMANDS = ("/contact",)
+CONTACT = "nuttakitkundum@gmail.com"
+COPYRIGHT = "© 2026 Nuttakit Kundum. All rights reserved."
 AUDIO_START_TIMEOUT = 30.0
 METER_LABEL = "spot chart กำลังฟัง"
 
@@ -61,7 +66,7 @@ PUSH_FOLD_ONLY = {
     "EN": "Not available yet. Only tournament push/fold charts, 15bb or less or say push/fold, "
           "e.g. BTN shove 10bb",
 }
-HELP = "/v voice  /t text  /n new  /q quit  /h help (/help en English)"
+HELP = "/v voice  /t text  /n new  /q quit  /h help (/help en English)  /contact"
 HELP_COMMANDS = ("/help", "/h", "/?")
 # ตัวอย่าง ข้อจำกัด และสี ใช้ร่วมกับวิธีใช้ใน Discord (scripts/discord_bot/bot.py) จะได้ไม่เขียนสองที่
 HELP_GUIDE = {
@@ -111,9 +116,10 @@ Commands
   /t, /text           สลับเป็นโหมดพิมพ์
   /n, /new            เริ่ม spot ใหม่ ลืมตำแหน่ง สแตก และคนที่ all-in ที่จำไว้
   /h, /help [th|en]   วิธีใช้ ไม่บอกภาษา = ไทย  (/? ก็ได้)
+  /contact            อีเมลติดต่อผู้พัฒนา
   /q, /quit           ออก  (exit, quit, ออก ก็ได้)
 
-""" + HELP_GUIDE["th"],
+""" + HELP_GUIDE["th"] + f"\n\n{COPYRIGHT}",
     "en": """spot chart · tamkwai
 Name a seat and a stack, get a push/fold chart solved on the spot
 
@@ -126,9 +132,10 @@ Commands
   /t, /text           switch to text
   /n, /new            new spot: forget the remembered seats, stack and shovers
   /h, /help [th|en]   this help; Thai unless en  (/? also works)
+  /contact            the developer's email
   /q, /quit           quit  (exit, quit also work)
 
-""" + HELP_GUIDE["en"],
+""" + HELP_GUIDE["en"] + f"\n\n{COPYRIGHT}",
 }
 
 
@@ -141,12 +148,14 @@ class Reply:
     message: str | None = None  # ข้อความแทนชาร์ต เช่นหาไม่เจอหรือยังไม่มีชาร์ตแบบนี้
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
     # ชนิดคำตอบ ใช้ในบันทึกคำถามเพื่อหาประโยคที่ตัวอ่านยังอ่านไม่ออก
-    # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table
+    # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | mario
     kind: str = "chart"
 
 
 def reply(prompt: str, memory=None) -> Reply:
     """ชาร์ตของคำถามหนึ่ง หรือข้อความบอกว่าทำไมไม่มีชาร์ต"""
+    if mario.asked(prompt):
+        return Reply(None, kind="mario")
     found = spot.lookup(prompt, memory=memory)
     if found is None:
         return Reply(None, MISSING[spot.language_of(prompt)], kind="not_found")
@@ -167,6 +176,8 @@ def reply(prompt: str, memory=None) -> Reply:
 def answer(prompt: str, color: bool, memory=None) -> tuple[str, "spot.Spot | None"]:
     """ข้อความที่จะพิมพ์ในเทอร์มินัลให้หนึ่งคำถาม กับ spot ที่เจอไว้ใช้เป็นความจำตาถัดไป"""
     made = reply(prompt, memory=memory)
+    if made.kind == "mario":
+        return mario.render(color), None
     if made.message is not None:
         return made.message, made.found
     found = made.found
@@ -289,6 +300,8 @@ def _loop(args: argparse.Namespace, session: Session) -> int:
             session.stop_voice()
         elif kind == "typed" and text.lower() in NEW_COMMANDS:
             memory = None
+        elif kind == "typed" and text.lower() in CONTACT_COMMANDS:
+            print(f"\n{CONTACT}\n{COPYRIGHT}")
         elif kind == "typed" and help_for(text):
             print(f"\n{help_for(text)}")
         elif text:

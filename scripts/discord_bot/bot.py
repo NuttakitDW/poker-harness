@@ -40,6 +40,7 @@ import discord
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "voice"))
 
 import chart_image  # noqa: E402
+import mario  # noqa: E402
 import question_log  # noqa: E402
 import keys  # noqa: E402
 import soniox_api  # noqa: E402
@@ -50,6 +51,7 @@ PERMISSIONS = 1024 | 2048 | 16384 | 32768 | 65536
 QUIT_COMMANDS = ("/q", "/quit")
 PING, PONG = "ping", "pong"
 CHART_PREFIX, NEW_COMMAND, HELP_PREFIX = "!chart", "!new", "!help"
+CONTACT_COMMANDS = ("!contact", "/contact")
 DISCORD_HELP = {
     "th": """ตามควาย · วิธีใช้ใน Discord
 ถามตำแหน่งกับสแตก ได้รูปชาร์ต push/fold ที่ solver แก้สด
@@ -61,6 +63,7 @@ Commands
   ข้อความเสียง          กดไมค์ค้างในแอปมือถือแล้วพูดคำถาม
   !new                ลืม spot เดิม (จำแยกตามคนและห้อง)
   !help [th|en]       วิธีใช้นี้  (!help en ภาษาอังกฤษ)
+  !contact            อีเมลติดต่อผู้พัฒนา
   ping                เช็คว่าบอทออนไลน์อยู่
 
 ตัวอย่างข้างล่าง ใส่หลัง @ตามควาย หรือ !chart""",
@@ -74,6 +77,7 @@ Commands
   voice message        hold the mic in the mobile app and say the question
   !new                 forget the remembered spot (kept per person and channel)
   !help [th|en]        this help  (!help alone is Thai)
+  !contact             the developer's email
   ping                 check the bot is online
 
 Put the examples below after @ตามควาย or !chart""",
@@ -137,7 +141,8 @@ def help_message(text: str) -> str | None:
         return None
     lang = words[1] if len(words) == 2 else "th"
     # ตัวอย่างกับข้อจำกัดมาจาก make chart ส่วนคำสั่งเป็นของ Discord ใส่ code block ให้คอลัมน์ตรง
-    return f"```\n{DISCORD_HELP[lang]}\n\n{spot_chart.HELP_GUIDE[lang]}\n```"
+    return (f"```\n{DISCORD_HELP[lang]}\n\n{spot_chart.HELP_GUIDE[lang]}\n\n"
+            f"{spot_chart.COPYRIGHT}\n```")
 
 
 def terminal_command(line: str) -> tuple[str, str]:
@@ -187,6 +192,8 @@ class Bridge(discord.Client):
         elif text.lower() == NEW_COMMAND:
             self.memory.pop(key, None)
             await message.reply(FORGOT)
+        elif text.lower() in CONTACT_COMMANDS:
+            await message.reply(f"{spot_chart.CONTACT}\n{spot_chart.COPYRIGHT}")
         elif help_message(text):
             await message.reply(help_message(text))
         else:
@@ -248,6 +255,11 @@ class Bridge(discord.Client):
                           made.found.request if made.found else None, **extra)
                 if made.found is not None:
                     self.memory[key] = made.found.request
+                if made.kind == "mario":
+                    png = await asyncio.to_thread(mario.png)
+                    await message.reply(heard,
+                                        file=discord.File(io.BytesIO(png), filename="mario.png"))
+                    return
                 if made.message is not None:
                     await message.reply("\n".join(filter(None, (heard, made.message))))
                     return
