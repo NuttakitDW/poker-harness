@@ -8,6 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "discord_bot"))
 import bot  # noqa: E402
+import spot_chart  # noqa: E402
 
 
 class InviteTests(unittest.TestCase):
@@ -74,6 +75,39 @@ class AudioTests(unittest.TestCase):
 
     def test_the_reply_says_what_was_heard(self):
         self.assertEqual(bot.heard_line("BTN shove 10bb"), "ได้ยินว่า: BTN shove 10bb")
+
+
+class HelpTests(unittest.TestCase):
+    def test_help_is_thai_by_default_and_english_on_request(self):
+        self.assertIn("วิธีใช้", bot.help_message("!help"))
+        self.assertIn("How to use", bot.help_message("!help en"))
+        self.assertEqual(bot.help_message("!help th"), bot.help_message("!help"))
+
+    def test_help_lists_the_discord_commands_not_the_terminal_ones(self):
+        for lang in ("th", "en"):
+            text = bot.help_message(f"!help {lang}")
+            for command in ("@ตามควาย", "!chart", "!new", "!help", "ping"):
+                with self.subTest(lang=lang, command=command):
+                    self.assertIn(command, text)
+            for terminal_only in ("/voice", "/text", "make chart", "--input-device"):
+                with self.subTest(lang=lang, terminal_only=terminal_only):
+                    self.assertNotIn(terminal_only, text)
+
+    def test_help_explains_voice_messages_and_dms(self):
+        self.assertIn("DM", bot.help_message("!help en"))
+        self.assertIn("voice message", bot.help_message("!help en"))
+        self.assertIn("ข้อความเสียง", bot.help_message("!help"))
+
+    def test_help_shares_the_examples_and_limits_with_the_terminal(self):
+        self.assertIn(spot_chart.HELP_GUIDE["en"], bot.help_message("!help en"))
+
+    def test_help_fits_in_one_discord_message(self):
+        for lang in ("th", "en"):
+            self.assertLessEqual(len(bot.help_message(f"!help {lang}")), 2000)
+
+    def test_other_words_are_not_help(self):
+        self.assertIsNone(bot.help_message("!helpful"))
+        self.assertIsNone(bot.help_message("help me"))
 
 
 class TerminalCommandTests(unittest.TestCase):

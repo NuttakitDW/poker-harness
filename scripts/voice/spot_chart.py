@@ -59,22 +59,9 @@ PUSH_FOLD_ONLY = {
 }
 HELP = "/v voice  /t text  /n new  /q quit  /h help (/help en English)"
 HELP_COMMANDS = ("/help", "/h", "/?")
-HELP_TEXT = {
-    "th": """spot chart · ตามควาย.com
-ถามตำแหน่งกับสแตก ได้ชาร์ต push/fold ที่ solver แก้สด
-
-Usage
-  make chart
-  .venv/bin/python scripts/voice/spot_chart.py ["คำถาม"] [--voice] [--input-device N]
-
-Commands
-  /v, /voice          สลับเป็นโหมดพูด
-  /t, /text           สลับเป็นโหมดพิมพ์
-  /n, /new            เริ่ม spot ใหม่ ลืมตำแหน่ง สแตก และคนที่ all-in ที่จำไว้
-  /h, /help [th|en]   วิธีใช้ ไม่บอกภาษา = ไทย  (/? ก็ได้)
-  /q, /quit           ออก  (exit, quit, ออก ก็ได้)
-
-Examples  ตอนนี้มีแค่ push/fold ทัวร์นาเมนต์ chip EV
+# ตัวอย่าง ข้อจำกัด และสี ใช้ร่วมกับวิธีใช้ใน Discord (scripts/discord_bot/bot.py) จะได้ไม่เขียนสองที่
+HELP_GUIDE = {
+    "th": """Examples  ตอนนี้มีแค่ push/fold ทัวร์นาเมนต์ chip EV
   shove เป็นคนแรก     BTN ออลอิน 10bb
   เจอคน shove         BB เจอ BTN ออลอิน 8bb
   เจอหลายคน           UTG all-in แล้ว BTN call เราอยู่ SB 5bb
@@ -90,21 +77,7 @@ Limits
 
 Colours
   แดง shove  เขียว call  น้ำเงิน fold  ยิ่งอ่อนยิ่งเล่นน้อย (เล่นผสม)""",
-    "en": """spot chart · tamkwai
-Name a seat and a stack, get a push/fold chart solved on the spot
-
-Usage
-  make chart
-  .venv/bin/python scripts/voice/spot_chart.py ["question"] [--voice] [--input-device N]
-
-Commands
-  /v, /voice          switch to voice
-  /t, /text           switch to text
-  /n, /new            new spot: forget the remembered seats, stack and shovers
-  /h, /help [th|en]   this help; Thai unless en  (/? also works)
-  /q, /quit           quit  (exit, quit also work)
-
-Examples  push/fold tournament charts only, chip EV
+    "en": """Examples  push/fold tournament charts only, chip EV
   first to shove      BTN shove 10bb
   facing a shove      BB vs BTN shove 8bb
   facing several      UTG all-in, BTN call, I'm in the SB 5bb
@@ -120,6 +93,38 @@ Limits
 
 Colours
   red shove  green call  blue fold  lighter = mixed, played less often""",
+}
+HELP_TEXT = {
+    "th": """spot chart · ตามควาย.com
+ถามตำแหน่งกับสแตก ได้ชาร์ต push/fold ที่ solver แก้สด
+
+Usage
+  make chart
+  .venv/bin/python scripts/voice/spot_chart.py ["คำถาม"] [--voice] [--input-device N]
+
+Commands
+  /v, /voice          สลับเป็นโหมดพูด
+  /t, /text           สลับเป็นโหมดพิมพ์
+  /n, /new            เริ่ม spot ใหม่ ลืมตำแหน่ง สแตก และคนที่ all-in ที่จำไว้
+  /h, /help [th|en]   วิธีใช้ ไม่บอกภาษา = ไทย  (/? ก็ได้)
+  /q, /quit           ออก  (exit, quit, ออก ก็ได้)
+
+""" + HELP_GUIDE["th"],
+    "en": """spot chart · tamkwai
+Name a seat and a stack, get a push/fold chart solved on the spot
+
+Usage
+  make chart
+  .venv/bin/python scripts/voice/spot_chart.py ["question"] [--voice] [--input-device N]
+
+Commands
+  /v, /voice          switch to voice
+  /t, /text           switch to text
+  /n, /new            new spot: forget the remembered seats, stack and shovers
+  /h, /help [th|en]   this help; Thai unless en  (/? also works)
+  /q, /quit           quit  (exit, quit also work)
+
+""" + HELP_GUIDE["en"],
 }
 
 

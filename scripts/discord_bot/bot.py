@@ -48,9 +48,33 @@ PERMISSIONS = 1024 | 2048 | 16384 | 32768 | 65536
 QUIT_COMMANDS = ("/q", "/quit")
 PING, PONG = "ping", "pong จาก Mac"
 CHART_PREFIX, NEW_COMMAND, HELP_PREFIX = "!chart", "!new", "!help"
-DISCORD_HOWTO = {
-    "th": "ใน Discord: @ตามควาย <คำถาม> หรือ !chart <คำถาม>  ·  !new เริ่มใหม่  ·  !help en English",
-    "en": "In Discord: @ตามควาย <question> or !chart <question>  ·  !new to reset  ·  !help (Thai)",
+DISCORD_HELP = {
+    "th": """ตามควาย · วิธีใช้ใน Discord
+ถามตำแหน่งกับสแตก ได้รูปชาร์ต push/fold ที่ solver แก้สด
+
+Commands
+  @ตามควาย <คำถาม>    ถามในห้อง
+  !chart <คำถาม>       ถามในห้องโดยไม่ต้อง mention
+  DM                  ส่งคำถามมาตรง ๆ ได้เลย ไม่ต้องมีคำนำหน้า
+  ข้อความเสียง          กดไมค์ค้างในแอปมือถือแล้วพูดคำถาม
+  !new                ลืม spot เดิม (จำแยกตามคนและห้อง)
+  !help [th|en]       วิธีใช้นี้  (!help en ภาษาอังกฤษ)
+  ping                เช็คว่าบอทออนไลน์อยู่
+
+ตัวอย่างข้างล่าง ใส่หลัง @ตามควาย หรือ !chart""",
+    "en": """ตามควาย · How to use in Discord
+Name a seat and a stack, get a push/fold chart image solved on the spot
+
+Commands
+  @ตามควาย <question>  ask in a channel
+  !chart <question>    ask in a channel without a mention
+  DM                   send the question as is, no prefix needed
+  voice message        hold the mic in the mobile app and say the question
+  !new                 forget the remembered spot (kept per person and channel)
+  !help [th|en]        this help  (!help alone is Thai)
+  ping                 check the bot is online
+
+Put the examples below after @ตามควาย or !chart""",
 }
 FAILED = "ขอโทษ ทำชาร์ตไม่สำเร็จ ลองถามใหม่อีกทีนะ"
 NOT_HEARD = "ถอดเสียงไม่ออก ลองพูดใหม่ชัด ๆ หรือพิมพ์มาแทนนะ"
@@ -105,13 +129,13 @@ def heard_line(text: str) -> str:
 
 
 def help_message(text: str) -> str | None:
-    """วิธีใช้ถ้าข้อความเป็น !help หรือ !help en"""
+    """วิธีใช้ใน Discord ถ้าข้อความเป็น !help, !help th หรือ !help en"""
     words = text.strip().lower().split()
-    if not words or words[0] != HELP_PREFIX:
+    if not words or words[0] != HELP_PREFIX or words[1:] not in ([], ["th"], ["en"]):
         return None
-    body = spot_chart.help_for("/help " + " ".join(words[1:]))
-    lang = "en" if words[1:] == ["en"] else "th"
-    return f"{DISCORD_HOWTO[lang]}\n```\n{body}\n```" if body else None
+    lang = words[1] if len(words) == 2 else "th"
+    # ตัวอย่างกับข้อจำกัดมาจาก make chart ส่วนคำสั่งเป็นของ Discord ใส่ code block ให้คอลัมน์ตรง
+    return f"```\n{DISCORD_HELP[lang]}\n\n{spot_chart.HELP_GUIDE[lang]}\n```"
 
 
 def terminal_command(line: str) -> tuple[str, str]:
