@@ -164,11 +164,7 @@ class Reply:
     message: str | None = None  # ข้อความแทนชาร์ต เช่นหาไม่เจอหรือยังไม่มีชาร์ตแบบนี้
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
     # ชนิดคำตอบ ใช้ในบันทึกคำถามเพื่อหาประโยคที่ตัวอ่านยังอ่านไม่ออก
-<<<<<<< Updated upstream
-    # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | mario
-=======
-    # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | bad_payouts
->>>>>>> Stashed changes
+    # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | bad_payouts | mario
     kind: str = "chart"
 
 
