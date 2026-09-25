@@ -1,0 +1,280 @@
+"""บอท Discord ชื่อ ตามควาย สำหรับทดสอบว่าเครื่องนี้คุยกับ Discord ได้สองทาง
+
+บอทเป็นฝ่ายต่อออกไปหา Discord เอง ไม่ต้องเปิด port ไม่ต้องมี server สาธารณะ
+ข้อความที่คนพิมพ์ในห้องที่บอทเห็นจะขึ้นในเทอร์มินัลนี้
+พิมพ์ในเทอร์มินัลแล้วกด Enter จะส่งไปห้องล่าสุดที่มีคนพิมพ์มา หรือห้อง DISCORD_CHANNEL_ID
+ในห้อง Discord พิมพ์ ping บอทตอบ pong จาก Mac
+
+ถามชาร์ต push/fold จาก Discord ได้ ตอบเป็นรูปชาร์ตแบบเดียวกับ make chart
+    @ตามควาย BTN shove 10bb     หรือ   !chart BTN shove 10bb
+    ใน DM พิมพ์คำถามตรง ๆ ได้เลย
+    ข้อความเสียง (กดไมค์ค้างในแอปมือถือ) ถอดเป็นข้อความด้วย Soniox แล้วตอบเป็นชาร์ต
+    ไฟล์เสียงที่แนบในห้องต้องมี @ตามควาย หรือ !chart กำกับ ใน DM ไม่ต้อง
+    !new       ลืมตำแหน่งกับสแตกที่จำไว้ (จำแยกตามคนและห้อง)
+    !help      วิธีใช้   !help en ภาษาอังกฤษ
+
+ต้องมี DISCORD_BOT_TOKEN ใน .env (DISCORD_CHANNEL_ID ไม่ใส่ก็ได้)
+
+ใช้:
+    make bot
+
+คำสั่งในเทอร์มินัล:
+    /channels     ห้องที่บอทส่งข้อความได้ พร้อม id
+    /to <id>      เปลี่ยนห้องที่จะส่ง
+    /q, /quit     ออก
+"""
+
+from __future__ import annotations
+
+import asyncio
+import io
+import pathlib
+import re
+import sys
+import threading
+import traceback
+
+import discord
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "voice"))
+
+import chart_image  # noqa: E402
+import keys  # noqa: E402
+import soniox_api  # noqa: E402
+import spot_chart  # noqa: E402
+
+# ดูห้อง ส่งข้อความ ฝังลิงก์ แนบไฟล์ อ่านประวัติ พอสำหรับส่งชาร์ตเป็นรูปในขั้นต่อไป
+PERMISSIONS = 1024 | 2048 | 16384 | 32768 | 65536
+QUIT_COMMANDS = ("/q", "/quit")
+PING, PONG = "ping", "pong จาก Mac"
+CHART_PREFIX, NEW_COMMAND, HELP_PREFIX = "!chart", "!new", "!help"
+DISCORD_HOWTO = {
+    "th": "ใน Discord: @ตามควาย <คำถาม> หรือ !chart <คำถาม>  ·  !new เริ่มใหม่  ·  !help en English",
+    "en": "In Discord: @ตามควาย <question> or !chart <question>  ·  !new to reset  ·  !help (Thai)",
+}
+FAILED = "ขอโทษ ทำชาร์ตไม่สำเร็จ ลองถามใหม่อีกทีนะ"
+NOT_HEARD = "ถอดเสียงไม่ออก ลองพูดใหม่ชัด ๆ หรือพิมพ์มาแทนนะ"
+AUDIO_EXTENSIONS = (".ogg", ".oga", ".opus", ".mp3", ".m4a", ".wav", ".webm", ".aac", ".flac")
+FORGOT = "ลืม spot เดิมแล้ว ถามใหม่ได้เลย"
+NO_TARGET = "ยังไม่รู้จะส่งไปห้องไหน พิมพ์อะไรก็ได้ใน Discord ก่อน หรือ /channels แล้ว /to <id>"
+
+
+def invite_url(app_id: int) -> str:
+    """ลิงก์เชิญบอทเข้า server พร้อมสิทธิ์ที่ต้องใช้"""
+    return (f"https://discord.com/oauth2/authorize?client_id={app_id}"
+            f"&scope=bot&permissions={PERMISSIONS}")
+
+
+def incoming(guild: str | None, channel: str | None, author: str, content: str) -> str:
+    """บรรทัดที่พิมพ์ในเทอร์มินัลเมื่อมีข้อความเข้ามา"""
+    where = f"{guild} #{channel}" if guild else "DM"
+    return f"[{where}] {author}: {content}"
+
+
+def chart_question(content: str, bot_id: int, direct: bool) -> str | None:
+    """คำถามชาร์ตในข้อความ ต้อง mention บอท ขึ้นต้นด้วย !chart หรือเป็น DM ไม่งั้นไม่ใช่คำถาม"""
+    text = content.strip()
+    mention = re.compile(rf"<@!?{bot_id}>")
+    if mention.search(text):
+        question = mention.sub(" ", text)
+    elif text.lower().startswith(CHART_PREFIX):
+        question = text[len(CHART_PREFIX):]
+    elif direct:
+        question = text
+    else:
+        return None
+    return question.strip() or None
+
+
+def audio_attachment(attachments) -> object | None:
+    """ไฟล์เสียงไฟล์แรกในข้อความ ดูจากชนิดไฟล์ก่อน ถ้าไม่บอกชนิดดูจากนามสกุล"""
+    return next((item for item in attachments
+                 if (item.content_type or "").startswith("audio/")
+                 or item.filename.lower().endswith(AUDIO_EXTENSIONS)), None)
+
+
+def answers_audio(voice: bool, direct: bool, text: str, bot_id: int) -> bool:
+    """ตอบเสียงนี้ไหม ข้อความเสียงของ Discord กับเสียงใน DM ตอบเสมอ ไฟล์เสียงในห้องต้องเรียกบอท"""
+    if voice or direct:
+        return True
+    return bool(re.search(rf"<@!?{bot_id}>", text)) or text.lower().startswith(CHART_PREFIX)
+
+
+def heard_line(text: str) -> str:
+    return f"ได้ยินว่า: {text}"
+
+
+def help_message(text: str) -> str | None:
+    """วิธีใช้ถ้าข้อความเป็น !help หรือ !help en"""
+    words = text.strip().lower().split()
+    if not words or words[0] != HELP_PREFIX:
+        return None
+    body = spot_chart.help_for("/help " + " ".join(words[1:]))
+    lang = "en" if words[1:] == ["en"] else "th"
+    return f"{DISCORD_HOWTO[lang]}\n```\n{body}\n```" if body else None
+
+
+def terminal_command(line: str) -> tuple[str, str]:
+    """แปลบรรทัดที่พิมพ์ในเทอร์มินัลเป็น (คำสั่ง, ค่า)"""
+    text = line.strip()
+    if not text:
+        return "skip", ""
+    if text.lower() in QUIT_COMMANDS:
+        return "quit", ""
+    if text == "/channels":
+        return "channels", ""
+    if text.startswith("/to "):
+        return "to", text[4:].strip()
+    return "send", text
+
+
+class Bridge(discord.Client):
+    """ส่งต่อข้อความระหว่างห้อง Discord กับเทอร์มินัลของเครื่องนี้"""
+
+    def __init__(self, channel_id: int | None) -> None:
+        intents = discord.Intents.default()
+        intents.message_content = True  # ต้องเปิด Message Content Intent ใน Developer Portal ด้วย
+        super().__init__(intents=intents)
+        self.target = channel_id
+        self._reading = False
+        self.memory: dict[tuple[int, int], object] = {}  # (ห้อง, คน) -> สิ่งที่บอกไว้ตาก่อน
+
+    async def on_ready(self) -> None:
+        print(f"ตามควาย ออนไลน์แล้ว ({self.user}) อยู่ใน {len(self.guilds)} server", flush=True)
+        print(f"ลิงก์เชิญบอท: {invite_url(self.application_id)}", flush=True)
+        # ต่อใหม่หลังเน็ตหลุดก็เรียก on_ready อีก เปิดตัวอ่านเทอร์มินัลครั้งเดียวพอ
+        if not self._reading:
+            self._reading = True
+            threading.Thread(target=self._read_terminal, daemon=True).start()
+
+    async def on_message(self, message: discord.Message) -> None:
+        if message.author == self.user:
+            return
+        guild = message.guild.name if message.guild else None
+        channel = getattr(message.channel, "name", None)
+        print(incoming(guild, channel, message.author.display_name, message.content), flush=True)
+        self.target = message.channel.id
+        text = message.content.strip()
+        key = (message.channel.id, message.author.id)
+        if text.lower() == PING:
+            await message.channel.send(PONG)
+        elif text.lower() == NEW_COMMAND:
+            self.memory.pop(key, None)
+            await message.reply(FORGOT)
+        elif help_message(text):
+            await message.reply(help_message(text))
+        else:
+            audio = audio_attachment(message.attachments)
+            direct = message.guild is None
+            if audio and answers_audio(message.flags.voice, direct, text, self.user.id):
+                await self._voice(message, audio, key)
+                return
+            question = chart_question(text, self.user.id, direct)
+            if question:
+                await self._chart(message, question, key)
+
+    async def _voice(self, message: discord.Message, audio, key: tuple[int, int]) -> None:
+        """ถอดข้อความเสียงด้วย Soniox แล้วถามชาร์ตเหมือนพิมพ์มา"""
+        try:
+            async with message.channel.typing():
+                data = await audio.read()
+                result = await asyncio.to_thread(soniox_api.transcribe_bytes, data,
+                                                 soniox_api.load_api_key(), audio.filename)
+        except Exception:  # noqa: BLE001 ถอดเสียงพังก็ต้องตอบ ไม่ใช่เงียบหาย
+            traceback.print_exc()
+            await message.reply(NOT_HEARD)
+            return
+        print(f"  ถอดเสียงได้: {result.text!r} ({result.seconds:.1f}s)", flush=True)
+        if not result.text:
+            await message.reply(NOT_HEARD)
+            return
+        await self._chart(message, result.text, key, heard=heard_line(result.text))
+
+    async def _chart(self, message: discord.Message, question: str, key: tuple[int, int],
+                     heard: str | None = None) -> None:
+        """แก้ชาร์ตในเธรดแยก gateway จะได้ไม่ค้างระหว่าง solver คิด แล้วตอบเป็นรูป
+
+        heard คือบรรทัดบอกว่าถอดเสียงได้ว่าอะไร ให้ผู้ถามเห็นถ้าบอทได้ยินผิด
+        """
+        try:
+            async with message.channel.typing():
+                made = await asyncio.to_thread(spot_chart.reply, question,
+                                               memory=self.memory.get(key))
+                if made.found is not None:
+                    self.memory[key] = made.found.request
+                if made.message is not None:
+                    await message.reply("\n".join(filter(None, (heard, made.message))))
+                    return
+                found = made.found
+                png = await asyncio.to_thread(chart_image.render, found.book, found.chart,
+                                              found.hands, found.lang, (made.note,))
+                await message.reply(heard,
+                                    file=discord.File(io.BytesIO(png), filename="chart.png"))
+        except Exception:  # noqa: BLE001 บอทต้องไม่ตายเพราะคำถามเดียว เก็บรายละเอียดไว้ในเทอร์มินัล
+            traceback.print_exc()
+            await message.reply(FAILED)
+
+    def _read_terminal(self) -> None:
+        for line in sys.stdin:
+            kind, value = terminal_command(line)
+            asyncio.run_coroutine_threadsafe(self._handle(kind, value), self.loop)
+            if kind == "quit":
+                return
+        asyncio.run_coroutine_threadsafe(self.close(), self.loop)
+
+    async def _handle(self, kind: str, value: str) -> None:
+        if kind == "quit":
+            await self.close()
+        elif kind == "channels":
+            self._list_channels()
+        elif kind == "to":
+            self._switch(value)
+        elif kind == "send":
+            await self._send(value)
+
+    def _list_channels(self) -> None:
+        for guild in self.guilds:
+            for channel in guild.text_channels:
+                if channel.permissions_for(guild.me).send_messages:
+                    print(f"  {channel.id}  {guild.name} #{channel.name}", flush=True)
+
+    def _switch(self, value: str) -> None:
+        channel = self.get_channel(int(value)) if value.isdigit() else None
+        if channel is None:
+            print(f"ไม่เจอห้อง {value} ดู id ได้จาก /channels", flush=True)
+            return
+        self.target = channel.id
+        print(f"ส่งไป #{getattr(channel, 'name', channel.id)} แล้วนะ", flush=True)
+
+    async def _send(self, text: str) -> None:
+        if self.target is None:
+            print(NO_TARGET, flush=True)
+            return
+        try:
+            channel = self.get_channel(self.target) or await self.fetch_channel(self.target)
+            await channel.send(text)
+        except discord.Forbidden:
+            print("บอทไม่มีสิทธิ์ส่งข้อความในห้องนี้", flush=True)
+        except discord.HTTPException as error:
+            print(f"ส่งไม่สำเร็จ: {error}", flush=True)
+
+
+def main() -> int:
+    token = keys.require("DISCORD_BOT_TOKEN")
+    channel_id = keys.find("DISCORD_CHANNEL_ID")
+    bridge = Bridge(int(channel_id) if channel_id and channel_id.isdigit() else None)
+    try:
+        bridge.run(token)
+    except discord.LoginFailure:
+        print("token ไม่ถูกต้อง ไป Reset Token ใน Developer Portal แล้วใส่ DISCORD_BOT_TOKEN ใหม่",
+              file=sys.stderr)
+        return 1
+    except discord.PrivilegedIntentsRequired:
+        print("ยังไม่ได้เปิด Message Content Intent: Developer Portal > Bot > Privileged Gateway Intents",
+              file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

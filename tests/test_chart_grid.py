@@ -81,6 +81,11 @@ class GridTests(unittest.TestCase):
         self.assertIn(f"{chart_grid.STYLES['F']} fold 30% ", line)
         self.assertEqual(text.splitlines()[text.splitlines().index(line) - 1], "")
 
+    def test_tone_gives_the_background_and_text_colour(self):
+        self.assertEqual(chart_grid.tone("R", None), ("R", 124, False))
+        self.assertEqual(chart_grid.tone("F", {"fold": 0.6, "call": 0.4}), ("F", 153, True))
+        self.assertEqual(chart_grid.tone("-", None), ("-", None, False))
+
     def test_coloured_cells_show_the_hand_name(self):
         made = book([chart(raises=("AKs",))])
         first = ANSI.sub("", chart_grid.rows(made, made["charts"][0])[0])

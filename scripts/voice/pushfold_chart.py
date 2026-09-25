@@ -70,7 +70,7 @@ def _label(names: tuple[str, ...], name: str | None) -> str | None:
 
 
 @functools.lru_cache(maxsize=64)
-def _solve(stack: int, players: int) -> coach.Result:
+def _solve(stack: float, players: int) -> coach.Result:
     # ผลเดียวมีทุกที่นั่งทุกสถานการณ์ในโต๊ะ ถามที่นั่งอื่นในสแตกเดิมจึงไม่ต้องแก้ใหม่
     spot = Spot(stacks=(float(stack),) * players, ante=BB_ANTE, ante_mode="bb")
     return coach.solve(spot, library=_LIBRARY)

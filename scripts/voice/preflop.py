@@ -67,7 +67,7 @@ _THREE_BETS = re.compile(r"\s*(?:3\s*-?\s*bet|three\s*bet|ทรีเบ็ท|
 _FACING_THREE_BET = re.compile(r"(?:โดน|เจอ).{0,15}?(?:3bet|threebet|ทรีเบ็ท|สามเบ็ท)")
 
 # ตัวถอดเสียงเขียนบิ๊กบลายด์ได้หลายแบบ เช่น บิ๊กบาย บิกบลาย จึงจับแค่ต้นคำ
-_STACK = re.compile(r"(\d{1,3})\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)",
+_STACK = re.compile(r"(?<![\d.])(\d{1,3}(?:\.\d+)?)\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)",
                     re.IGNORECASE)
 
 # ขนาดโต๊ะ heads-up คือสองคน ตัวถอดเสียงเขียนเป็นไทยได้หลายแบบ ส่วน 6-max 3 handed โต๊ะ 9 คน บอกเลขตรง ๆ
@@ -104,7 +104,7 @@ class Request:
     """สิ่งที่ถอดได้จากคำถามว่าผู้ใช้ถามถึงสถานการณ์ไหน"""
 
     game: str | None = None
-    stack: int | None = None
+    stack: float | None = None  # สแตกเป็น bb เลขเต็มเก็บเป็น int ทศนิยมอย่าง 5.5 เก็บเป็น float
     hero: str | None = None
     villain: str | None = None
     scenario: str | None = None
@@ -284,7 +284,7 @@ def parse(question: str) -> Request:
         scenario = scenario or "RFI"
     size = _TABLE_SIZE.search(lowered)
     players = 2 if _HEADS_UP.search(lowered) else int(size.group(1)) if size else None
-    return Request(game=game, stack=int(stack.group(1)) if stack else None,
+    return Request(game=game, stack=_stack_value(stack.group(1)) if stack else None,
                    hero=hero, villain=villain, scenario=scenario, players=players, shovers=shovers,
                    pushfold=bool(_PUSH_FOLD.search(lowered)))
 
@@ -335,6 +335,12 @@ def hands_in(question: str) -> list[str]:
             names = [f"{high}{low}s", f"{high}{low}o"]
         found.extend(name for name in names if name not in found)
     return found
+
+
+def _stack_value(text: str) -> float:
+    """สแตกที่อ่านได้ 10 เป็น 10 ส่วน 5.5 เป็น 5.5 เลขเต็มจะได้แสดงว่า 10bb ไม่ใช่ 10.0bb"""
+    value = float(text)
+    return int(value) if value.is_integer() else value
 
 
 def _shares(shares: dict) -> str:

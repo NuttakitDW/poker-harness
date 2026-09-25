@@ -37,6 +37,23 @@ class RoutingTests(unittest.TestCase):
         self.assertIsNone(pushfold_chart.solved(request(hero="BB", stack=2)))
 
 
+class DecimalStackTests(unittest.TestCase):
+    def test_a_decimal_stack_is_read(self):
+        for said, stack in (("SB shove 5.5bb", 5.5), ("BTN ออลอิน 7.25 บีบี", 7.25),
+                            ("BB vs SB 12.5 big blinds", 12.5)):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.parse(said).stack, stack)
+
+    def test_whole_stacks_stay_whole_numbers(self):
+        self.assertEqual(preflop.parse("BTN shove 10bb").stack, 10)
+        self.assertIsInstance(preflop.parse("BTN shove 10.0bb").stack, int)
+
+    def test_a_decimal_stack_is_solved_at_that_depth(self):
+        made = pushfold_chart.solved(request(hero="SB", stack=5.5))
+        self.assertEqual(made.chart["stack"], 5.5)
+        self.assertIn("all stacks 5.5bb", made.note)
+
+
 class TableSizeTests(unittest.TestCase):
     def test_heads_up_is_read_in_english_and_thai(self):
         for said in ("ขอเป็นแบบ Heads-up.", "heads up BTN 5bb", "HU 10bb", "เฮดอัพ 8bb",
@@ -218,6 +235,16 @@ class AnswerTests(SpotTestCase):
         self.assertIn("push/fold Nash", text)
         self.assertEqual(found.chart["scenario"], "Push/Fold")
         self.assertEqual(found.request.stack, 10)
+
+    def test_reply_gives_the_chart_and_its_note_without_drawing(self):
+        made = spot_chart.reply("BTN shove 10bb tournament", classify=agrees("BTN"))
+        self.assertIsNone(made.message)
+        self.assertEqual(made.found.chart["scenario"], "Push/Fold")
+        self.assertIn("push/fold Nash", made.note)
+
+    def test_reply_explains_when_there_is_no_chart(self):
+        made = spot_chart.reply("BTN open 30bb tournament", classify=agrees("BTN"))
+        self.assertEqual(made.message, spot_chart.PUSH_FOLD_ONLY["EN"])
 
     def test_deeper_stacks_say_only_push_fold_is_available(self):
         text, found = spot_chart.answer("BTN open 30bb tournament", color=False,

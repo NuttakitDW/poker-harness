@@ -50,15 +50,28 @@ def cell_text(hand: str) -> str:
     return hand.ljust(3)
 
 
+def tone(code: str, shares: dict | None) -> tuple[str, int | None, bool]:
+    """(action ที่ใช้สี, สีพื้น xterm-256, ตัวอักษรดำไหม) ของช่องหนึ่ง ใช้ร่วมกันทั้งเทอร์มินัลและรูป
+
+    ช่องผสมใช้สีของ action หลัก ยิ่งเล่นน้อยยิ่งอ่อน ช่องที่ไม่อยู่ในเรนจ์ไม่มีสีพื้น
+    """
+    if shares:
+        action, share = max(shares.items(), key=lambda item: item[1])
+        code = ACTION_CODES.get(action, "F")
+    elif code in SHADES:
+        share = 1.0
+    else:
+        return code, None, False
+    background = next(bg for floor, bg in SHADES[code] if share >= floor)
+    return code, background, share < DARK_TEXT_FROM
+
+
 def shade(shares: dict) -> tuple[str, str]:
     """(action หลัก, สไตล์) ของช่องผสม เช่น raise 70% เป็นแดงอ่อน เล่นเกือบตลอดเป็นสีเต็ม"""
-    action, share = max(shares.items(), key=lambda item: item[1])
-    code = ACTION_CODES.get(action, "F")
-    if share >= SHADES[code][0][0]:
+    code, background, dark = tone("F", shares)
+    if background == SHADES[code][0][1]:
         return code, STYLES[code]
-    background = next(bg for floor, bg in SHADES[code] if share >= floor)
-    text = "231;1" if share >= DARK_TEXT_FROM else "16"
-    return code, f"\033[48;5;{background};38;5;{text}m"
+    return code, f"\033[48;5;{background};38;5;{'16' if dark else '231;1'}m"
 
 
 def _cell(hand: str, code: str, shares: dict | None, color: bool, asked: bool = False) -> str:

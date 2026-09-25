@@ -116,17 +116,34 @@ Colours
 
 
 
-def answer(prompt: str, color: bool, classify=spot.systemone_hero,
-           memory=None) -> tuple[str, "spot.Spot | None"]:
-    """ข้อความที่จะพิมพ์ให้หนึ่งคำถาม กับ spot ที่เจอไว้ใช้เป็นความจำตาถัดไป"""
+@dataclasses.dataclass(frozen=True)
+class Reply:
+    """ผลของคำถามหนึ่ง ยังไม่วาด ให้เทอร์มินัลกับ Discord วาดเองตามแบบของตัวเอง"""
+
+    found: "spot.Spot | None"   # spot ที่เจอ ใช้เป็นความจำตาถัดไป ถ้ามีชาร์ตจะเป็นชาร์ตที่แก้แล้ว
+    message: str | None = None  # ข้อความแทนชาร์ต เช่นหาไม่เจอหรือยังไม่มีชาร์ตแบบนี้
+    note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
+
+
+def reply(prompt: str, classify=spot.systemone_hero, memory=None) -> Reply:
+    """ชาร์ตของคำถามหนึ่ง หรือข้อความบอกว่าทำไมไม่มีชาร์ต"""
     found = spot.lookup(prompt, classify=classify, memory=memory)
     if found is None:
-        return MISSING[spot.language_of(prompt)], None
+        return Reply(None, MISSING[spot.language_of(prompt)])
     # ตอบแค่ push/fold ที่แก้สด นอกนั้นบอกว่ายังไม่มี แต่ยังจำตำแหน่งกับสแตกไว้ถามต่อได้
     made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None
     if made is None:
-        return PUSH_FOLD_ONLY[found.lang], found
-    found = dataclasses.replace(found, book=made.book, chart=made.chart)
+        return Reply(found, PUSH_FOLD_ONLY[found.lang])
+    return Reply(dataclasses.replace(found, book=made.book, chart=made.chart), note=made.note)
+
+
+def answer(prompt: str, color: bool, classify=spot.systemone_hero,
+           memory=None) -> tuple[str, "spot.Spot | None"]:
+    """ข้อความที่จะพิมพ์ในเทอร์มินัลให้หนึ่งคำถาม กับ spot ที่เจอไว้ใช้เป็นความจำตาถัดไป"""
+    made = reply(prompt, classify=classify, memory=memory)
+    if made.message is not None:
+        return made.message, made.found
+    found = made.found
     return chart_grid.render(found.book, found.chart, color=color, asked=found.hands,
                              lang=found.lang, notes=(made.note,), show_mixed=False), found
 
