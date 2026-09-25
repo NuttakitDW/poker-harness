@@ -12,14 +12,9 @@ sys.path.insert(0, str(ROOT / "tests"))
 import preflop  # noqa: E402
 import spot  # noqa: E402
 import spot_chart  # noqa: E402
-import systemone  # noqa: E402
 from test_preflop import book, chart  # noqa: E402
 
 ANSI = re.compile(r"\033\[[0-9;]*m")
-
-
-def agrees(seat, probability=0.9):
-    return lambda _prompt: (seat, probability)
 
 
 class SpotTestCase(unittest.TestCase):
@@ -38,53 +33,39 @@ class LookupTests(SpotTestCase):
             book([chart(hero="UTG", stack=100, page=4, raises=("AKo",))], game="cash"),
         )
 
-    def test_an_exact_match_with_the_ai_agreeing_is_fully_confident(self):
-        found = spot.lookup("BB vs BTN open 30bb tournament", classify=agrees("BB"))
+    def test_an_exact_match_is_fully_confident(self):
+        found = spot.lookup("BB vs BTN open 30bb tournament")
         self.assertEqual(found.chart["page"], 33)
         self.assertEqual(found.confidence, 1.0)
         self.assertEqual(found.notes, ())
 
     def test_the_nearest_stack_is_used_and_costs_confidence(self):
-        found = spot.lookup("BB vs BTN open 40bb tournament", classify=agrees("BB"))
+        found = spot.lookup("BB vs BTN open 40bb tournament")
         self.assertIn(found.chart["stack"], (30, 50))
         self.assertLess(found.confidence, 1.0)
         self.assertTrue(any("40BB" in note for note in found.notes))
 
     def test_thai_questions_find_the_same_chart_with_thai_notes(self):
-        found = spot.lookup("BB เจอ button เปิด 45bb ทัวร์", classify=agrees("BB"))
+        found = spot.lookup("BB เจอ button เปิด 45bb ทัวร์")
         self.assertEqual(found.chart["page"], 34)
         self.assertEqual(found.lang, "TH")
         self.assertTrue(any("ถาม 45BB" in note for note in found.notes))
 
-    def test_the_rule_parser_wins_when_the_ai_disagrees_but_confidence_drops(self):
-        found = spot.lookup("BB vs BTN open 30bb tournament", classify=agrees("BTN"))
-        self.assertEqual(found.chart["hero"], "BB")
-        self.assertEqual(found.confidence, spot.AI_DISAGREES)
-
-    def test_no_ai_still_answers_with_lower_confidence(self):
-        found = spot.lookup("BB vs BTN open 30bb tournament", classify=lambda _p: None)
-        self.assertEqual(found.confidence, spot.AI_MISSING)
-
-    def test_the_ai_fills_in_a_seat_the_rules_cannot_read(self):
-        found = spot.lookup("ตำแหน่งสุดท้าย chart 30bb tournament",
-                            classify=agrees("BTN", 0.9))
-        self.assertEqual(found.chart["hero"], "BTN")
-        self.assertLessEqual(found.confidence, spot.AI_ONLY * 0.9)
-
-    def test_an_unsure_ai_guess_on_an_off_topic_question_gives_nothing(self):
-        self.assertIsNone(spot.lookup("what is ICM", classify=agrees("BTN", 0.65)))
+    def test_a_seat_the_rules_cannot_read_gives_nothing(self):
+        # SystemOne used to guess BTN here; without it the asker must name a seat
+        self.assertIsNone(spot.lookup("ตำแหน่งสุดท้าย chart 30bb tournament"))
 
     def test_nothing_is_found_without_any_seat(self):
-        self.assertIsNone(spot.lookup("what is ICM", classify=lambda _p: None))
+        self.assertIsNone(spot.lookup("what is ICM"))
 
     def test_an_unstated_game_and_stack_are_noted(self):
-        found = spot.lookup("UTG open AKo", classify=agrees("UTG"))
+        found = spot.lookup("UTG open AKo")
         self.assertEqual(found.book["game"], "cash")
         self.assertEqual(found.hands, ("AKo",))
         self.assertEqual(len(found.notes), 2)
 
     def test_the_confidence_line_shows_a_percentage(self):
-        found = spot.lookup("BB vs BTN open 40bb tournament", classify=agrees("BB"))
+        found = spot.lookup("BB vs BTN open 40bb tournament")
         self.assertRegex(spot.confidence_line(found), r"^confidence \d+%")
 
 
@@ -107,7 +88,7 @@ class MemoryTests(SpotTestCase):
         memory = None
         found = None
         for prompt in prompts:
-            found = spot.lookup(prompt, classify=agrees("BTN", 0.9), memory=memory)
+            found = spot.lookup(prompt, memory=memory)
             memory = found.request if found else memory
         return found
 
@@ -171,11 +152,11 @@ class MemoryTests(SpotTestCase):
 
     def test_small_talk_does_not_redraw_the_remembered_chart(self):
         first = self.ask("BB เจอ button 25bb")
-        self.assertIsNone(spot.lookup("ฮัลโหล ได้ยินไหมครับ", classify=agrees("BTN", 0.9),
+        self.assertIsNone(spot.lookup("ฮัลโหล ได้ยินไหมครับ",
                                       memory=first.request))
 
     def test_without_memory_a_lone_opponent_is_not_the_hero(self):
-        self.assertIsNone(spot.lookup("เจอ button ไม่ใช่เจอ UTG", classify=lambda _p: None))
+        self.assertIsNone(spot.lookup("เจอ button ไม่ใช่เจอ UTG"))
 
 
 class LanguageTests(unittest.TestCase):
@@ -193,17 +174,16 @@ class AnswerTests(SpotTestCase):
         self.use_books(book([made], game="cash"))
 
     def test_a_cash_spot_says_only_push_fold_is_available(self):
-        text, found = spot_chart.answer("UTG open AKo 100bb cash", color=False,
-                                        classify=agrees("UTG"))
+        text, found = spot_chart.answer("UTG open AKo 100bb cash", color=False)
         self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["EN"])
         self.assertEqual(found.request.hero, "UTG")
 
     def test_the_push_fold_only_reply_follows_the_asked_language(self):
-        text, _ = spot_chart.answer("UTG เปิด 100bb cash", color=False, classify=agrees("UTG"))
+        text, _ = spot_chart.answer("UTG เปิด 100bb cash", color=False)
         self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["TH"])
 
     def test_a_missing_spot_says_so_in_the_asked_language(self):
-        text, found = spot_chart.answer("ICM คืออะไร", color=False, classify=lambda _p: None)
+        text, found = spot_chart.answer("ICM คืออะไร", color=False)
         self.assertIsNone(found)
         self.assertEqual(text, spot_chart.MISSING["TH"])
 
@@ -228,44 +208,6 @@ class HelpTests(unittest.TestCase):
                     self.assertIn(command, text)
 
 
-class SystemOneHeroTests(unittest.TestCase):
-    def test_no_key_means_no_guess(self):
-        with mock.patch.object(systemone, "available", return_value=False):
-            self.assertIsNone(spot.systemone_hero("BB vs BTN"))
-
-    def test_a_failed_call_means_no_guess(self):
-        with mock.patch.object(systemone, "available", return_value=True), \
-                mock.patch.object(systemone, "choose",
-                                  side_effect=systemone.SystemOneError("down")):
-            self.assertIsNone(spot.systemone_hero("BB vs BTN"))
-
-    def test_the_guess_carries_its_probability(self):
-        answer = systemone.Choice("BB", {"BB": 0.8, "BTN": 0.2}, 0.6)
-        with mock.patch.object(systemone, "available", return_value=True), \
-                mock.patch.object(systemone, "choose", return_value={"hero": answer}):
-            self.assertEqual(spot.systemone_hero("BB vs BTN"), ("BB", 0.8))
-
-
-class SystemOneClientTests(unittest.TestCase):
-    def test_answers_are_read_into_choices(self):
-        reply = {"answers": {"hero": {"choice": "BB", "probabilities": {"BB": 0.7, "SB": 0.3},
-                                      "confidence": 0.5}}}
-        with mock.patch.object(systemone, "_post", return_value=reply) as post:
-            got = systemone.choose("x", {"hero": ("seat?", {"BB": "bb", "SB": "sb"})}, key="k")
-        self.assertEqual(got["hero"].choice, "BB")
-        self.assertEqual(got["hero"].probability, 0.7)
-        sent = post.call_args.args[0]
-        self.assertEqual(sent["questions"]["hero"]["type"], "choice")
-
-    def test_a_missing_answer_is_an_error(self):
-        with mock.patch.object(systemone, "_post", return_value={"answers": {}}):
-            with self.assertRaises(systemone.SystemOneError):
-                systemone.choose("x", {"hero": ("seat?", {"BB": "bb"})}, key="k")
-
-    def test_no_key_is_an_error(self):
-        with mock.patch.object(systemone.keys, "find", return_value=None):
-            with self.assertRaises(systemone.SystemOneError):
-                systemone.choose("x", {"hero": ("seat?", {"BB": "bb"})})
 
 
 if __name__ == "__main__":

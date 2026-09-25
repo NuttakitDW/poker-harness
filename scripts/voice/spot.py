@@ -2,19 +2,16 @@
 
 ไม่มีคำอธิบาย ไม่มีโมเดลเขียนคำตอบ มีแค่ตารางกับตัวเลขว่าตารางนี้ตรงกับที่ถามแค่ไหน
 
-ตัวอ่านคำถามหลักคือ preflop.parse ซึ่งอ่านบทบาทได้แม่นกว่า ส่วน SystemOne ช่วยสองทาง
-ยืนยันว่าผู้ถามนั่งตำแหน่งไหน และเดาตำแหน่งแทนเมื่อตัวอ่านหลักหาไม่เจอ
-ลองแล้ว SystemOne ตอบคู่มือผิดเกือบทุกครั้ง (ตอบว่าไม่มีคนเปิดทั้งที่มี) จึงไม่ใช้ข้อนั้น
+ตัวอ่านคำถามคือ preflop.parse ตัวเดียว ไม่เรียกโมเดลหรือ API ภายนอก ตอบได้แม้ไม่มีเน็ต
+เคยให้ SystemOne ของ iApp ช่วยเดาตำแหน่งผู้ถาม แต่ตัวอ่านหลักชนะทุกครั้งที่เห็นต่าง
+จึงเอาออกเมื่อ 2026-09-25 ถ้าตัวอ่านหาตำแหน่งผู้ถามไม่เจอก็ตอบว่าหา spot ไม่เจอ
 """
 
 from __future__ import annotations
 
 import dataclasses
 import re
-from typing import Callable
-
 import preflop
-import systemone
 
 # สแตกที่สมมติเมื่อผู้ถามไม่บอก cash ส่วนใหญ่เล่น 100BB
 DEFAULT_STACK = {"cash": 100, "tournament": 30, None: 100}
@@ -32,16 +29,6 @@ GAME_SWITCH = 0.8
 # หักตามระยะห่างแบบอัตราส่วนใน stack_gap ห่างเท่าตัว (10 กับ 20) หักราว 35% แต่ไม่ต่ำกว่าพื้น
 STACK_GAP_WEIGHT = 0.5
 STACK_GAP_FLOOR = 0.25
-# ตัวอ่านหลักกับ SystemOne เห็นตรงกัน ไม่ตรงกัน หรือไม่ได้ถาม SystemOne
-AI_AGREES = 1.0
-AI_DISAGREES = 0.75
-AI_MISSING = 0.9
-# ตัวอ่านหลักหาตำแหน่งไม่เจอ ต้องเชื่อ SystemOne คนเดียว
-AI_ONLY = 0.8
-# SystemOne ตอบตำแหน่งให้ทุกคำถามแม้แต่ "ICM คืออะไร" (ได้ 0.51-0.65) หรือ "hello" (0.45)
-# จึงรับคำเดาเดี่ยว ๆ เมื่อมั่นใจสูง หรือมั่นใจพอประมาณและคำถามมีร่องรอยของ spot
-AI_ONLY_ALONE = 0.75
-AI_ONLY_WITH_SIGNAL = 0.5
 # ตำแหน่งยืมมาจากคำถามก่อนหน้า เช่น "ขอเปลี่ยนเป็น 25BB" หรือ "เจอ button ไม่ใช่ UTG"
 FROM_MEMORY = 0.95
 
@@ -52,18 +39,6 @@ _FACING = re.compile(r"(?:เจอ|โดน|ใส่|vs\.?|versus|against|fac
 
 _THAI = re.compile(r"[฀-๿]")
 
-SEATS = {
-    "UTG": "UTG, under the gun, first to act",
-    "UTG+1": "UTG+1, second to act",
-    "LJ": "lojack",
-    "HJ": "hijack",
-    "CO": "cutoff",
-    "BTN": "button / dealer",
-    "SB": "small blind",
-    "BB": "big blind",
-}
-HERO_QUESTION = ("Which seat is the person asking (the player who must act now)? "
-                 "If someone else opened or raised, the asker is the OTHER seat facing it.")
 
 NOTES = {
     "TH": {
@@ -75,9 +50,6 @@ NOTES = {
         "scenario": "ไม่มีชาร์ต {asked} ใช้ {used}",
         "villain": "ไม่มีชาร์ตเจอ {asked} ใช้เจอ {used}",
         "extra_villain": "ใช้ชาร์ตเจอ {used}",
-        "ai_disagrees": "SystemOne เห็นว่าเป็น {seat}",
-        "ai_only": "ตำแหน่งเดาโดย SystemOne",
-        "ai_missing": "ไม่ได้ตรวจกับ SystemOne",
         "memory": "ต่อจากคำถามก่อน",
         "open": "เปิดก่อน",
     },
@@ -90,16 +62,10 @@ NOTES = {
         "scenario": "no {asked} chart, using {used}",
         "villain": "no chart vs {asked}, using vs {used}",
         "extra_villain": "using chart vs {used}",
-        "ai_disagrees": "SystemOne reads seat as {seat}",
-        "ai_only": "seat guessed by SystemOne",
-        "ai_missing": "not cross-checked with SystemOne",
         "memory": "carried from the last question",
         "open": "open",
     },
 }
-
-HeroGuess = tuple[str, float]
-Classifier = Callable[[str], "HeroGuess | None"]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -126,40 +92,11 @@ def language_of(text: str) -> str:
     return "TH" if _THAI.search(text) else "EN"
 
 
-def systemone_hero(prompt: str) -> HeroGuess | None:
-    """ถาม SystemOne ว่าผู้ถามนั่งตำแหน่งไหน คืน None ถ้าไม่มีคีย์หรือเรียกไม่ได้"""
-    if not systemone.available():
-        return None
-    try:
-        answer = systemone.choose({"poker_question": prompt},
-                                  {"hero": (HERO_QUESTION, SEATS)})["hero"]
-    except systemone.SystemOneError:
-        return None
-    return answer.choice, answer.probability
-
-
 def _looks_like_spot(prompt: str, request: preflop.Request) -> bool:
     """มีมือ สแตก หรือคำขอชาร์ตอยู่ในคำถาม"""
     lowered = prompt.lower()
     return bool(request.stack or preflop.hands_in(prompt)
                 or any(word in lowered for word in (*preflop.CHART_WORDS, *preflop.HOLD_WORDS)))
-
-
-def _agreement(prompt: str, request: preflop.Request, guess: HeroGuess | None,
-               words: dict) -> tuple[str | None, float, list[str]]:
-    """เลือกตำแหน่งผู้ถาม คืน (ตำแหน่ง, ตัวคูณความมั่นใจ, หมายเหตุ)"""
-    if request.hero is None:
-        if guess is None or guess[0] not in SEATS:
-            return None, 0.0, []
-        needed = AI_ONLY_WITH_SIGNAL if _looks_like_spot(prompt, request) else AI_ONLY_ALONE
-        if guess[1] < needed:
-            return None, 0.0, []
-        return guess[0], AI_ONLY * guess[1], [words["ai_only"]]
-    if guess is None:
-        return request.hero, AI_MISSING, [words["ai_missing"]]
-    if guess[0] == request.hero:
-        return request.hero, AI_AGREES, []
-    return request.hero, AI_DISAGREES, [words["ai_disagrees"].format(seat=guess[0])]
 
 
 def stack_gap(have: int, wanted: int) -> float:
@@ -254,8 +191,8 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            shovers=new.shovers or (() if new.villain else base.shovers))
 
 
-def lookup(prompt: str, classify: Classifier | None = systemone_hero,
-           lang: str | None = None, memory: preflop.Request | None = None) -> Spot | None:
+def lookup(prompt: str, lang: str | None = None,
+           memory: preflop.Request | None = None) -> Spot | None:
     """ชาร์ตที่ใกล้คำถามที่สุด คืน None ถ้าไม่รู้แม้แต่ว่าผู้ถามนั่งตรงไหน
 
     memory คือ Spot.request ของตาก่อน ใช้ตอบคำถามต่อเนื่องอย่าง "ขอเปลี่ยนเป็น 25BB"
@@ -267,14 +204,13 @@ def lookup(prompt: str, classify: Classifier | None = systemone_hero,
     if said == preflop.Request() and not _looks_like_spot(prompt, said):
         # ไม่ได้พูดอะไรเกี่ยวกับ spot เลย เช่น "ฮัลโหล ได้ยินไหม" อย่าวาดชาร์ตเดิมซ้ำ
         return None
-    if said.hero is None and request.hero is not None:
-        # ผู้ถามมาจากตาก่อน SystemOne เห็นแค่ประโยคท่อนนี้ ถามไปก็ได้คำตอบผิด
-        hero, trust, hero_notes = request.hero, FROM_MEMORY, [words["memory"]]
-    else:
-        guess = classify(prompt) if classify else None
-        hero, trust, hero_notes = _agreement(prompt, request, guess, words)
+    hero = request.hero
     if hero is None:
         return None
+    # ผู้ถามมาจากตาก่อน เช่น "ขอเปลี่ยนเป็น 25BB" ไม่ได้บอกตำแหน่งในตานี้
+    from_memory = said.hero is None
+    trust = FROM_MEMORY if from_memory else 1.0
+    hero_notes = [words["memory"]] if from_memory else []
     request = dataclasses.replace(request, hero=hero)
     scenario = request.scenario or "RFI"
 

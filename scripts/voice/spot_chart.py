@@ -133,9 +133,9 @@ class Reply:
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
 
 
-def reply(prompt: str, classify=spot.systemone_hero, memory=None) -> Reply:
+def reply(prompt: str, memory=None) -> Reply:
     """ชาร์ตของคำถามหนึ่ง หรือข้อความบอกว่าทำไมไม่มีชาร์ต"""
-    found = spot.lookup(prompt, classify=classify, memory=memory)
+    found = spot.lookup(prompt, memory=memory)
     if found is None:
         return Reply(None, MISSING[spot.language_of(prompt)])
     # ตอบแค่ push/fold ที่แก้สด นอกนั้นบอกว่ายังไม่มี แต่ยังจำตำแหน่งกับสแตกไว้ถามต่อได้
@@ -147,10 +147,9 @@ def reply(prompt: str, classify=spot.systemone_hero, memory=None) -> Reply:
     return Reply(dataclasses.replace(found, book=made.book, chart=made.chart), note=made.note)
 
 
-def answer(prompt: str, color: bool, classify=spot.systemone_hero,
-           memory=None) -> tuple[str, "spot.Spot | None"]:
+def answer(prompt: str, color: bool, memory=None) -> tuple[str, "spot.Spot | None"]:
     """ข้อความที่จะพิมพ์ในเทอร์มินัลให้หนึ่งคำถาม กับ spot ที่เจอไว้ใช้เป็นความจำตาถัดไป"""
-    made = reply(prompt, classify=classify, memory=memory)
+    made = reply(prompt, memory=memory)
     if made.message is not None:
         return made.message, made.found
     found = made.found

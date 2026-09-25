@@ -12,7 +12,7 @@ import preflop  # noqa: E402
 import pushfold_chart  # noqa: E402
 import spot_chart  # noqa: E402
 from test_preflop import book, chart  # noqa: E402
-from test_spot import SpotTestCase, agrees  # noqa: E402
+from test_spot import SpotTestCase  # noqa: E402
 
 ANSI = re.compile(r"\033\[[0-9;]*m")
 
@@ -305,40 +305,36 @@ class AnswerTests(SpotTestCase):
         self.use_books(book([chart(hero="BTN", stack=30, raises=("AKo",))], game="tournament"))
 
     def test_make_chart_shows_the_solved_chart_for_short_stacks(self):
-        text, found = spot_chart.answer("BTN shove 10bb tournament A2o", color=False,
-                                        classify=agrees("BTN"))
+        text, found = spot_chart.answer("BTN shove 10bb tournament A2o", color=False)
         self.assertIn("Push/Fold", text)
         self.assertIn("push/fold Nash", text)
         self.assertEqual(found.chart["scenario"], "Push/Fold")
         self.assertEqual(found.request.stack, 10)
 
     def test_reply_gives_the_chart_and_its_note_without_drawing(self):
-        made = spot_chart.reply("BTN shove 10bb tournament", classify=agrees("BTN"))
+        made = spot_chart.reply("BTN shove 10bb tournament")
         self.assertIsNone(made.message)
         self.assertEqual(made.found.chart["scenario"], "Push/Fold")
         self.assertIn("push/fold Nash", made.note)
 
     def test_reply_explains_when_there_is_no_chart(self):
-        made = spot_chart.reply("BTN open 30bb tournament", classify=agrees("BTN"))
+        made = spot_chart.reply("BTN open 30bb tournament")
         self.assertEqual(made.message, spot_chart.PUSH_FOLD_ONLY["EN"])
 
     def test_deeper_stacks_say_only_push_fold_is_available(self):
-        text, found = spot_chart.answer("BTN open 30bb tournament", color=False,
-                                        classify=agrees("BTN"))
+        text, found = spot_chart.answer("BTN open 30bb tournament", color=False)
         self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["EN"])
         self.assertEqual(found.request.stack, 30)
 
     def test_a_follow_up_stack_then_gets_the_chart(self):
-        _, found = spot_chart.answer("BTN open 30bb tournament", color=False,
-                                     classify=agrees("BTN"))
-        text, _ = spot_chart.answer("10bb", color=False, classify=agrees("BTN"),
+        _, found = spot_chart.answer("BTN open 30bb tournament", color=False)
+        text, _ = spot_chart.answer("10bb", color=False,
                                     memory=found.request)
         self.assertIn("push/fold Nash", text)
 
     def test_a_hero_all_in_by_posting_is_told_so(self):
         self.use_books(book([chart(hero="BB", stack=30)], game="tournament"))
-        text, _ = spot_chart.answer("BB 0.8bb push fold tournament", color=False,
-                                    classify=agrees("BB"))
+        text, _ = spot_chart.answer("BB 0.8bb push fold tournament", color=False)
         self.assertEqual(text, spot_chart.ALL_IN_BY_POSTING["EN"])
 
 
