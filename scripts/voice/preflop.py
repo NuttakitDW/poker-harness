@@ -352,18 +352,31 @@ WORDS = {
 
 
 def hand_answers(book: dict, chart: dict, hands: list[str], lang: str = "TH") -> list[str]:
-    """คำตอบของแต่ละมือที่ถาม อ่านจากช่องในตารางตรง ๆ ไม่ต้องให้โมเดลไล่ช่วงเอง"""
+    """คำตอบของแต่ละมือที่ถาม พร้อม % ของทุก action เช่น "K5s = fold 77% / call 23%"
+
+    อ่านจากช่องในตารางตรง ๆ ไม่ต้องให้โมเดลไล่ช่วงเอง chart["names"] เปลี่ยนชื่อ action ได้
+    เช่นชาร์ต push/fold เรียก raise ว่า shove
+    """
     words = WORDS[lang]
-    codes = dict(zip(book["hand_order"], chart["actions"]))
-    mixed = chart.get("mixed", {})
+    names = chart.get("names", {})
     lines = []
     for hand in hands:
-        action = CODE_ACTIONS.get(codes.get(hand, "-"), "none")
-        answer = words["none"] if action == "none" else action
-        if hand in mixed:
-            answer = f"{answer} ({words['mixed']} {_shares(mixed[hand])})"
-        lines.append(f"{hand} = {answer}")
+        shares = hand_shares(book, chart, hand)
+        if not shares:
+            lines.append(f"{hand} = {words['none']}")
+            continue
+        lines.append(f"{hand} = " + " / ".join(f"{names.get(name, name)} {round(share * 100)}%"
+                                               for name, share in shares))
     return lines
+
+
+def hand_shares(book: dict, chart: dict, hand: str) -> list[tuple[str, float]]:
+    """(action, ความถี่) ของมือหนึ่ง เรียงจากบ่อยสุด ว่างถ้ามือนี้ไม่อยู่ในเรนจ์"""
+    action = CODE_ACTIONS.get(dict(zip(book["hand_order"], chart["actions"])).get(hand, "-"), "none")
+    if action == "none":
+        return []
+    shares = chart.get("mixed", {}).get(hand) or {action: 1.0}
+    return sorted(shares.items(), key=lambda item: -item[1])
 
 
 def _score(chart: dict, request: Request) -> tuple:

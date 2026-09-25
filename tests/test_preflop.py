@@ -191,13 +191,13 @@ class HandTests(unittest.TestCase):
     def test_the_answer_for_an_asked_hand_is_read_from_the_chart(self):
         made = book([chart(raises=("A9o",))])
         lines = preflop.hand_answers(made, made["charts"][0], ["T8o", "A9o"])
-        self.assertEqual(lines, ["T8o = fold", "A9o = raise"])
+        self.assertEqual(lines, ["T8o = fold 100%", "A9o = raise 100%"])
 
     def test_a_mixed_hand_answer_carries_the_frequencies(self):
         made_chart = chart(raises=("77",))
         made_chart["mixed"] = {"77": {"raise": 0.5, "fold": 0.5}}
         lines = preflop.hand_answers(book([made_chart]), made_chart, ["77"])
-        self.assertEqual(lines, ["77 = raise (เล่นผสม raise 50% fold 50%)"])
+        self.assertEqual(lines, ["77 = raise 50% / fold 50%"])
 
 
 class ShareTests(unittest.TestCase):

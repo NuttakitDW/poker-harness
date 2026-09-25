@@ -18,7 +18,7 @@ DIM = "\033[2m"
 BOLD = "\033[1m"
 POINTED = "\033[1;4m"
 
-# (พื้นหลัง, ตัวอักษร) ตามรหัส action ในไฟล์ชาร์ต ช่องที่เล่นผสมแบ่งสีตามสัดส่วนของแต่ละ action
+# (พื้นหลัง, ตัวอักษร) ตามรหัส action ในไฟล์ชาร์ต ช่องที่เล่นผสมใช้สีของ action หลักแบบอ่อนลงตามความถี่
 # แดงคือ raise เขียวคือ call หรือ check น้ำเงินคือ fold ช่องเทาจาง ๆ คือมือที่ไม่อยู่ในเรนจ์เลย
 STYLES = {
     "R": "\033[48;5;124;38;5;231;1m",
@@ -26,15 +26,22 @@ STYLES = {
     "F": "\033[48;5;25;38;5;231m",
     "-": "\033[38;5;240m",
 }
-# ลำดับสีในช่องผสม ซ้ายไปขวา raise แล้ว call แล้ว fold
-SPLIT_ORDER = (("raise", "R"), ("call", "C"), ("fold", "F"))
-CELL_WIDTH = 4
+ACTION_CODES = {"raise": "R", "call": "C", "fold": "F"}
+# เฉดของช่องผสม (ความถี่ขั้นต่ำ, พื้นหลัง) ยิ่งเล่นน้อยยิ่งอ่อน สีอ่อนใช้ตัวอักษรดำให้อ่านออก
+SHADES = {
+    "R": ((0.95, 124), (0.85, 167), (0.7, 174), (0.0, 217)),
+    "C": ((0.95, 28), (0.85, 71), (0.7, 108), (0.0, 151)),
+    "F": ((0.95, 25), (0.85, 68), (0.7, 110), (0.0, 153)),
+}
+DARK_TEXT_FROM = 0.85  # ต่ำกว่านี้พื้นอ่อนแล้ว ใช้ตัวอักษรดำ
 # ไม่มีสี เช่นส่งออกไปไฟล์ ใช้ตัวอักษรแทน ตัวเล็กคือเล่นผสม
 PLAIN = {"R": "R", "C": "C", "F": ".", "-": "-"}
 LEGEND = (("R", "raise"), ("C", "call/check"), ("F", "fold"))
 LEGEND_WORDS = {
-    "TH": {"none": "ไม่อยู่ในเรนจ์", "mixed": "เล่นผสม แบ่งสีตาม %", "lower": "ตัวเล็ก = เล่นผสม"},
-    "EN": {"none": "not in range", "mixed": "mixed, split by %", "lower": "lower case = mixed"},
+    "TH": {"none": "ไม่อยู่ในเรนจ์", "mixed": "สีอ่อน = เล่นผสม ยิ่งอ่อนยิ่งเล่นน้อย",
+           "lower": "ตัวเล็ก = เล่นผสม"},
+    "EN": {"none": "not in range", "mixed": "lighter = mixed, played less often",
+           "lower": "lower case = mixed"},
 }
 
 
@@ -43,18 +50,15 @@ def cell_text(hand: str) -> str:
     return hand.ljust(3)
 
 
-def split(shares: dict) -> list[str]:
-    """แบ่งช่องกว้าง 4 ตัวอักษรตามสัดส่วนแต่ละ action ช่องละ 25% ส่วนที่ปัดทิ้งมากสุดได้ช่องที่เหลือก่อน
-
-    เศษเท่ากันให้ action ที่ได้ช่องน้อยกว่าก่อน ส่วนน้อยจะได้ไม่หายไปจากสายตา
-    """
-    exact = [(code, shares.get(action, 0.0) * CELL_WIDTH) for action, code in SPLIT_ORDER]
-    counts = [int(size) for _, size in exact]
-    leftover = sorted(range(len(exact)),
-                      key=lambda i: (round(counts[i] - exact[i][1], 6), counts[i]))
-    for i in leftover[:CELL_WIDTH - sum(counts)]:
-        counts[i] += 1
-    return [code for (code, _), count in zip(exact, counts) for _ in range(count)]
+def shade(shares: dict) -> tuple[str, str]:
+    """(action หลัก, สไตล์) ของช่องผสม เช่น raise 70% เป็นแดงอ่อน เล่นเกือบตลอดเป็นสีเต็ม"""
+    action, share = max(shares.items(), key=lambda item: item[1])
+    code = ACTION_CODES.get(action, "F")
+    if share >= SHADES[code][0][0]:
+        return code, STYLES[code]
+    background = next(bg for floor, bg in SHADES[code] if share >= floor)
+    text = "231;1" if share >= DARK_TEXT_FROM else "16"
+    return code, f"\033[48;5;{background};38;5;{text}m"
 
 
 def _cell(hand: str, code: str, shares: dict | None, color: bool, asked: bool = False) -> str:
@@ -65,9 +69,8 @@ def _cell(hand: str, code: str, shares: dict | None, color: bool, asked: bool = 
         return f"{lead}{mark.lower() if shares else mark}  "
     pointed = POINTED if asked else ""
     text = lead + cell_text(hand)
-    if not shares:
-        return f"{STYLES.get(code, '')}{pointed}{text}{RESET}"
-    return "".join(f"{RESET}{STYLES[part]}{pointed}{char}" for part, char in zip(split(shares), text)) + RESET
+    style = shade(shares)[1] if shares else STYLES.get(code, "")
+    return f"{style}{pointed}{text}{RESET}"
 
 
 def rows(book: dict, chart: dict, color: bool = True,
@@ -90,10 +93,17 @@ def legend(color: bool = True, lang: str = "TH") -> str:
     words = LEGEND_WORDS[lang]
     if not color:
         return f"   R raise  C call/check  . fold  - {words['none']}  {words['lower']}"
-    parts = [f"{STYLES[code]} {name} {RESET}" for code, name in LEGEND]
+    # แต่ละสีตามด้วยเฉดที่อ่อนลง เช่น ฟ้าอ่อนคือ fold เป็นส่วนใหญ่แต่บางครั้งก็เล่น
+    parts = [f"{STYLES[code]} {name} {_ramp(code)}{RESET}" for code, name in LEGEND]
     parts.append(f"{STYLES['-']}{words['none']}{RESET}")
-    parts.append(f"{STYLES['R']}  {STYLES['F']}  {RESET} {words['mixed']}")
+    parts.append(words["mixed"])
     return "   " + "  ".join(parts)
+
+
+def _ramp(code: str) -> str:
+    action = next(name for name, value in ACTION_CODES.items() if value == code)
+    return "".join(f"{shade({action: floor or 0.55, 'other': 1 - (floor or 0.55)})[1]}  "
+                   for floor, _ in SHADES[code][1:])
 
 
 def render(book: dict, chart: dict, color: bool = True,
@@ -116,13 +126,27 @@ def render(book: dict, chart: dict, color: bool = True,
         *rows(book, chart, color, asked),
         legend(color, lang),
     ]
-    for answer in preflop.hand_answers(book, chart, list(asked), lang):
-        lines.append(f"   {BOLD}{answer}{RESET}" if color else f"   {answer}")
+    if asked:
+        # คำตอบของมือที่ถามต้องเด่น เว้นบรรทัด แล้วแต่ละ action เป็นป้ายสีเดียวกับตาราง
+        lines.append("")
+        answers = ([_answer(book, chart, hand, lang) for hand in asked] if color
+                   else [f"   {answer}" for answer in preflop.hand_answers(book, chart, list(asked), lang)])
+        lines.extend(answers)
     mixed = preflop.mixed_note(chart) if show_mixed else ""
     if mixed:
         lines.append(f"   {words['mixed']}: {mixed}")
     lines.extend(f"   {note}" for note in notes)
     return "\n".join(lines)
+
+
+def _answer(book: dict, chart: dict, hand: str, lang: str) -> str:
+    shares = preflop.hand_shares(book, chart, hand)
+    if not shares:
+        return f"   {BOLD}{hand}{RESET}  {STYLES['-']}{preflop.WORDS[lang]['none']}{RESET}"
+    names = chart.get("names", {})
+    badges = " ".join(f"{STYLES[ACTION_CODES.get(name, 'F')]} {names.get(name, name)} "
+                      f"{round(share * 100)}% {RESET}" for name, share in shares)
+    return f"   {BOLD}{hand}{RESET}  {badges}"
 
 
 def chart_key(book: dict, chart: dict) -> tuple:

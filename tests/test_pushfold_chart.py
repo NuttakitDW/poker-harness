@@ -188,6 +188,13 @@ class SolvedChartTests(unittest.TestCase):
         self.assertEqual(made.chart["villain"], "SB")
         self.assertEqual(made.chart["scenario"], "Call vs shove")
 
+    def test_an_asked_hand_shows_shove_and_fold_percentages(self):
+        made = pushfold_chart.solved(request(hero="SB", stack=12))
+        hand = next(iter(made.chart["mixed"]))
+        line = preflop.hand_answers(made.book, made.chart, [hand])[0]
+        self.assertRegex(line, rf"^{hand} = (shove|fold) \d+% / (shove|fold) \d+%$")
+        self.assertEqual(preflop.hand_answers(made.book, made.chart, ["AA"]), ["AA = shove 100%"])
+
     def test_mixed_cells_carry_their_frequencies(self):
         made = pushfold_chart.solved(request(hero="SB", stack=12))
         for hand, shares in made.chart["mixed"].items():
@@ -212,11 +219,22 @@ class AnswerTests(SpotTestCase):
         self.assertEqual(found.chart["scenario"], "Push/Fold")
         self.assertEqual(found.request.stack, 10)
 
-    def test_deeper_stacks_keep_the_book_chart(self):
+    def test_deeper_stacks_say_only_push_fold_is_available(self):
         text, found = spot_chart.answer("BTN open 30bb tournament", color=False,
                                         classify=agrees("BTN"))
-        self.assertNotIn("push/fold Nash", ANSI.sub("", text))
-        self.assertEqual(found.chart["page"], 4)
+        self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["EN"])
+        self.assertEqual(found.request.stack, 30)
+
+    def test_a_follow_up_stack_then_gets_the_chart(self):
+        _, found = spot_chart.answer("BTN open 30bb tournament", color=False,
+                                     classify=agrees("BTN"))
+        text, _ = spot_chart.answer("10bb", color=False, classify=agrees("BTN"),
+                                    memory=found.request)
+        self.assertIn("push/fold Nash", text)
+
+    def test_an_unsolvable_spot_says_only_push_fold_is_available(self):
+        text, _ = spot_chart.answer("BTN shove 2bb tournament", color=False, classify=agrees("BTN"))
+        self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["EN"])
 
 
 if __name__ == "__main__":

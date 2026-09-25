@@ -192,18 +192,15 @@ class AnswerTests(SpotTestCase):
         made["mixed"] = {"77": {"raise": 0.5, "fold": 0.5}}
         self.use_books(book([made], game="cash"))
 
-    def test_the_answer_is_only_the_chart_and_its_confidence(self):
-        text, _ = spot_chart.answer("UTG open AKo 100bb cash", color=False,
-                                    classify=agrees("UTG"))
-        self.assertIn("AKo = raise", text)
-        self.assertIn("confidence 100%", text)
-        self.assertNotIn("mixed: 77", text)
+    def test_a_cash_spot_says_only_push_fold_is_available(self):
+        text, found = spot_chart.answer("UTG open AKo 100bb cash", color=False,
+                                        classify=agrees("UTG"))
+        self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["EN"])
+        self.assertEqual(found.request.hero, "UTG")
 
-    def test_english_labels_follow_an_english_question(self):
-        text, _ = spot_chart.answer("UTG open 100bb cash", color=False,
-                                    classify=agrees("UTG"))
-        self.assertIn("page 4", text)
-        self.assertIn("not in range", text)
+    def test_the_push_fold_only_reply_follows_the_asked_language(self):
+        text, _ = spot_chart.answer("UTG เปิด 100bb cash", color=False, classify=agrees("UTG"))
+        self.assertEqual(text, spot_chart.PUSH_FOLD_ONLY["TH"])
 
     def test_a_missing_spot_says_so_in_the_asked_language(self):
         text, found = spot_chart.answer("ICM คืออะไร", color=False, classify=lambda _p: None)

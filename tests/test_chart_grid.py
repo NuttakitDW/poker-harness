@@ -49,23 +49,37 @@ class GridTests(unittest.TestCase):
         first = plain_rows(made, made_chart)[0]
         self.assertEqual(first[3:].split()[0], "r")
 
-    def test_a_mixed_cell_is_split_by_frequency(self):
-        self.assertEqual(chart_grid.split({"raise": 0.5, "fold": 0.5}), ["R", "R", "F", "F"])
-        self.assertEqual(chart_grid.split({"raise": 0.75, "fold": 0.25}), ["R", "R", "R", "F"])
-        self.assertEqual(chart_grid.split({"call": 0.86, "fold": 0.11}), ["C", "C", "C", "F"])
+    def test_a_mixed_cell_takes_the_main_actions_colour(self):
+        self.assertEqual(chart_grid.shade({"raise": 0.7, "fold": 0.3})[0], "R")
+        self.assertEqual(chart_grid.shade({"raise": 0.3, "fold": 0.7})[0], "F")
 
-    def test_a_three_way_mix_keeps_the_raise_call_fold_order(self):
-        self.assertEqual(chart_grid.split({"fold": 0.25, "call": 0.25, "raise": 0.5}),
-                         ["R", "R", "C", "F"])
+    def test_the_less_often_played_the_lighter_the_shade(self):
+        styles = [chart_grid.shade({"raise": p, "fold": 1 - p})[1] for p in (0.99, 0.9, 0.75, 0.55)]
+        self.assertEqual(len(set(styles)), 4)
+        self.assertEqual(styles[0], chart_grid.STYLES["R"])
 
-    def test_a_coloured_mixed_cell_paints_each_part_and_keeps_its_width(self):
+    def test_a_coloured_mixed_cell_is_one_lighter_colour(self):
         made_chart = chart(raises=("AA",))
-        made_chart["mixed"] = {"AA": {"raise": 0.5, "fold": 0.5}}
+        made_chart["mixed"] = {"AA": {"raise": 0.7, "fold": 0.3}}
         line = chart_grid.rows(book([made_chart]), made_chart)[0]
-        self.assertIn(chart_grid.STYLES["R"], line)
-        self.assertIn(chart_grid.STYLES["F"], line)
+        self.assertIn(chart_grid.shade({"raise": 0.7, "fold": 0.3})[1], line)
+        self.assertNotIn(chart_grid.STYLES["F"], line.split("AA")[0])
         self.assertEqual(len(ANSI.sub("", line)[3:]), 13 * 4)
-        self.assertIn(" AA", ANSI.sub("", line))
+
+    def test_the_legend_explains_the_light_shade_of_every_colour(self):
+        text = chart_grid.legend()
+        for action in ("raise", "call", "fold"):
+            with self.subTest(action=action):
+                self.assertIn(chart_grid.shade({action: 0.6, "x": 0.4})[1], text)
+
+    def test_an_asked_hand_gets_a_coloured_badge_per_action(self):
+        made_chart = chart(raises=("AA",))
+        made_chart["mixed"] = {"AA": {"raise": 0.7, "fold": 0.3}}
+        text = chart_grid.render(book([made_chart]), made_chart, asked=("AA",))
+        line = next(l for l in text.splitlines() if "70%" in l)
+        self.assertIn(f"{chart_grid.STYLES['R']} raise 70% ", line)
+        self.assertIn(f"{chart_grid.STYLES['F']} fold 30% ", line)
+        self.assertEqual(text.splitlines()[text.splitlines().index(line) - 1], "")
 
     def test_coloured_cells_show_the_hand_name(self):
         made = book([chart(raises=("AKs",))])
@@ -131,7 +145,7 @@ class LookupTests(unittest.TestCase):
         first = chart_grid.for_question("20BB อยู่ UTG เปิด AKo ได้ไหม")
         again = chart_grid.for_question("20BB อยู่ UTG เปิด 18 offsuit ได้ไหม")
         self.assertNotEqual(first[0], again[0])
-        self.assertIn("T8o = fold", again[1])
+        self.assertRegex(ANSI.sub("", again[1]), r"T8o\s+fold 100%")
 
     def test_an_unrelated_question_gets_nothing(self):
         self.assertIsNone(chart_grid.for_question("ICM คืออะไร"))

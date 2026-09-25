@@ -5,7 +5,7 @@
 ใช้:
     .venv/bin/python scripts/voice/spot_chart.py
     .venv/bin/python scripts/voice/spot_chart.py --voice
-    .venv/bin/python scripts/voice/spot_chart.py "BB vs BTN open 40bb tournament"
+    .venv/bin/python scripts/voice/spot_chart.py "BB vs BTN shove 10bb tournament"
 
 คำสั่งระหว่างใช้:
     /v      สลับเป็นโหมดพูด
@@ -13,7 +13,10 @@
     /n      เริ่ม spot ใหม่ ลืมตำแหน่งและสแตกที่คุยกันมา
     /q      ออก
 
-คำถามต่อเนื่องยืมสิ่งที่บอกไว้ตาก่อน เช่น "ขอเปลี่ยนเป็น 25bb" หรือ "เจอ button ไม่ใช่ UTG"
+ตอนนี้ตอบได้แค่ชาร์ต push/fold ทัวร์นาเมนต์ที่ solver แก้สด สแตกไม่เกิน 15bb หรือพูดว่า push/fold
+อย่างอื่นเช่น open 30bb หรือ cash game ตอบว่ายังไม่มี ไม่เปิดชาร์ตหนังสือแทน
+
+คำถามต่อเนื่องยืมสิ่งที่บอกไว้ตาก่อน เช่น "ขอเปลี่ยนเป็น 8bb" หรือ "เจอ button ไม่ใช่ UTG"
 """
 
 from __future__ import annotations
@@ -40,8 +43,14 @@ AUDIO_START_TIMEOUT = 30.0
 METER_LABEL = "spot chart กำลังฟัง"
 
 MISSING = {
-    "TH": "หา spot ไม่เจอ บอกตำแหน่งด้วย เช่น BB เจอ BTN เปิด 40bb",
-    "EN": "No spot found. Name a seat, e.g. BB vs BTN open 40bb",
+    "TH": "หา spot ไม่เจอ บอกตำแหน่งด้วย เช่น BB เจอ BTN ออลอิน 10bb",
+    "EN": "No spot found. Name a seat, e.g. BB vs BTN shove 10bb",
+}
+PUSH_FOLD_ONLY = {
+    "TH": "ตอนนี้ยังไม่มีชาร์ตแบบนี้ หาได้แค่ push/fold ทัวร์นาเมนต์ สแตกไม่เกิน 15bb "
+          "หรือบอกว่า push/fold เช่น BTN ออลอิน 10bb",
+    "EN": "Not available yet. Only tournament push/fold charts, 15bb or less or say push/fold, "
+          "e.g. BTN shove 10bb",
 }
 HELP = "/v voice  /t text  /n new spot  /q quit"
 
@@ -52,14 +61,13 @@ def answer(prompt: str, color: bool, classify=spot.systemone_hero,
     found = spot.lookup(prompt, classify=classify, memory=memory)
     if found is None:
         return MISSING[spot.language_of(prompt)], None
-    notes = (spot.confidence_line(found),)
-    # สแตกสั้นในทัวร์ แก้ push/fold สด ๆ แทนชาร์ตหนังสือที่สแตกไม่ตรง
+    # ตอบแค่ push/fold ที่แก้สด นอกนั้นบอกว่ายังไม่มี แต่ยังจำตำแหน่งกับสแตกไว้ถามต่อได้
     made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None
-    if made is not None:
-        found = dataclasses.replace(found, book=made.book, chart=made.chart)
-        notes = (made.note,)
+    if made is None:
+        return PUSH_FOLD_ONLY[found.lang], found
+    found = dataclasses.replace(found, book=made.book, chart=made.chart)
     return chart_grid.render(found.book, found.chart, color=color, asked=found.hands,
-                             lang=found.lang, notes=notes, show_mixed=False), found
+                             lang=found.lang, notes=(made.note,), show_mixed=False), found
 
 
 class Session:

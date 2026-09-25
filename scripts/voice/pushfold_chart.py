@@ -109,7 +109,8 @@ def solved(request: preflop.Request) -> Solved | None:
     book = {"game": "tournament", "title": TITLE, "hand_order": order}
     chart = {"stack": request.stack, "section": "SOLVER", "page": None,
              "hero": _label(names, hero), "villain": villain,
-             "scenario": FACING if facing else FIRST_IN, "actions": actions, "mixed": mixed}
+             "scenario": FACING if facing else FIRST_IN, "actions": actions, "mixed": mixed,
+             "names": {"raise": "shove"}}
     table = "heads-up" if len(names) == 2 else f"{len(names)}-handed"
     note = (f"push/fold Nash, {table}, all stacks {request.stack}bb, "
             f"BB ante {BB_ANTE:g}bb, {result.range_pct(seat, past) * 100:.1f}% of hands "
