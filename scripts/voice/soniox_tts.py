@@ -28,7 +28,7 @@ import keys  # noqa: E402
 ENDPOINT = "https://tts-rt.soniox.com/tts"
 WEBSOCKET_URL = "wss://tts-rt.soniox.com/tts-websocket"
 # ด่านหน้าของ Soniox ปฏิเสธ User-Agent ปริยายของ urllib ด้วย 403 ต้องบอกชื่อตัวเองไป
-USER_AGENT = "poker-harness/1.0"
+USER_AGENT = "tamkwai/1.0"
 MODEL = "tts-rt-v2"
 # รุ่นสตรีมใช้ v1 เพราะ v2 ใช้เวลาสังเคราะห์นานกว่าหลายเท่าจนคุยสดไม่ได้
 STREAM_MODEL = "tts-rt-v1"

@@ -26,7 +26,7 @@ import lexicon
 
 BASE_URL = "https://api.soniox.com/v1"
 # ด่านหน้าของ Soniox ปฏิเสธ User-Agent ปริยายของ urllib ด้วย 403 ต้องบอกชื่อตัวเองไป
-USER_AGENT = "poker-harness/1.0"
+USER_AGENT = "tamkwai/1.0"
 MODEL = "stt-async-v5"
 LANGUAGE_HINTS = ("th", "en")
 DOMAIN = "Poker strategy"

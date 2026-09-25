@@ -1,4 +1,4 @@
-# Poker harness
+# tamkwai (ตามควาย.com)
 
 A bilingual, page-cited poker knowledge library from the 26-PDF ZIP archive (25 unique PDFs; one duplicate) and two PokerCoaching cheat sheets. Start with [English](harnesses/EN/INDEX.md) or [ไทย](harnesses/TH/INDEX.md). Both editions include topic cards, a glossary, and links to page-organized source extraction; the original PDFs remain in `sources/pdf/`. Thai topic cards are substantive adaptations, not literal translations of every book page. The original PDFs are the canonical full sources. Page-organized extracted text is stored once under `harnesses/EN/sources/`, including the Thai-language PDF; Thai source indexes link back to it.
 
