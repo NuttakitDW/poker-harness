@@ -26,6 +26,8 @@ import preflop
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "tests" / "fixtures" / "spot" / "questions.jsonl"
+# เสียงคนจริงจาก make record-spots ใช้ข้อความที่ถอดได้ตอนอัด ("heard") เป็นคำถาม
+RECORDED = ROOT / "tests" / "fixtures" / "spot" / "recorded.jsonl"
 FIELDS = ("hero", "stack", "shovers", "players", "ante", "ante_mode", "hands")
 UNORDERED = ("shovers", "hands")
 STACK_TOLERANCE = 1e-9
@@ -120,6 +122,14 @@ def load(path: pathlib.Path = CORPUS) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+def load_recorded(path: pathlib.Path = RECORDED) -> list[dict]:
+    """ข้อความที่ถอดจากเสียงคนจริง ทำให้อยู่ในรูปเดียวกับชุดคำถาม"""
+    if not path.exists():
+        return []
+    return [{**row, "question": row["heard"], "source": f"voice:{row['group']}"}
+            for row in load(path) if row.get("heard")]
+
+
 def evaluate(cases: list[dict], reader: Reader = regex_reader) -> Result:
     rows = []
     for case in cases:
@@ -133,7 +143,7 @@ def main() -> int:
     parser.add_argument("--corpus", type=pathlib.Path, default=CORPUS)
     parser.add_argument("--failures", action="store_true", help="แสดงเฉพาะข้อที่พลาด")
     args = parser.parse_args()
-    print(evaluate(load(args.corpus)).render(failures_only=args.failures))
+    print(evaluate(load(args.corpus) + load_recorded()).render(failures_only=args.failures))
     return 0
 
 

@@ -80,11 +80,13 @@ _PUSH_FOLD = re.compile(r"push\s*[-/]?\s*fold|(?<![a-z])(?:jam\w*|shov\w*|push\w
 
 # ใครเป็นคนยัดหมด "UTG jam" คำตามหลังตำแหน่ง หรือ "คน jam เป็น UTG" คำนำหน้าตำแหน่ง
 _JAM_WORD = r"(?:jam\w*|shov\w*|push\w*|all\s*-?\s*in|ออลอิน|แจม|ยัดหมด|ลงหมด)"
-_JAMS_AFTER = re.compile(rf"\s*{_JAM_WORD}")
+# คำเสริมระหว่างตำแหน่งกับ action ที่คนพูดจริง "Button ก็ all-in มาด้วย"
+_FILLER = r"(?:\s*(?:ก็|also|เอง|ได้))?"
+_JAMS_AFTER = re.compile(rf"{_FILLER}\s*{_JAM_WORD}")
 _JAMS_BEFORE = re.compile(rf"{_JAM_WORD}\s*(?:มา)?\s*(?:เป็น|จาก|from|by)\s*$")
 _JAM_LOOKBACK = 20
 # push/fold คนที่ call คนยัดก็ลงหมดเหมือนกัน "button call" จึงนับเป็นคนยัดด้วย เว้นแต่เป็นคนถามเอง
-_CALLS_AFTER = re.compile(r"\s*(?:call\w*|คอล|โคล)")
+_CALLS_AFTER = re.compile(rf"{_FILLER}\s*(?:call\w*|คอล|โคล)")
 # "เราอยู่ small blind" หรือ "I'm in the SB" ตำแหน่งหลังคำนี้คือคนถาม
 _HERO_BEFORE = re.compile(r"(?:เรา|ผม|ฉัน|i'?m|i\s+am|we'?re|we\s+are|hero)\s*(?:อยู่|นั่ง|เป็น|in|at|on)?"
                           r"\s*(?:ที่|ตำแหน่ง|the)?\s*$")
@@ -98,7 +100,9 @@ _BB_ANTE = re.compile(r"(?<![\d.])(?<![\d.]\s)(?:bb|big\s*blind|บีบี|บ
 _LIVE = re.compile(r"(?<![a-z])live(?![a-z])|ไลฟ์")
 
 # คำบอกว่าดอกเดียวกันหรือต่างดอก ตัวถอดเสียงเขียนได้ทั้งอังกฤษและไทย
-_SUIT_WORD = r"(?i:offsuit|off-suit|off|suited|suit|ออฟสูท|ออฟ|สูท)"
+_SUIT_WORD = r"(?i:offsuit|off-suit|off|suited|suit|ออฟสูท|ออฟ|สูท|คนละสี|คนละดอก|ต่างดอก|สีเดียวกัน|ดอกเดียวกัน)"
+# คำบอกดอกที่แปลว่าต่างดอก ที่เหลือแปลว่าดอกเดียวกัน
+_OFFSUIT_HINTS = ("off", "ออฟ", "คนละ", "ต่าง")
 # ข้อความเสียงเรียกไพ่เป็นคำ "Jack 2 off" "แจ็ค 2 ออฟ" แปลงเป็นตัวอักษรไพ่ก่อนหามือ
 # พหูพจน์คือคู่ "pocket jacks" เป็น JJ ส่วน "ten big blinds" ไม่มีไพ่ใบที่สอง จึงไม่กลายเป็นมือ
 _CARD_WORDS = (
@@ -106,13 +110,23 @@ _CARD_WORDS = (
     (r"ace|เอซ", "A"), (r"king|คิง", "K"), (r"queen|ควีน", "Q"), (r"jack|แจ็ค|แจ๊ค|แจค", "J"),
     (r"ten|เท็น", "T"),
 )
+# "pocket queen" "pocket 8" คือคู่ แม้พูดเป็นเอกพจน์
+_POCKET = re.compile(r"(?i)pocket\s*(aces?|kings?|queens?|jacks?|tens?|[2-9akqjt])(?![a-z0-9])")
+_RANK_WORDS = {"ace": "A", "king": "K", "queen": "Q", "jack": "J", "ten": "T"}
+
+
+def _rank_of(word: str) -> str:
+    word = word.lower().rstrip("s") if len(word) > 1 else word
+    return _RANK_WORDS.get(word, word.upper())
+
+
 _CARD_WORD_PATTERNS = tuple((re.compile(rf"(?i)(?<![a-z])(?:{words})(?![a-z])"), rank)
                             for words, rank in _CARD_WORDS)
 # คนไทยอ่าน T ว่าสิบ พูด T8 ว่าสิบแปดแล้วตัวถอดเสียงเขียนเป็น 18 ถือเป็นมือเฉพาะเมื่อตามด้วยคำบอกดอก
 _TEEN_HAND = re.compile(rf"(?<!\d)1([2-9])(?=\s*{_SUIT_WORD})")
 _TEN = re.compile(r"(?<!\d)10(?!\d)")
 # ตัวอักษรไพ่ต้องเป็นตัวใหญ่ ไม่งั้นคำอังกฤษอย่าง at จะกลายเป็นมือ AT
-_HAND = re.compile(rf"(?<![A-Za-z0-9])([AKQJT2-9])\s?([AKQJT2-9])"
+_HAND = re.compile(rf"(?<![A-Za-z0-9])([AKQJT2-9])\s?[,\-]?\s?([AKQJT2-9])"
                    rf"(?:\s*({_SUIT_WORD})|([so]))?(?![A-Za-z0-9])")
 
 
@@ -211,6 +225,15 @@ def _jammers(text: str, mentions: list[tuple[int, int, str]]) -> list[str]:
                               if _JAMS_AFTER.match(text, end) or _before(text, start, _JAMS_BEFORE)))
 
 
+# ลำดับการเล่นก่อน flop โต๊ะเต็ม ใช้ตัดสินว่าใครเล่นก่อนใคร
+ACTION_ORDER = ("UTG", "UTG+1", "LJ", "HJ", "CO", "BTN", "SB", "BB")
+
+
+def _acts_before(seat: str, other: str) -> bool:
+    return (seat in ACTION_ORDER and other in ACTION_ORDER
+            and ACTION_ORDER.index(seat) < ACTION_ORDER.index(other))
+
+
 def _marked_hero(text: str, mentions: list[tuple[int, int, str]]) -> str | None:
     return next((name for start, _, name in mentions if _before(text, start, _HERO_BEFORE)), None)
 
@@ -254,13 +277,18 @@ def _sounded_out_seats(text: str) -> str:
     return text
 
 
+def normalize_thai(text: str) -> str:
+    """ตัวถอดเสียงเขียนสระอำได้สองแบบ (ํ + า กับ ำ) ทำให้เป็นแบบเดียว คำอย่าง ตำแหน่ง จะได้จับได้"""
+    return text.replace("\u0e4d\u0e32", "\u0e33")
+
+
 def _fix_seat_typos(text: str) -> str:
     def fix(match: re.Match) -> str:
         word = match.group(0)
         if word in POSITION_WORDS or word in _NOT_SEATS:
             return word
         return next((seat for seat in _TYPO_TARGETS if _one_edit(word, seat)), word)
-    return _WORD.sub(fix, _sounded_out_seats(text))
+    return _WORD.sub(fix, _sounded_out_seats(normalize_thai(text)))
 
 
 def normalize_seats(text: str) -> str:
@@ -301,8 +329,13 @@ def parse(question: str) -> Request:
     shovers: tuple[str, ...] = ()
     mentions = _mentions(seats)
     jammers = _jammers(seats, mentions) if len(found) > 1 and scenario in (None, "RFI") else []
+    marked = _marked_hero(seats, mentions)
+    if not jammers and marked and _PUSH_FOLD.search(seats):
+        # "มีคน all-in มาก่อน 1 คน จากตำแหน่ง UTG เราอยู่ hijack" บอกคนถามชัด แต่ไม่ได้วางคำ jam
+        # ติดตำแหน่ง ที่นั่งอื่นที่เล่นก่อนคนถามจึงเป็นคนแจม ที่นั่งหลังคนถามยังไม่ได้เล่น
+        jammers = [name for name in found if name != marked and _acts_before(name, marked)]
     if jammers:
-        caller = _marked_hero(seats, mentions) or next((n for n in found if n not in jammers), None)
+        caller = marked or next((n for n in found if n not in jammers), None)
         callers = [name for _, end, name in mentions if _CALLS_AFTER.match(seats, end)]
         shovers = tuple(dict.fromkeys(name for name in jammers + callers if name != caller))
         if caller and shovers:
@@ -351,6 +384,7 @@ def carry(question: str, earlier: list[str]) -> str:
 def hands_in(question: str) -> list[str]:
     """มือที่ผู้ใช้ถามถึง เช่น A8o หรือ KQs ถ้าไม่บอกดอกคืนทั้ง suited และ offsuit"""
     text = _STACK.sub(" ", question)
+    text = _POCKET.sub(lambda m: _rank_of(m.group(1)) * 2, text)
     for pattern, rank in _CARD_WORD_PATTERNS:
         text = pattern.sub(rank, text)
     text = _TEN.sub("T", _TEEN_HAND.sub(r"T\1", text))
@@ -359,7 +393,7 @@ def hands_in(question: str) -> list[str]:
         first, second, word, letter = match.groups()
         suit = letter
         if word:
-            suit = "o" if "off" in word.lower() or "ออฟ" in word else "s"
+            suit = "o" if any(hint in word.lower() for hint in _OFFSUIT_HINTS) else "s"
         # ตัวเลขล้วนไม่มีคำบอกดอก เช่น 98 เปอร์เซ็นต์ ไม่ใช่มือ
         if suit is None and first.isdigit() and second.isdigit():
             continue

@@ -53,7 +53,7 @@ class CorpusTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.cases = spot_eval.load()
+        cls.cases = spot_eval.load() + spot_eval.load_recorded()
         cls.result = spot_eval.evaluate(cls.cases, spot_eval.regex_reader)
 
     def test_the_corpus_is_labelled_with_known_fields_only(self):
