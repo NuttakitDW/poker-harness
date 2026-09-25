@@ -70,6 +70,25 @@ _FACING_THREE_BET = re.compile(r"(?:โดน|เจอ).{0,15}?(?:3bet|threebet
 _STACK = re.compile(r"(\d{1,3})\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)",
                     re.IGNORECASE)
 
+# ขนาดโต๊ะ heads-up คือสองคน ตัวถอดเสียงเขียนเป็นไทยได้หลายแบบ ส่วน 6-max 3 handed โต๊ะ 9 คน บอกเลขตรง ๆ
+_HEADS_UP = re.compile(r"(?<![a-z])(?:heads?\s*-?\s*up|hu)(?![a-z])|เฮด(?:ส์)?อัพ|ฮัดอัพ|ตัวต่อตัว")
+_TABLE_SIZE = re.compile(r"(?<!\d)([2-9])\s*-?\s*(?:max|handed|คน)")
+
+# ขอ push/fold ตรง ๆ หรือพูดถึงการยัดหมด ใช้ solver แม้สแตกเกิน 15bb
+_PUSH_FOLD = re.compile(r"push\s*[-/]?\s*fold|(?<![a-z])(?:jam\w*|shov\w*|push\w*|all\s*-?\s*in)(?![a-z])"
+                        r"|ออลอิน|แจม|ยัดหมด|ลงหมด")
+
+# ใครเป็นคนยัดหมด "UTG jam" คำตามหลังตำแหน่ง หรือ "คน jam เป็น UTG" คำนำหน้าตำแหน่ง
+_JAM_WORD = r"(?:jam\w*|shov\w*|push\w*|all\s*-?\s*in|ออลอิน|แจม|ยัดหมด|ลงหมด)"
+_JAMS_AFTER = re.compile(rf"\s*{_JAM_WORD}")
+_JAMS_BEFORE = re.compile(rf"{_JAM_WORD}\s*(?:มา)?\s*(?:เป็น|จาก|from|by)\s*$")
+_JAM_LOOKBACK = 20
+# push/fold คนที่ call คนยัดก็ลงหมดเหมือนกัน "button call" จึงนับเป็นคนยัดด้วย เว้นแต่เป็นคนถามเอง
+_CALLS_AFTER = re.compile(r"\s*(?:call\w*|คอล|โคล)")
+# "เราอยู่ small blind" หรือ "I'm in the SB" ตำแหน่งหลังคำนี้คือคนถาม
+_HERO_BEFORE = re.compile(r"(?:เรา|ผม|ฉัน|i'?m|i\s+am|we'?re|we\s+are|hero)\s*(?:อยู่|นั่ง|เป็น|in|at|on)?"
+                          r"\s*(?:ที่|ตำแหน่ง|the)?\s*$")
+
 # คำบอกว่าดอกเดียวกันหรือต่างดอก ตัวถอดเสียงเขียนได้ทั้งอังกฤษและไทย
 _SUIT_WORD = r"(?i:offsuit|off-suit|suited|ออฟสูท|ออฟ|สูท)"
 # คนไทยอ่าน T ว่าสิบ พูด T8 ว่าสิบแปดแล้วตัวถอดเสียงเขียนเป็น 18 ถือเป็นมือเฉพาะเมื่อตามด้วยคำบอกดอก
@@ -89,6 +108,9 @@ class Request:
     hero: str | None = None
     villain: str | None = None
     scenario: str | None = None
+    players: int | None = None
+    shovers: tuple[str, ...] = ()  # ทุกตำแหน่งที่ยัดหมดมาก่อนคนถาม เรียงตามที่พูด
+    pushfold: bool = False
 
     @property
     def usable(self) -> bool:
@@ -160,14 +182,55 @@ def _roles(text: str, found: list[str],
     return other, opener, "RFI"
 
 
+def _before(text: str, start: int, pattern: re.Pattern) -> bool:
+    return bool(pattern.search(text[max(0, start - _JAM_LOOKBACK):start]))
+
+
+def _jammers(text: str, mentions: list[tuple[int, int, str]]) -> list[str]:
+    """ทุกตำแหน่งที่ยัดหมดมา "UTG jam" หรือ "คน jam เป็น UTG" ไม่ซ้ำ เรียงตามที่พูด"""
+    return list(dict.fromkeys(name for start, end, name in mentions
+                              if _JAMS_AFTER.match(text, end) or _before(text, start, _JAMS_BEFORE)))
+
+
+def _marked_hero(text: str, mentions: list[tuple[int, int, str]]) -> str | None:
+    return next((name for start, _, name in mentions if _before(text, start, _HERO_BEFORE)), None)
+
+
 def seat_mentions(text: str) -> list[tuple[int, int, str]]:
     """ทุกจุดที่พูดถึงตำแหน่งในข้อความที่ผ่าน normalize_seats แล้ว"""
     return _mentions(text)
 
 
+# พิมพ์ชื่อตำแหน่งผิดหนึ่งตัว เช่น btbn ugt cutof ยังอ่านเป็นตำแหน่งได้ คำอังกฤษธรรมดาที่ใกล้ btn ไม่นับ
+_WORD = re.compile(r"(?<![a-z0-9])[a-z]{3,}(?![a-z0-9+])")
+_TYPO_TARGETS = tuple(word for word in POSITION_WORDS if word.isascii() and word.isalpha() and len(word) >= 3)
+_NOT_SEATS = {"bin", "ban", "bun", "ben", "ton"}
+
+
+def _one_edit(a: str, b: str) -> bool:
+    """a กับ b ต่างกันไม่เกินหนึ่งตัว เพิ่ม ลบ แทน หรือสลับตัวติดกัน"""
+    if a == b or abs(len(a) - len(b)) > 1:
+        return a == b
+    if len(a) == len(b):
+        diff = [i for i in range(len(a)) if a[i] != b[i]]
+        return len(diff) == 1 or (len(diff) == 2 and diff[1] == diff[0] + 1
+                                  and a[diff[0]] == b[diff[1]] and a[diff[1]] == b[diff[0]])
+    short, long = sorted((a, b), key=len)
+    return any(long[:i] + long[i + 1:] == short for i in range(len(long)))
+
+
+def _fix_seat_typos(text: str) -> str:
+    def fix(match: re.Match) -> str:
+        word = match.group(0)
+        if word in POSITION_WORDS or word in _NOT_SEATS:
+            return word
+        return next((seat for seat in _TYPO_TARGETS if _one_edit(word, seat)), word)
+    return _WORD.sub(fix, text)
+
+
 def normalize_seats(text: str) -> str:
-    """ตัวพิมพ์เล็กและรวม big blind เป็นคำเดียว ตำแหน่งที่ seat_mentions คืนอิงข้อความนี้"""
-    return _spaced_blinds(text.lower())
+    """ตัวพิมพ์เล็ก แก้ชื่อตำแหน่งที่พิมพ์ผิด และรวม big blind เป็นคำเดียว ตำแหน่งที่ seat_mentions คืนอิงข้อความนี้"""
+    return _spaced_blinds(_fix_seat_typos(text.lower()))
 
 
 def _squash(text: str) -> str:
@@ -181,7 +244,7 @@ def _spaced_blinds(text: str) -> str:
 
 def parse(question: str) -> Request:
     """อ่านคำถามแล้วเดาว่าเป็นสถานการณ์ไหน"""
-    lowered = question.lower()
+    lowered = _fix_seat_typos(question.lower())
     stack = _STACK.search(lowered)
 
     game = None
@@ -199,6 +262,18 @@ def parse(question: str) -> Request:
     seats = _spaced_blinds(_STACK.sub(" ", lowered))
     found = _positions(_mentions(seats))
     hero, villain, scenario = _roles(seats, found, scenario)
+    # มีคนยัดหมดมา คนถามคือคนที่บอกว่า "เราอยู่" หรืออีกคนที่ไม่ได้ยัด ชาร์ตคือเจอ All-In
+    shovers: tuple[str, ...] = ()
+    mentions = _mentions(seats)
+    jammers = _jammers(seats, mentions) if len(found) > 1 and scenario in (None, "RFI") else []
+    if jammers:
+        caller = _marked_hero(seats, mentions) or next((n for n in found if n not in jammers), None)
+        callers = [name for _, end, name in mentions if _CALLS_AFTER.match(seats, end)]
+        shovers = tuple(dict.fromkeys(name for name in jammers + callers if name != caller))
+        if caller and shovers:
+            hero, villain, scenario = caller, shovers[0], "All-In"
+        else:
+            shovers = ()
     if "vs" in lowered or "เจอ" in lowered or "โดน" in lowered:
         scenario = scenario or "RFI"
     # ถือมืออยู่ตำแหน่งเดียวโดยไม่มีใครเปิดมาก่อน คือถามว่าควรเปิดมือนี้ไหม
@@ -207,8 +282,11 @@ def parse(question: str) -> Request:
                  or bool(hands_in(question)))
     if hero and not villain and asks_open:
         scenario = scenario or "RFI"
+    size = _TABLE_SIZE.search(lowered)
+    players = 2 if _HEADS_UP.search(lowered) else int(size.group(1)) if size else None
     return Request(game=game, stack=int(stack.group(1)) if stack else None,
-                   hero=hero, villain=villain, scenario=scenario)
+                   hero=hero, villain=villain, scenario=scenario, players=players, shovers=shovers,
+                   pushfold=bool(_PUSH_FOLD.search(lowered)))
 
 
 def carry(question: str, earlier: list[str]) -> str:

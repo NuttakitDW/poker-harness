@@ -49,6 +49,24 @@ class GridTests(unittest.TestCase):
         first = plain_rows(made, made_chart)[0]
         self.assertEqual(first[3:].split()[0], "r")
 
+    def test_a_mixed_cell_is_split_by_frequency(self):
+        self.assertEqual(chart_grid.split({"raise": 0.5, "fold": 0.5}), ["R", "R", "F", "F"])
+        self.assertEqual(chart_grid.split({"raise": 0.75, "fold": 0.25}), ["R", "R", "R", "F"])
+        self.assertEqual(chart_grid.split({"call": 0.86, "fold": 0.11}), ["C", "C", "C", "F"])
+
+    def test_a_three_way_mix_keeps_the_raise_call_fold_order(self):
+        self.assertEqual(chart_grid.split({"fold": 0.25, "call": 0.25, "raise": 0.5}),
+                         ["R", "R", "C", "F"])
+
+    def test_a_coloured_mixed_cell_paints_each_part_and_keeps_its_width(self):
+        made_chart = chart(raises=("AA",))
+        made_chart["mixed"] = {"AA": {"raise": 0.5, "fold": 0.5}}
+        line = chart_grid.rows(book([made_chart]), made_chart)[0]
+        self.assertIn(chart_grid.STYLES["R"], line)
+        self.assertIn(chart_grid.STYLES["F"], line)
+        self.assertEqual(len(ANSI.sub("", line)[3:]), 13 * 4)
+        self.assertIn(" AA", ANSI.sub("", line))
+
     def test_coloured_cells_show_the_hand_name(self):
         made = book([chart(raises=("AKs",))])
         first = ANSI.sub("", chart_grid.rows(made, made["charts"][0])[0])

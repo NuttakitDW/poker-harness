@@ -155,6 +155,20 @@ class MemoryTests(SpotTestCase):
         found = self.ask("ขอ 10 Big blind ตำแหน่ง Small blind raise first in ทัวร์นาเมนต์")
         self.assertEqual((found.chart.get("villain"), found.chart["stack"]), (None, 20))
 
+    def test_equal_gaps_either_side_pick_the_shorter_stack(self):
+        self.assertEqual(spot.stack_gap(12, 16), spot.stack_gap(20, 16))
+        self.use_books(book([chart(hero="SB", stack=12, page=40),
+                             chart(hero="SB", stack=20, page=41)]))
+        found = self.ask("SB open 16bb tournament")
+        self.assertEqual(found.chart["stack"], 12)
+
+    def test_calling_a_jam_picks_the_all_in_chart(self):
+        self.use_books(book([chart(hero="SB", villain="UTG", scenario="All-In", stack=12, page=82),
+                             chart(hero="SB", villain="UTG", stack=20, page=63)]))
+        found = self.ask("ขอฉาด Push/fold 16 Big blind Call open jam จากตําแหน่ง small blind "
+                         "คน jam เป็น UTG")
+        self.assertEqual((found.chart["scenario"], found.chart["stack"]), ("All-In", 12))
+
     def test_small_talk_does_not_redraw_the_remembered_chart(self):
         first = self.ask("BB เจอ button 25bb")
         self.assertIsNone(spot.lookup("ฮัลโหล ได้ยินไหมครับ", classify=agrees("BTN", 0.9),

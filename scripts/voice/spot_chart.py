@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import pathlib
 import queue
 import sys
@@ -27,6 +28,7 @@ import threading
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 import chart_grid  # noqa: E402
+import pushfold_chart  # noqa: E402
 import spot  # noqa: E402
 from engines import usable_text  # noqa: E402
 
@@ -50,9 +52,14 @@ def answer(prompt: str, color: bool, classify=spot.systemone_hero,
     found = spot.lookup(prompt, classify=classify, memory=memory)
     if found is None:
         return MISSING[spot.language_of(prompt)], None
+    notes = (spot.confidence_line(found),)
+    # สแตกสั้นในทัวร์ แก้ push/fold สด ๆ แทนชาร์ตหนังสือที่สแตกไม่ตรง
+    made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None
+    if made is not None:
+        found = dataclasses.replace(found, book=made.book, chart=made.chart)
+        notes = (made.note,)
     return chart_grid.render(found.book, found.chart, color=color, asked=found.hands,
-                             lang=found.lang, notes=(spot.confidence_line(found),),
-                             show_mixed=False), found
+                             lang=found.lang, notes=notes, show_mixed=False), found
 
 
 class Session:

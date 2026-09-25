@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import dataclasses
-import math
 import re
 from typing import Callable
 
@@ -164,11 +163,11 @@ def _agreement(prompt: str, request: preflop.Request, guess: HeroGuess | None,
 
 
 def stack_gap(have: int, wanted: int) -> float:
-    """ระยะห่างของสแตกแบบอัตราส่วน 10 กับ 20 ห่างเท่า 50 กับ 100 คือเท่าตัว
+    """ระยะห่างของสแตกเทียบกับสแตกที่ถาม ถาม 16BB ได้ 12 หรือ 20 ห่างเท่ากันคือ 25%
 
-    วัดแบบลบกันตรง ๆ แล้ว 10BB ห่างจาก 20BB กับ 80BB พอ ๆ กันจนชนพื้นทั้งคู่
+    หารด้วยสแตกที่ถาม ถาม 10BB ได้ 20BB ห่างเท่าตัว แต่ถาม 100BB ได้ 80BB ห่างแค่ 20%
     """
-    return abs(math.log(have / wanted))
+    return abs(have - wanted) / wanted
 
 
 def _fit(book: dict, chart: dict, request: preflop.Request, scenario: str,
@@ -240,10 +239,14 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
         return new
     base = memory
     if new.hero and new.hero != memory.hero:
-        base = dataclasses.replace(memory, villain=None, scenario=None)
+        base = dataclasses.replace(memory, villain=None, scenario=None, shovers=())
     return preflop.Request(game=new.game or base.game, stack=new.stack or base.stack,
                            hero=new.hero or base.hero, villain=new.villain or base.villain,
-                           scenario=new.scenario or base.scenario)
+                           scenario=new.scenario or base.scenario,
+                           players=new.players or base.players,
+                           pushfold=new.pushfold or base.pushfold,
+                           # คู่มือใหม่คนเดียวแทนคนยัดหมดชุดเดิมทั้งหมด
+                           shovers=new.shovers or (() if new.villain else base.shovers))
 
 
 def lookup(prompt: str, classify: Classifier | None = systemone_hero,
@@ -279,9 +282,9 @@ def lookup(prompt: str, classify: Classifier | None = systemone_hero,
             if chart["hero"] != hero:
                 continue
             score, notes = _fit(book, chart, request, scenario, lang)
-            # คะแนนเท่ากันเพราะชนพื้น ให้สแตกที่ใกล้กว่าชนะ ไม่ใช่เลขหน้า
+            # คะแนนเท่ากันเพราะชนพื้น ให้สแตกที่ใกล้กว่าชนะ ห่างเท่ากันเอาสแตกที่สั้นกว่า ไม่ใช่เลขหน้า
             wanted = request.stack or DEFAULT_STACK[request.game]
-            rank = (-score, stack_gap(chart["stack"], wanted), chart["page"])
+            rank = (-score, stack_gap(chart["stack"], wanted), chart["stack"], chart["page"])
             if best is None or rank < best[0]:
                 best = (rank, book, chart, score, notes)
     if best is None:

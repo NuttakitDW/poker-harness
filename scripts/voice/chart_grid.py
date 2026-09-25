@@ -18,7 +18,7 @@ DIM = "\033[2m"
 BOLD = "\033[1m"
 POINTED = "\033[1;4m"
 
-# (พื้นหลัง, ตัวอักษร) ตามรหัส action ในไฟล์ชาร์ต ช่องที่เล่นผสมใช้สีอ่อนของ action หลัก
+# (พื้นหลัง, ตัวอักษร) ตามรหัส action ในไฟล์ชาร์ต ช่องที่เล่นผสมแบ่งสีตามสัดส่วนของแต่ละ action
 # แดงคือ raise เขียวคือ call หรือ check น้ำเงินคือ fold ช่องเทาจาง ๆ คือมือที่ไม่อยู่ในเรนจ์เลย
 STYLES = {
     "R": "\033[48;5;124;38;5;231;1m",
@@ -26,17 +26,15 @@ STYLES = {
     "F": "\033[48;5;25;38;5;231m",
     "-": "\033[38;5;240m",
 }
-MIXED_STYLES = {
-    "R": "\033[48;5;217;38;5;16m",
-    "C": "\033[48;5;114;38;5;16m",
-    "F": "\033[48;5;110;38;5;16m",
-}
+# ลำดับสีในช่องผสม ซ้ายไปขวา raise แล้ว call แล้ว fold
+SPLIT_ORDER = (("raise", "R"), ("call", "C"), ("fold", "F"))
+CELL_WIDTH = 4
 # ไม่มีสี เช่นส่งออกไปไฟล์ ใช้ตัวอักษรแทน ตัวเล็กคือเล่นผสม
 PLAIN = {"R": "R", "C": "C", "F": ".", "-": "-"}
 LEGEND = (("R", "raise"), ("C", "call/check"), ("F", "fold"))
 LEGEND_WORDS = {
-    "TH": {"none": "ไม่อยู่ในเรนจ์", "mixed": "ผสม", "lower": "ตัวเล็ก = เล่นผสม"},
-    "EN": {"none": "not in range", "mixed": "mixed", "lower": "lower case = mixed"},
+    "TH": {"none": "ไม่อยู่ในเรนจ์", "mixed": "เล่นผสม แบ่งสีตาม %", "lower": "ตัวเล็ก = เล่นผสม"},
+    "EN": {"none": "not in range", "mixed": "mixed, split by %", "lower": "lower case = mixed"},
 }
 
 
@@ -45,15 +43,31 @@ def cell_text(hand: str) -> str:
     return hand.ljust(3)
 
 
-def _cell(hand: str, code: str, mixed: bool, color: bool, asked: bool = False) -> str:
+def split(shares: dict) -> list[str]:
+    """แบ่งช่องกว้าง 4 ตัวอักษรตามสัดส่วนแต่ละ action ช่องละ 25% ส่วนที่ปัดทิ้งมากสุดได้ช่องที่เหลือก่อน
+
+    เศษเท่ากันให้ action ที่ได้ช่องน้อยกว่าก่อน ส่วนน้อยจะได้ไม่หายไปจากสายตา
+    """
+    exact = [(code, shares.get(action, 0.0) * CELL_WIDTH) for action, code in SPLIT_ORDER]
+    counts = [int(size) for _, size in exact]
+    leftover = sorted(range(len(exact)),
+                      key=lambda i: (round(counts[i] - exact[i][1], 6), counts[i]))
+    for i in leftover[:CELL_WIDTH - sum(counts)]:
+        counts[i] += 1
+    return [code for (code, _), count in zip(exact, counts) for _ in range(count)]
+
+
+def _cell(hand: str, code: str, shares: dict | None, color: bool, asked: bool = False) -> str:
     # มือที่ผู้ใช้ถามมีลูกศรนำหน้าแทนช่องว่าง ช่องจึงกว้างเท่าเดิม
     lead = ">" if asked else " "
     if not color:
         mark = PLAIN.get(code, "?")
-        return f"{lead}{mark.lower() if mixed else mark}  "
-    style = MIXED_STYLES.get(code) if mixed else None
-    style = (style or STYLES.get(code, "")) + (POINTED if asked else "")
-    return f"{style}{lead}{cell_text(hand)}{RESET}"
+        return f"{lead}{mark.lower() if shares else mark}  "
+    pointed = POINTED if asked else ""
+    text = lead + cell_text(hand)
+    if not shares:
+        return f"{STYLES.get(code, '')}{pointed}{text}{RESET}"
+    return "".join(f"{RESET}{STYLES[part]}{pointed}{char}" for part, char in zip(split(shares), text)) + RESET
 
 
 def rows(book: dict, chart: dict, color: bool = True,
@@ -64,7 +78,7 @@ def rows(book: dict, chart: dict, color: bool = True,
     mixed = chart.get("mixed", {})
     lines = []
     for row, high in enumerate(RANKS):
-        cells = "".join(_cell(hand, codes.get(hand, "-"), hand in mixed, color, hand in asked)
+        cells = "".join(_cell(hand, codes.get(hand, "-"), mixed.get(hand), color, hand in asked)
                         for hand in order[row * SIZE:(row + 1) * SIZE])
         label = f"{DIM}{high}{RESET}" if color else high
         lines.append(f" {label} {cells}")
@@ -78,7 +92,7 @@ def legend(color: bool = True, lang: str = "TH") -> str:
         return f"   R raise  C call/check  . fold  - {words['none']}  {words['lower']}"
     parts = [f"{STYLES[code]} {name} {RESET}" for code, name in LEGEND]
     parts.append(f"{STYLES['-']}{words['none']}{RESET}")
-    parts.append(f"{MIXED_STYLES['R']} {words['mixed']} {RESET}")
+    parts.append(f"{STYLES['R']}  {STYLES['F']}  {RESET} {words['mixed']}")
     return "   " + "  ".join(parts)
 
 
@@ -88,11 +102,12 @@ def render(book: dict, chart: dict, color: bool = True,
     """ตารางเต็มพร้อมหัวเรื่อง ที่มา คำอธิบายสี และความถี่ของช่องที่เล่นผสม
 
     เป็นแม่แบบกลางของทุกโหมดที่โชว์ชาร์ต notes คือบรรทัดเสริมท้ายตาราง เช่นคะแนนความมั่นใจ
-    show_mixed ปิดรายการความถี่ได้ สำหรับโหมดที่ต้องการแค่ตาราง ช่องผสมยังเป็นสีอ่อนอยู่
+    show_mixed ปิดรายการความถี่ได้ สำหรับโหมดที่ต้องการแค่ตาราง ช่องผสมยังแบ่งสีตามสัดส่วนอยู่
     """
     words = preflop.WORDS[lang]
     title = preflop.describe(book, chart, lang)
-    source = f"{book['title']} {words['page']} {chart['page']}"
+    # ชาร์ตที่ solver แก้สดไม่มีเลขหน้า
+    source = book["title"] if chart.get("page") is None else f"{book['title']} {words['page']} {chart['page']}"
     header = "   " + "".join(f" {rank}  " for rank in RANKS)
     lines = [
         f"{BOLD}{title}{RESET}" if color else title,
