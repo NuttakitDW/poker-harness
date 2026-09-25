@@ -208,6 +208,26 @@ class AnswerTests(SpotTestCase):
         self.assertEqual(text, spot_chart.MISSING["TH"])
 
 
+class HelpTests(unittest.TestCase):
+    def test_help_is_thai_by_default_and_english_on_request(self):
+        self.assertIn("ถามตำแหน่งกับสแตก", spot_chart.help_for("/help"))
+        self.assertIn("Name a seat", spot_chart.help_for("/help en"))
+        self.assertEqual(spot_chart.help_for("/h"), spot_chart.help_for("/help th"))
+        self.assertEqual(spot_chart.help_for("/?"), spot_chart.help_for("/help"))
+
+    def test_other_text_is_not_a_help_command(self):
+        self.assertIsNone(spot_chart.help_for("BTN shove 10bb"))
+        self.assertIsNone(spot_chart.help_for("/hello"))
+
+    def test_both_languages_list_every_command(self):
+        for lang in ("th", "en"):
+            text = spot_chart.help_for(f"/help {lang}")
+            for command in ("/v, /voice", "/t, /text", "/n, /new", "/q, /quit", "/h, /help",
+                            "Usage", "make chart"):
+                with self.subTest(lang=lang, command=command):
+                    self.assertIn(command, text)
+
+
 class SystemOneHeroTests(unittest.TestCase):
     def test_no_key_means_no_guess(self):
         with mock.patch.object(systemone, "available", return_value=False):

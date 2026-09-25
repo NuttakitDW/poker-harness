@@ -11,6 +11,7 @@
     /v      สลับเป็นโหมดพูด
     /t      สลับเป็นโหมดพิมพ์
     /n      เริ่ม spot ใหม่ ลืมตำแหน่งและสแตกที่คุยกันมา
+    /help   วิธีใช้ภาษาไทย  /help en ภาษาอังกฤษ
     /q      ออก
 
 ตอนนี้ตอบได้แค่ชาร์ต push/fold ทัวร์นาเมนต์ที่ solver แก้สด สแตกไม่เกิน 15bb หรือพูดว่า push/fold
@@ -52,7 +53,67 @@ PUSH_FOLD_ONLY = {
     "EN": "Not available yet. Only tournament push/fold charts, 15bb or less or say push/fold, "
           "e.g. BTN shove 10bb",
 }
-HELP = "/v voice  /t text  /n new spot  /q quit"
+HELP = "/v voice  /t text  /n new  /q quit  /h help (/help en English)"
+HELP_COMMANDS = ("/help", "/h", "/?")
+HELP_TEXT = {
+    "th": """spot chart · ตามควาย.com
+ถามตำแหน่งกับสแตก ได้ชาร์ต push/fold ที่ solver แก้สด
+
+Usage
+  make chart
+  .venv/bin/python scripts/voice/spot_chart.py ["คำถาม"] [--voice] [--input-device N]
+
+Commands
+  /v, /voice          สลับเป็นโหมดพูด
+  /t, /text           สลับเป็นโหมดพิมพ์
+  /n, /new            เริ่ม spot ใหม่ ลืมตำแหน่ง สแตก และคนที่ all-in ที่จำไว้
+  /h, /help [th|en]   วิธีใช้ ไม่บอกภาษา = ไทย  (/? ก็ได้)
+  /q, /quit           ออก  (exit, quit, ออก ก็ได้)
+
+Examples  ตอนนี้มีแค่ push/fold ทัวร์นาเมนต์ chip EV
+  shove เป็นคนแรก     BTN ออลอิน 10bb
+  เจอคน shove         BB เจอ BTN ออลอิน 8bb
+  เจอหลายคน           UTG all-in แล้ว BTN call เราอยู่ SB 5bb
+  ขนาดโต๊ะ            heads-up, 6-max, 3 handed  (ไม่บอก = โต๊ะ 8 คน)
+  ถามมือ              ถือ K5s  ได้ % ของทุก action
+  ถามต่อ              ขอ 12bb, เจอ CO แทน  (ใช้ตำแหน่งจากตาก่อน)
+
+Limits
+  สแตก 3-15bb หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
+  ทุกคนสแตกเท่ากัน  BB จ่าย ante 1bb
+
+Colours
+  แดง shove  เขียว call  น้ำเงิน fold  ยิ่งอ่อนยิ่งเล่นน้อย (เล่นผสม)""",
+    "en": """spot chart · tamkwai
+Name a seat and a stack, get a push/fold chart solved on the spot
+
+Usage
+  make chart
+  .venv/bin/python scripts/voice/spot_chart.py ["question"] [--voice] [--input-device N]
+
+Commands
+  /v, /voice          switch to voice
+  /t, /text           switch to text
+  /n, /new            new spot: forget the remembered seats, stack and shovers
+  /h, /help [th|en]   this help; Thai unless en  (/? also works)
+  /q, /quit           quit  (exit, quit also work)
+
+Examples  push/fold tournament charts only, chip EV
+  first to shove      BTN shove 10bb
+  facing a shove      BB vs BTN shove 8bb
+  facing several      UTG all-in, BTN call, I'm in the SB 5bb
+  table size          heads-up, 6-max, 3 handed  (unstated = 8-handed)
+  ask about a hand    hold K5s  gives every action's %
+  follow up           12bb, vs CO instead  (keeps the seats from before)
+
+Limits
+  stacks 3-15bb, or say push/fold; above 15bb is approximate
+  everyone has the same stack; the BB posts a 1bb ante
+
+Colours
+  red shove  green call  blue fold  lighter = mixed, played less often""",
+}
+
 
 
 def answer(prompt: str, color: bool, classify=spot.systemone_hero,
@@ -136,6 +197,15 @@ class Session:
             self._listener.mute()
 
 
+def help_for(text: str) -> str | None:
+    """วิธีใช้ถ้าข้อความเป็นคำสั่ง /help ไม่บอกภาษาได้ภาษาไทย "/help en" ได้ภาษาอังกฤษ"""
+    words = text.strip().lower().split()
+    if not words or words[0] not in HELP_COMMANDS or len(words) > 2:
+        return None
+    lang = words[1] if len(words) == 2 else "th"
+    return HELP_TEXT.get(lang)
+
+
 def _prompt(voice: bool) -> None:
     # โหมดพูดขึ้นบรรทัดใหม่ไว้ให้คลื่นเสียงวาด ไม่งั้นคลื่นจะวาดทับข้อความนี้
     if voice:
@@ -174,6 +244,8 @@ def _loop(args: argparse.Namespace, session: Session) -> int:
             session.stop_voice()
         elif kind == "typed" and text.lower() in NEW_COMMANDS:
             memory = None
+        elif kind == "typed" and help_for(text):
+            print(f"\n{help_for(text)}")
         elif text:
             if kind == "heard":
                 print(f"\n> {text}")
