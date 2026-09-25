@@ -16,7 +16,10 @@ COPY harnesses/ harnesses/
 # Prebuilt caches (tmp/ is gitignored; building them takes ~35 min)
 COPY tmp/equity.sqlite tmp/equity-tables.npz tmp/pushfold-e2.npz tmp/pushfold-e3.npz tmp/
 
+# Railway shows the host's 48 CPUs but the plan allows 8; without a cap OpenBLAS starts
+# 48 threads and one solve takes 70s instead of 3.5s.
 ENV CHART_FONT=/usr/share/fonts/truetype/tlwg/TlwgMono.ttf \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    OPENBLAS_NUM_THREADS=8
 
 CMD ["python", "scripts/discord_bot/bot.py"]
