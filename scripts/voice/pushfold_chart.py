@@ -9,6 +9,7 @@
 สแตกที่บอกคือที่เหลือหลังจ่าย ante แล้ว บอก 1.5bb กับ ante 0.1bb คือมี 1.6bb ก่อนจ่าย
 บอก "bb ante" หรือ "live" คือ BB จ่าย ante แทนทั้งโต๊ะ ค่าเริ่ม 1bb บวก ante คืนให้แค่ BB
 heads-up คนที่เป็น button คือ SB จึงแสดงเป็น BTN/SB
+บอกรางวัลมา (icm 50/30/20) แก้แบบ ICM แทน chip EV ทุกคนที่โต๊ะคือผู้เล่นที่เหลือทั้งหมด
 """
 
 from __future__ import annotations
@@ -21,14 +22,14 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 import preflop  # noqa: E402
-from pushfold import coach, floor, hands  # noqa: E402
+from pushfold import coach, floor, hands, icm, structures  # noqa: E402
 from pushfold.spot import Spot, SpotError  # noqa: E402
 
 MAX_STACK = 15
 TABLE_SIZE = 8
 DEFAULT_ANTE = {"each": 0.1, "bb": 1.0}  # เป็น bb ต่อคนที่จ่าย
 FIRST_IN, FACING = "Push/Fold", "Call vs shove"
-TITLE = "Push/fold Nash solver (chip EV)"
+TITLE = "Push/fold Nash solver ({model})"
 HU_BUTTON = "BTN/SB"
 
 _LIBRARY = coach.Library()
@@ -88,13 +89,88 @@ def _spot(stack: float, players: int, ante: float, mode: str) -> Spot:
 
 def table(request: preflop.Request) -> Spot:
     """โต๊ะที่จะแก้สำหรับคำถามนี้"""
-    return _spot(request.stack, request.players or TABLE_SIZE, _ante(request), _mode(request))
+    return _spot(request.stack, _players(request), _ante(request), _mode(request))
+
+
+def _players(request: preflop.Request) -> int:
+    """คนที่โต๊ะ ไม่บอกคือ 8 คน หรือน้อยกว่าถ้าทั้งทัวร์เหลือไม่ถึง เช่น bubble ของ SNG 50/30/20"""
+    if request.players:
+        return request.players
+    found = stage(request)
+    return min(TABLE_SIZE, found.left) if found else TABLE_SIZE
+
+
+def stage(request: preflop.Request) -> structures.Stage | None:
+    """ช่วงของทัวร์ที่ผู้ถามบอก None ถ้าไม่ได้บอกว่าเหลือกี่คน ไม่บอกคนลงถือว่า 1000 จ่าย 15%
+
+    จำนวนคนที่บอกมาชนะชื่อช่วง bubble คือเกือบถึงเงิน final table คือเหลือเท่าคนที่โต๊ะนี้
+    """
+    if request.left_pct is None and request.players_left is None and request.stage_word is None:
+        return None
+    entrants = request.entrants or structures.DEFAULT_ENTRANTS
+    share = structures.PAID_SHARE if request.paid_pct is None else request.paid_pct / 100
+    given = tuple(request.payouts or ())
+    if request.players_left or request.left_pct is not None:
+        left = request.players_left or max(1, round(entrants * request.left_pct / 100))
+    elif request.stage_word == "final":
+        left = request.players or TABLE_SIZE
+    else:
+        return structures.Stage.bubble(entrants, share, given)
+    return structures.Stage(entrants, left, share, given)
+
+
+def _others(request: preflop.Request) -> float:
+    """สแตกของทุกคนที่โต๊ะอื่นเป็น bb ตามที่พูด ไม่บอกคือเท่าโต๊ะนี้"""
+    return request.field_avg or request.stack
+
+
+def payouts(request: preflop.Request) -> icm.Payouts | None:
+    """รางวัลที่ใช้แก้ None คือ chip EV ตั้งไม่ได้ raise icm.PayoutError"""
+    if request.payouts == ():
+        return None
+    found = stage(request)
+    if found:
+        posted = _ante(request) if _mode(request) == "each" else 0.0
+        return found.payouts(_players(request), round(_others(request) + posted, 9))
+    if request.payouts:
+        return icm.Payouts(request.payouts)
+    return icm.Payouts(preflop.DEFAULT_PAYOUTS) if request.icm else None
+
+
+def payout_problem(request: preflop.Request) -> str | None:
+    """ทำไมคิด ICM ไม่ได้ เช่น heads-up จ่ายสามอันดับ หรือเหลือน้อยกว่าคนที่โต๊ะ None ถ้าได้"""
+    try:
+        chosen = payouts(request)
+        if chosen is not None:
+            chosen.check(_players(request))
+    except icm.PayoutError as error:
+        return str(error)
+    return None
+
+
+def _model(request: preflop.Request) -> str:
+    chosen = payouts(request)
+    if chosen is None:
+        return "chip EV"
+    found = stage(request)
+    if found is None:
+        return "ICM " + "/".join(f"{p:g}" for p in chosen.prizes)
+    named = request.players_left is None and request.left_pct is None and request.stage_word
+    where = {"bubble": "bubble: ", "final": "final table: "}.get(named, "")
+    money = " (in the money)" if found.in_money else ""
+    curve = "real payouts" if found.given else "standard MTT payouts"
+    others = f", others at {_others(request):g}bb each" if chosen.crowd else ""
+    # รางวัลจริงไม่ขึ้นกับคนลง ถ้าไม่ได้บอกคนลงก็ไม่ต้องโชว์ 1000 ที่สมมติไว้
+    size = (f" of {found.entrants} left ({100 * found.left / found.entrants:.3g}%)"
+            if request.entrants or not found.given else " left")
+    return f"ICM, {where}{found.left}{size}, {found.paid} paid{money}, {curve}{others}"
 
 
 @functools.lru_cache(maxsize=64)
-def _solve(stack: float, players: int, ante: float, mode: str) -> coach.Result:
+def _solve(stack: float, players: int, ante: float, mode: str,
+           prizes: icm.Payouts | None = None) -> coach.Result:
     # ผลเดียวมีทุกที่นั่งทุกสถานการณ์ในโต๊ะ ถามที่นั่งอื่นในสแตกเดิมจึงไม่ต้องแก้ใหม่
-    return coach.solve(_spot(stack, players, ante, mode), library=_LIBRARY)
+    return coach.solve(_spot(stack, players, ante, mode), library=_LIBRARY, payouts=prizes)
 
 
 def missing_seat(request: preflop.Request) -> tuple[str, tuple[str, ...]] | None:
@@ -140,9 +216,11 @@ def _ante_words(request: preflop.Request) -> str:
 
 def solved(request: preflop.Request) -> Solved | None:
     """ชาร์ตที่แก้แล้วของผู้ถาม คืน None ถ้าแก้ไม่ได้ เช่นสแตกไม่พอจ่าย blind กับ ante"""
+    if payout_problem(request):
+        return None
     try:
-        result = _solve(request.stack, request.players or TABLE_SIZE, _ante(request),
-                        _mode(request))
+        result = _solve(request.stack, _players(request), _ante(request), _mode(request),
+                        payouts(request))
     except SpotError:
         return None
     names = result.spot.names
@@ -157,13 +235,15 @@ def solved(request: preflop.Request) -> Solved | None:
     order = list(hands.CLASSES)  # เรียง A..2 แถวต่อแถว ตรงกับ hand_order ในไฟล์ชาร์ต
     action = "call" if facing else "raise"
     actions, mixed = _cells(result.strategy[node.index][:, floor.JAM], action, order)
-    book = {"game": "tournament", "title": TITLE, "hand_order": order}
+    model = _model(request)
+    title = TITLE.format(model="ICM MTT" if stage(request) and payouts(request) else model)
+    book = {"game": "tournament", "title": title, "hand_order": order}
     chart = {"stack": request.stack, "section": "SOLVER", "page": None,
              "hero": _label(names, hero), "villain": villain,
              "scenario": FACING if facing else FIRST_IN, "actions": actions, "mixed": mixed,
              "names": {"raise": "shove"}}
     table = "heads-up" if len(names) == 2 else f"{len(names)}-handed"
-    note = (f"push/fold Nash, {table}, all stacks {request.stack}bb after the ante, "
+    note = (f"push/fold Nash, {model}, {table}, all stacks {request.stack}bb after the ante, "
             f"{_ante_words(request)}, {result.range_pct(seat, past) * 100:.1f}% of hands "
             f"{'call' if facing else 'shove'}, exploitability {result.exploitability:.3f}bb, "
             f"solved in {result.seconds:.1f}s")

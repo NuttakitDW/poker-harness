@@ -227,5 +227,19 @@ def load() -> Tables:
     return three_way()
 
 
+@functools.lru_cache(maxsize=1)
+def orders() -> np.ndarray:
+    """(169, 169, 169) float32: P(x first, y second, z third) in a 3-way all-in.
+
+    ICM needs the whole finish order, not just equity. It comes out of the tables already
+    here: pw[y, z, x] counts orders with y ahead of z, eq3[y, z, x] those with y first,
+    so the difference is exactly x first, then y, then z. Both tables come from the same
+    deals, so the difference is never negative. Ties count as coin flips.
+    """
+    t = three_way()
+    ahead_not_first = np.clip(t.pw - t.eq3, 0.0, None)   # [y, z, x]: x first, y ahead of z
+    return np.ascontiguousarray(ahead_not_first.transpose(2, 0, 1))
+
+
 if __name__ == "__main__":
     load()

@@ -1,5 +1,6 @@
 """M2: the Oddsmaker's equity tables."""
 
+import itertools
 import random
 import sys
 import unittest
@@ -82,6 +83,34 @@ class ThreeWayTest(unittest.TestCase):
         aa = H("AA")
         self.assertFalse(self.t.possible[aa, aa, H("AKo")])
         self.assertTrue(self.t.possible[aa, aa, H("KK")])
+
+
+class FinishOrderTest(unittest.TestCase):
+    """orders[x, y, z] = P(x first, y second, z third), derived from eq3 and pw."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.t = oddsmaker.load()
+        cls.o = oddsmaker.orders()
+        cls.triples = np.random.default_rng(4).integers(0, 169, size=(300, 3))
+
+    def test_never_negative(self):
+        self.assertGreaterEqual(float(self.o.min()), 0.0)
+
+    def test_the_six_orders_add_up_to_one(self):
+        for a, b, c in self.triples:
+            total = sum(self.o[p] for p in itertools.permutations((a, b, c)))
+            self.assertAlmostEqual(float(total), 1.0, places=5)
+
+    def test_first_place_is_three_way_equity(self):
+        for a, b, c in self.triples:
+            self.assertAlmostEqual(float(self.o[a, b, c] + self.o[a, c, b]), float(self.t.eq3[a, b, c]),
+                                   places=5)
+
+    def test_who_beats_whom_is_the_side_pot_table(self):
+        for a, b, c in self.triples:
+            ahead = self.o[a, b, c] + self.o[a, c, b] + self.o[c, a, b]
+            self.assertAlmostEqual(float(ahead), float(self.t.pw[a, b, c]), places=5)
 
 
 if __name__ == "__main__":

@@ -59,6 +59,9 @@ class SeatPlan:
     third: np.ndarray    # per term: strategy column of the third hand (l)
     others: np.ndarray   # (terms, n-1): strategy columns whose reach multiplies in; ONE = skip
 
+    def price(self, cols: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        return values(self, cols)
+
 
 def _column(terminal, seat) -> int:
     return terminal.nodes[seat] * 2 + terminal.actions[seat]

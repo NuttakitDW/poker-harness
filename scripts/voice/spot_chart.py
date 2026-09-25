@@ -56,6 +56,11 @@ SEAT_NOT_AT_TABLE = {
     "TH": "โต๊ะ {players} คนไม่มีตำแหน่ง {seat} มีแค่ {seats} ลองถามใหม่ด้วยตำแหน่งเหล่านี้",
     "EN": "A {players}-handed table has no {seat}; the seats are {seats}",
 }
+BAD_PAYOUTS = {
+    "TH": "คิด ICM ไม่ได้: {why} ลองบอกขนาดโต๊ะ รางวัล หรือจำนวนคนที่เหลือใหม่ เช่น 4 handed icm 50/30/20",
+    "EN": "Can't price ICM: {why}. Try another table size, payouts or players left, "
+          "e.g. 4 handed icm 50/30/20",
+}
 ALL_IN_BY_POSTING = {
     "TH": "ตำแหน่งนี้จ่าย blind กับ ante แล้วหมดตัวพอดี ไม่มีอะไรต้องตัดสินใจ รอดูไพ่ได้เลย",
     "EN": "That seat is all-in from posting the blind and ante; there is no decision to make",
@@ -70,33 +75,44 @@ HELP = "/v voice  /t text  /n new  /q quit  /h help (/help en English)  /contact
 HELP_COMMANDS = ("/help", "/h", "/?")
 # ตัวอย่าง ข้อจำกัด และสี ใช้ร่วมกับวิธีใช้ใน Discord (scripts/discord_bot/bot.py) จะได้ไม่เขียนสองที่
 HELP_GUIDE = {
-    "th": """Examples  ตอนนี้มีแค่ push/fold ทัวร์นาเมนต์ chip EV
+    "th": """Examples  ตอนนี้มีแค่ push/fold ทัวร์นาเมนต์ chip EV หรือ ICM
   shove เป็นคนแรก     BTN ออลอิน 10bb
   เจอคน shove         BB เจอ BTN ออลอิน 8bb
   เจอหลายคน           UTG all-in แล้ว BTN call เราอยู่ SB 5bb
   ขนาดโต๊ะ            heads-up, 6-max, 3 handed  (ไม่บอก = โต๊ะ 8 คน)
+  ICM                 icm 50/30/20, รางวัล 50/30/20  (icm เฉย ๆ = 50/30/20, chip ev = กลับ)
+  ช่วงของทัวร์ MTT     เหลือ 50%, เหลือ 120 คน, bubble, final table  เปลี่ยนได้: field 500, paid 12%, avg 25bb
   ถามมือ              ถือ K5s  ได้ % ของทุก action
   ถามต่อ              ขอ 12bb, เจอ CO แทน  (ใช้ตำแหน่งจากตาก่อน)
 
 Limits
   สแตกมากกว่า 0 ถึง 15bb ทศนิยมได้ เช่น 5.5bb  หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
   สแตกที่บอกคือที่เหลือหลังจ่าย ante  ทุกคนสแตกเท่ากัน
+  ICM นับว่าผู้เล่นที่เหลือทั้งหมดอยู่โต๊ะนี้ ถ้าไม่บอกช่วงของทัวร์
+  ช่วงของทัวร์: คนลง 1000 จ่าย 15% รางวัลแบบ MTT ทั่วไป คนโต๊ะอื่นสแตกเท่ากันหมด (ค่าเริ่มเท่าโต๊ะนี้)
+  bubble = เหลือมากกว่าคนได้เงิน 3%  final table = ทุกคนที่เหลืออยู่โต๊ะนี้
   ทุกคนจ่าย ante 10% ของ BB  เปลี่ยนได้: ante 12.5%, ante 0.2bb, ไม่มี ante
   BB จ่าย ante แทนทั้งโต๊ะ: bb ante หรือ live (ค่าเริ่ม 1bb, bb ante 1.5 ก็ได้)
 
 Colours
   แดง shove  เขียว call  น้ำเงิน fold  ยิ่งอ่อนยิ่งเล่นน้อย (เล่นผสม)""",
-    "en": """Examples  push/fold tournament charts only, chip EV
+    "en": """Examples  push/fold tournament charts only, chip EV or ICM
   first to shove      BTN shove 10bb
   facing a shove      BB vs BTN shove 8bb
   facing several      UTG all-in, BTN call, I'm in the SB 5bb
   table size          heads-up, 6-max, 3 handed  (unstated = 8-handed)
+  ICM                 icm 50/30/20, payout 50 30 20  (icm alone = 50/30/20, chip ev = back)
+  MTT stage           50% left, 120 left, bubble, final table  change: field 500, paid 12%, avg 25bb
   ask about a hand    hold K5s  gives every action's %
   follow up           12bb, vs CO instead  (keeps the seats from before)
 
 Limits
   stacks above 0 up to 15bb, decimals fine (5.5bb), or say push/fold; above 15bb is approximate
   the stack is what is left after the ante; everyone has the same stack
+  ICM counts the players at this table as everyone left, unless a stage is given
+  a stage assumes 1000 entrants, 15% paid, a standard MTT curve, and one shared stack
+  for everyone at other tables (this table's stack unless avg is given)
+  bubble = 3% more players left than places paid; final table = everyone left is at this table
   everyone antes 10% of the BB; change it: ante 12.5%, ante 0.2bb, no ante
   big blind ante for the table: bb ante or live (1bb by default, or bb ante 1.5)
 
@@ -148,7 +164,11 @@ class Reply:
     message: str | None = None  # ข้อความแทนชาร์ต เช่นหาไม่เจอหรือยังไม่มีชาร์ตแบบนี้
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
     # ชนิดคำตอบ ใช้ในบันทึกคำถามเพื่อหาประโยคที่ตัวอ่านยังอ่านไม่ออก
+<<<<<<< Updated upstream
     # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | mario
+=======
+    # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | bad_payouts
+>>>>>>> Stashed changes
     kind: str = "chart"
 
 
@@ -165,6 +185,9 @@ def reply(prompt: str, memory=None) -> Reply:
         seat, seats = missing
         text = SEAT_NOT_AT_TABLE[found.lang].format(players=len(seats), seat=seat, seats=", ".join(seats))
         return Reply(found, text, kind="seat_not_at_table")
+    problem = pushfold_chart.payout_problem(found.request) if pushfold_chart.applies(found.request) else None
+    if problem:
+        return Reply(found, BAD_PAYOUTS[found.lang].format(why=problem), kind="bad_payouts")
     if pushfold_chart.applies(found.request) and pushfold_chart.all_in_by_posting(found.request):
         return Reply(found, ALL_IN_BY_POSTING[found.lang], kind="all_in_by_posting")
     made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None

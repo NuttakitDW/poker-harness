@@ -359,6 +359,184 @@ class SolvedChartTests(unittest.TestCase):
         self.assertIn("after the ante", made.note)
 
 
+class PayoutWordsTests(unittest.TestCase):
+    def test_payouts_are_read_in_english_and_thai(self):
+        for said in ("BTN shove 10bb icm 50/30/20", "payout 50 30 20 BTN 10bb",
+                     "BTN 10bb รางวัล 50/30/20", "BTN 10bb ICM 50%/30%/20%",
+                     "prizes 50, 30, 20 BTN 10bb", "BTN 10bb ไอซีเอ็ม 50-30-20"):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.parse(said).payouts, (50, 30, 20))
+
+    def test_payout_numbers_are_not_read_as_the_stack_or_table(self):
+        made = preflop.parse("icm 50/30/20 4 handed BTN 10bb")
+        self.assertEqual((made.payouts, made.players, made.stack), ((50, 30, 20), 4, 10))
+        made = preflop.parse("payout 50 30 20 10bb BTN")
+        self.assertEqual((made.payouts, made.stack), ((50, 30, 20), 10))
+        self.assertIsNone(preflop.parse("icm 50/30/20 BTN").stack)
+
+    def test_icm_alone_means_the_default_payouts(self):
+        for said in ("BTN shove 10bb icm", "BTN 10bb ไอซีเอ็ม"):
+            with self.subTest(said=said):
+                made = preflop.parse(said)
+                self.assertTrue(made.icm)
+                self.assertIsNone(made.payouts)
+        self.assertIn("ICM 50/30/20", pushfold_chart.solved(request(stack=10, icm=True)).note)
+
+    def test_chip_ev_is_said_explicitly_or_left_out(self):
+        self.assertEqual(preflop.parse("BTN 10bb chip ev").payouts, ())
+        self.assertIsNone(preflop.parse("BTN 10bb").payouts)
+
+    def test_a_follow_up_keeps_the_payouts_until_chip_ev_is_asked(self):
+        import spot
+        kept = spot.merge(preflop.Request(stack=8), preflop.Request(hero="BTN", payouts=(50, 30, 20)))
+        self.assertEqual(kept.payouts, (50, 30, 20))
+        dropped = spot.merge(preflop.Request(payouts=()), preflop.Request(payouts=(50, 30, 20)))
+        self.assertEqual(dropped.payouts, ())
+
+
+class StageWordsTests(unittest.TestCase):
+    def test_share_of_the_field_left_is_read(self):
+        for said in ("BTN shove 10bb 50% left", "BTN 10bb 50% of the field left",
+                     "BTN 10bb เหลือ 50%", "BTN 10bb เหลือ 50 เปอร์เซ็นต์"):
+            with self.subTest(said=said):
+                made = preflop.parse(said)
+                self.assertEqual((made.left_pct, made.stack), (50, 10))
+
+    def test_players_left_is_read_without_touching_the_table_size(self):
+        made = preflop.parse("BTN 10bb 120 left 6-max")
+        self.assertEqual((made.players_left, made.players), (120, 6))
+        made = preflop.parse("BTN 10bb เหลือ 120 คน")
+        self.assertEqual((made.players_left, made.players), (120, None))
+
+    def test_field_size_paid_share_and_average_stack_are_read(self):
+        made = preflop.parse("BTN shove 10bb 20% left field 500 paid 12% avg 25bb")
+        self.assertEqual((made.entrants, made.paid_pct, made.field_avg, made.stack, made.left_pct),
+                         (500, 12, 25, 10, 20))
+        made = preflop.parse("BTN 10bb 300 entrants 15% paid สแตกเฉลี่ย 30bb เหลือ 20%")
+        self.assertEqual((made.entrants, made.paid_pct, made.field_avg, made.stack), (300, 15, 30, 10))
+
+    def test_zero_is_not_read_as_a_stage(self):
+        made = preflop.parse("BTN 10bb 0 left field 0 paid 0%")
+        self.assertEqual((made.players_left, made.entrants, made.paid_pct), (None, None, None))
+        self.assertIsNone(pushfold_chart.payout_problem(request(stack=10, players_left=None)))
+
+    def test_average_is_read_before_or_after_the_number(self):
+        for said in ("BTN 10bb 50% left avg 25bb", "BTN 10bb 50% left 25bb average",
+                     "BTN 10bb 50% left average stack 25bb"):
+            with self.subTest(said=said):
+                made = preflop.parse(said)
+                self.assertEqual((made.field_avg, made.stack), (25, 10))
+
+    def test_a_follow_up_keeps_the_stage_and_a_new_one_replaces_it(self):
+        import spot
+        kept = spot.merge(preflop.Request(stack=8), preflop.Request(left_pct=50, entrants=500))
+        self.assertEqual((kept.left_pct, kept.entrants), (50, 500))
+        moved = spot.merge(preflop.Request(players_left=40), preflop.Request(left_pct=50))
+        self.assertEqual((moved.players_left, moved.left_pct), (40, None))
+
+
+class NamedStageTests(unittest.TestCase):
+    def test_bubble_and_final_table_words_are_read(self):
+        for said, word in (("bubble BTN 10bb", "bubble"), ("BTN 10bb บับเบิล", "bubble"),
+                           ("final table BTN 10bb", "final"), ("BTN 10bb FT", "final"),
+                           ("BTN 10bb ไฟนอลเทเบิ้ล", "final"), ("BTN 10bb โต๊ะสุดท้าย", "final")):
+            with self.subTest(said=said):
+                self.assertEqual(preflop.parse(said).stage_word, word)
+
+    def test_the_bubble_is_just_above_the_places_paid(self):
+        made = pushfold_chart.solved(request(stack=10, stage_word="bubble"))
+        self.assertIn("bubble: 155 of 1000 left", made.note)
+        self.assertIn("150 paid", made.note)
+
+    def test_a_sit_and_go_bubble_shrinks_the_table(self):
+        chosen = pushfold_chart.payouts(request(stack=10, stage_word="bubble", payouts=(50, 30, 20)))
+        self.assertEqual((len(chosen.prizes), chosen.crowd), (3, 0))
+        made = pushfold_chart.solved(request(hero="BB", villain="SB", stack=10, stage_word="bubble",
+                                             payouts=(50, 30, 20)))
+        self.assertIn("4-handed", made.note)
+        self.assertIn("bubble: 4 left, 3 paid", made.note)
+
+    def test_the_final_table_is_everyone_left(self):
+        chosen = pushfold_chart.payouts(request(stack=10, stage_word="final", players=9))
+        self.assertEqual((len(chosen.prizes), chosen.crowd), (9, 0))
+        made = pushfold_chart.solved(request(stack=10, stage_word="final", players=9))
+        self.assertIn("final table: 9 of 1000 left", made.note)
+        self.assertNotIn("others at", made.note)
+
+    def test_numbers_beat_the_named_stage(self):
+        chosen = pushfold_chart.payouts(request(stack=10, stage_word="bubble", players_left=300))
+        self.assertEqual(chosen.crowd, 292)
+
+    def test_a_named_stage_replaces_an_earlier_share_left(self):
+        import spot
+        moved = spot.merge(preflop.Request(stage_word="bubble"), preflop.Request(left_pct=50))
+        self.assertEqual((moved.stage_word, moved.left_pct), ("bubble", None))
+        back = spot.merge(preflop.Request(left_pct=40), preflop.Request(stage_word="final"))
+        self.assertEqual((back.stage_word, back.left_pct), (None, 40))
+
+
+class StageChartTests(unittest.TestCase):
+    def test_half_the_field_left_is_solved_with_a_crowd(self):
+        made = pushfold_chart.solved(request(stack=10, left_pct=50))
+        self.assertIn("500 of 1000 left (50%)", made.note)
+        self.assertIn("150 paid", made.note)
+        self.assertIn("others at 10bb", made.note)
+        self.assertIn("ICM", made.book["title"])
+
+    def test_half_the_field_left_is_close_to_chip_ev_but_the_bubble_is_not(self):
+        seat = dict(hero="BB", villain="SB", stack=10)
+        chip = pushfold_chart.solved(request(**seat)).chart["actions"].count("C")
+        early = pushfold_chart.solved(request(**seat, left_pct=50)).chart["actions"].count("C")
+        bubble = pushfold_chart.solved(request(**seat, players_left=155)).chart["actions"].count("C")
+        self.assertLessEqual(abs(chip - early), chip * 0.15)
+        self.assertLess(bubble, chip * 0.8)
+
+    def test_real_payouts_replace_the_standard_curve(self):
+        made = pushfold_chart.solved(request(stack=10, players_left=12, entrants=100, players=6,
+                                             payouts=(30, 20, 14, 10, 8, 6, 5, 4, 3)))
+        self.assertIn("12 of 100 left", made.note)
+        self.assertIn("9 paid", made.note)
+        self.assertNotIn("standard", made.note)
+
+    def test_a_bb_ante_stage_gives_others_no_ante(self):
+        chosen = pushfold_chart.payouts(request(stack=10, left_pct=50, ante_mode="bb"))
+        self.assertEqual(chosen.crowd_stack, 10)
+        chosen = pushfold_chart.payouts(request(stack=10, left_pct=50, ante=0.2))
+        self.assertEqual(chosen.crowd_stack, 10.2)
+
+    def test_chip_ev_wins_over_a_stage(self):
+        made = pushfold_chart.solved(request(stack=10, left_pct=50, payouts=()))
+        self.assertIn("chip EV", made.note)
+
+    def test_fewer_left_than_seated_is_explained(self):
+        self.assertIn("only 5 players left but 8 seated",
+                      pushfold_chart.payout_problem(request(players_left=5, players=8)))
+
+    def test_an_unstated_table_shrinks_to_the_players_left(self):
+        self.assertIsNone(pushfold_chart.payout_problem(request(players_left=5)))
+        self.assertEqual(len(pushfold_chart.table(request(players_left=5)).stacks), 5)
+
+
+class IcmChartTests(unittest.TestCase):
+    def test_the_note_and_title_say_icm_and_the_payouts(self):
+        made = pushfold_chart.solved(request(stack=10, players=4, payouts=(50, 30, 20)))
+        self.assertIn("ICM 50/30/20", made.note)
+        self.assertIn("ICM", made.book["title"])
+        self.assertIn("chip EV", pushfold_chart.solved(request(stack=10)).note)
+
+    def test_the_bubble_calls_tighter_than_chip_ev(self):
+        spot_ = dict(hero="BB", villain="SB", stack=10, players=4)
+        chip = pushfold_chart.solved(request(**spot_)).chart["actions"].count("C")
+        prize = pushfold_chart.solved(request(**spot_, payouts=(50, 30, 20))).chart["actions"].count("C")
+        self.assertLess(prize, chip / 2)
+
+    def test_more_places_paid_than_players_is_caught(self):
+        self.assertIn("3 places paid but only 2",
+                      pushfold_chart.payout_problem(request(players=2, payouts=(50, 30, 20))))
+        self.assertIsNone(pushfold_chart.payout_problem(request(players=3, payouts=(50, 30, 20))))
+        self.assertIsNone(pushfold_chart.solved(request(players=2, payouts=(50, 30, 20))))
+
+
 class AnswerTests(SpotTestCase):
     def setUp(self):
         self.use_books(book([chart(hero="BTN", stack=30, raises=("AKo",))], game="tournament"))
@@ -393,6 +571,17 @@ class AnswerTests(SpotTestCase):
         self.assertEqual(made.kind, "seat_not_at_table")
         self.assertIn("UTG", made.message)
         self.assertIn("CO, BTN, SB, BB", made.message)
+
+    def test_more_places_paid_than_players_is_told_so(self):
+        made = spot_chart.reply("heads-up BTN shove 10bb icm 50/30/20")
+        self.assertEqual(made.kind, "bad_payouts")
+        self.assertIn("3", made.message)
+        self.assertIn("2", made.message)
+
+    def test_an_icm_question_gets_an_icm_chart(self):
+        made = spot_chart.reply("4 handed BTN shove 10bb icm 50/30/20")
+        self.assertEqual(made.kind, "chart")
+        self.assertIn("ICM 50/30/20", made.note)
 
     def test_deeper_stacks_say_only_push_fold_is_available(self):
         text, found = spot_chart.answer("BTN open 30bb tournament", color=False)

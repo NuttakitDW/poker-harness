@@ -7,6 +7,7 @@ Seats update one at a time. Methods:
   dcfr  discounted: positive regrets x t^1.5/(t^1.5+1), negative x 0.5, average x (t/(t+1))^2
 Stop rule: every `check_every` iterations the Auditor measures the average strategy;
 stop once no seat can gain more than `target` bb per hand.
+With `payouts` every ending is priced in ICM chips (icm.py) instead of chips; the rest is the same.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from typing import Callable
 
 import numpy as np
 
-from pushfold import auditor, floor, hands, pricer
+from pushfold import auditor, floor, hands, icm, icm_pricer, pricer
 from pushfold.spot import Spot
 
 METHODS = ("cfr", "cfr+", "dcfr")
@@ -36,6 +37,7 @@ class Result:
     seconds: float
     history: tuple[tuple[int, float], ...]  # (iteration, exploitability) at every check
     warm: bool = False                      # started from a cached neighbour
+    payouts: icm.Payouts | None = None      # None: chip EV
 
     def node(self, seat: int, history: tuple[int, ...] | None = None) -> floor.Node:
         """The node of `seat`; default: everyone before it folded (the first-in spot)."""
@@ -58,7 +60,7 @@ class Library:
     """Solved spots, so a new spot can start from its nearest solved neighbour.
 
     Neighbours must have the same tree shape: table size, ante mode and the same seats
-    all-in by posting (a forced seat has no nodes, so its tree is smaller).
+    all-in by posting (a forced seat has no nodes, so its tree is smaller), and the same payouts.
     Distance = sum of stack differences + ante difference, in bb.
     """
 
@@ -71,10 +73,10 @@ class Library:
     def add(self, result: Result) -> None:
         self._results.append(result)
 
-    def nearest(self, spot: Spot) -> Result | None:
+    def nearest(self, spot: Spot, payouts: icm.Payouts | None = None) -> Result | None:
         same = [r for r in self._results
                 if r.spot.n == spot.n and r.spot.ante_mode == spot.ante_mode
-                and r.spot.forced == spot.forced]
+                and r.spot.forced == spot.forced and r.payouts == payouts]
         if not same:
             return None
         return min(same, key=lambda r: sum(abs(a - b) for a, b in zip(r.spot.stacks, spot.stacks))
@@ -89,15 +91,16 @@ def _match(regret: np.ndarray) -> np.ndarray:
 
 def solve(spot: Spot, method: str = "cfr+", target: float = 0.01, check_every: int = 50,
           max_iters: int = 20_000, warm: np.ndarray | None = None,
-          library: Library | None = None, log: Callable[[str], None] | None = None) -> Result:
+          library: Library | None = None, log: Callable[[str], None] | None = None,
+          payouts: icm.Payouts | None = None) -> Result:
     if method not in METHODS:
         raise ValueError(f"unknown method {method!r}; pick one of {METHODS}")
     began = time.perf_counter()
     if warm is None and library is not None:
-        neighbour = library.nearest(spot)
+        neighbour = library.nearest(spot, payouts)
         warm = neighbour.strategy if neighbour is not None else None
     tree = floor.build(spot)
-    plans = pricer.plan(tree)
+    plans = icm_pricer.plans_for(tree, payouts)
     shape = (len(tree.nodes), len(hands.CLASSES), 2)
     regret = np.zeros(shape)
     total = np.zeros(shape)
@@ -114,7 +117,7 @@ def solve(spot: Spot, method: str = "cfr+", target: float = 0.01, check_every: i
         for p in plans:
             if not len(p.nodes):
                 continue
-            cfv, _ = pricer.values(p, pricer.columns(sigma))
+            cfv, _ = p.price(pricer.columns(sigma))
             mine = sigma[p.nodes]
             gain = cfv - (mine * cfv).sum(axis=2, keepdims=True)
             r = regret[p.nodes]
@@ -141,7 +144,7 @@ def solve(spot: Spot, method: str = "cfr+", target: float = 0.01, check_every: i
                 break
     average = total / total.sum(axis=2, keepdims=True)
     result = Result(spot, tree, average, t, exploit, time.perf_counter() - began, tuple(history),
-                    warm is not None)
+                    warm is not None, payouts)
     if library is not None:
         library.add(result)
     return result

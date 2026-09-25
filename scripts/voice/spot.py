@@ -187,6 +187,20 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            ante=new.ante if new.ante is not None
                            else (None if new.ante_mode else base.ante),
                            ante_mode=new.ante_mode or base.ante_mode,
+                           # () คือขอ chip EV ต้องไม่ถูกแทนด้วยรางวัลของตาก่อน
+                           payouts=new.payouts if new.payouts is not None else base.payouts,
+                           icm=new.icm or (base.icm and new.payouts is None),
+                           # บอกเหลือเป็น % หรือเป็นจำนวนคน อย่างใดอย่างหนึ่ง ของใหม่แทนของเดิม
+                           # bubble หรือ final table ใหม่แทนจำนวนคนเหลือเดิม และกลับกัน
+                           left_pct=new.left_pct if new.left_pct is not None
+                           else (None if new.players_left or new.stage_word else base.left_pct),
+                           players_left=new.players_left or (
+                               None if new.left_pct is not None or new.stage_word else base.players_left),
+                           stage_word=new.stage_word or (
+                               None if new.left_pct is not None or new.players_left else base.stage_word),
+                           entrants=new.entrants or base.entrants,
+                           paid_pct=new.paid_pct or base.paid_pct,
+                           field_avg=new.field_avg or base.field_avg,
                            # คู่มือใหม่คนเดียวแทนคนยัดหมดชุดเดิมทั้งหมด
                            shovers=new.shovers or (() if new.villain else base.shovers))
 
