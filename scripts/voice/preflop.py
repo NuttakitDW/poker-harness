@@ -105,13 +105,12 @@ _PRIZE = (r"\d+(?:\.\d+)?(?![\d.])(?!\s*(?:bb|big\s*blind|บีบี|บิ๊
           r"\s*%?")
 _PAYOUTS = re.compile(rf"(?:(?<![a-z])icm|payouts?|prizes?|ไอซีเอ็ม|เงินรางวัล|รางวัล)\s*:?\s*"
                       rf"({_PRIZE}(?:\s*[/,\-]?\s*{_PRIZE})+)")
-# พูดแค่ icm ไม่บอกรางวัล ใช้ 50/30/20 แล้วบอกไว้ใต้ชาร์ต ส่วน chip ev คือกลับไปไม่ใช้ ICM
+# พูดแค่ icm ไม่บอกรางวัล คือ bubble ของเกม live (pushfold_chart.stage) ส่วน chip ev คือกลับไปไม่ใช้ ICM
 _ICM_WORD = re.compile(r"(?<![a-z])icm(?![a-z])|ไอซีเอ็ม")
 # ช่วงของทัวร์ที่เรียกชื่อ bubble คือเกือบถึงเงิน final table คือทุกคนที่เหลืออยู่โต๊ะนี้
 _BUBBLE = re.compile(r"bubble|บับเบิ้?ล")
 _FINAL_TABLE = re.compile(r"final\s*table|(?<![a-z])ft(?![a-z])|ไฟนอล\s*เทเบิ้?ล|โต๊ะสุดท้าย")
 _CHIP_EV = re.compile(r"chip\s*-?\s*ev|(?<![a-z])c\s*-?\s*ev(?![a-z])|ชิป\s*อีวี")  # cev = chip ev
-DEFAULT_PAYOUTS = (50, 30, 20)
 # GGPoker All-in or Fold คือเกม cash ที่ทุกคนมี 10bb ตัดคำออกก่อน ไม่ให้ all-in ในชื่อเกมถูกอ่านเป็นคนยัด
 _AOF = re.compile(r"(?<![a-z])aof(?![a-z])|all\s*-?\s*in\s*(?:or|/|-)\s*fold|ออลอิน\s*(?:หรือ|ออร์)\s*โฟลด์")
 

@@ -45,6 +45,35 @@ class MttCurveTest(unittest.TestCase):
                 structures.mtt(entrants, paid)
 
 
+class LiveTableTest(unittest.TestCase):
+    def test_each_column_pays_the_whole_pool(self):
+        for (low, high), shares in structures.LIVE.items():
+            with self.subTest(entries=(low, high)):
+                self.assertAlmostEqual(sum(shares), 100, places=6)
+                self.assertAlmostEqual(sum(structures.live(high)), high, places=6)
+
+    def test_places_paid_follow_the_entries(self):
+        for entrants, paid in ((2, 2), (3, 3), (7, 3), (8, 4), (15, 4), (16, 5), (20, 5), (31, 6), (47, 7)):
+            with self.subTest(entrants=entrants):
+                self.assertEqual(len(structures.live(entrants)), paid)
+
+    def test_two_entries_split_the_pool_over_two_places(self):
+        self.assertAlmostEqual(sum(structures.live(2)), 2, places=6)
+
+    def test_bigger_fields_fall_back_to_the_mtt_curve(self):
+        self.assertIsNone(structures.live(48))
+        stage = structures.Stage(entrants=100, left=50)
+        self.assertEqual((stage.curve, stage.paid), ("mtt", 15))
+
+    def test_the_default_live_game_bubble(self):
+        stage = structures.Stage.bubble(structures.DEFAULT_ENTRANTS)
+        self.assertEqual((stage.curve, stage.paid, stage.left), ("live", 5, 6))
+        self.assertAlmostEqual(stage.prizes()[0] * structures.BUY_IN_THB, 3880, places=6)
+
+    def test_a_paid_share_overrides_the_live_table(self):
+        self.assertEqual(structures.Stage(entrants=20, left=10, paid_share=0.15).curve, "mtt")
+
+
 class StageTest(unittest.TestCase):
     def test_half_the_field_left(self):
         stage = structures.Stage(entrants=1000, left=500)

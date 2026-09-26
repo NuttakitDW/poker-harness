@@ -397,7 +397,9 @@ class PayoutWordsTests(unittest.TestCase):
                 made = preflop.parse(said)
                 self.assertTrue(made.icm)
                 self.assertIsNone(made.payouts)
-        self.assertIn("ICM 50/30/20", pushfold_chart.solved(request(stack=10, icm=True)).note)
+        note = pushfold_chart.solved(request(stack=10, icm=True)).note
+        self.assertIn("bubble: 6 of 20 left", note)
+        self.assertIn("5 paid, live payouts (500 THB buy-in: 3,880/2,590/1,660/1,110/760 THB)", note)
 
     def test_chip_ev_is_said_explicitly_or_left_out(self):
         self.assertEqual(preflop.parse("BTN 10bb chip ev").payouts, ())
@@ -491,8 +493,20 @@ class NamedStageTests(unittest.TestCase):
 
     def test_the_bubble_is_just_above_the_places_paid(self):
         made = pushfold_chart.solved(request(stack=10, stage_word="bubble"))
+        self.assertIn("bubble: 6 of 20 left", made.note)
+        self.assertIn("5 paid, live payouts", made.note)
+        made = pushfold_chart.solved(request(stack=10, stage_word="bubble", entrants=1000))
         self.assertIn("bubble: 155 of 1000 left", made.note)
         self.assertIn("150 paid", made.note)
+        self.assertIn("standard MTT payouts", made.note)
+
+    def test_a_paid_share_leaves_the_live_table(self):
+        made = pushfold_chart.solved(request(stack=10, stage_word="bubble", paid_pct=30))
+        self.assertIn("6 paid, standard MTT payouts", made.note)
+
+    def test_more_left_than_a_live_game_assumes_a_big_field(self):
+        chosen = pushfold_chart.stage(request(stack=10, players_left=120))
+        self.assertEqual((chosen.entrants, chosen.curve), (1000, "mtt"))
 
     def test_a_sit_and_go_bubble_shrinks_the_table(self):
         chosen = pushfold_chart.payouts(request(stack=10, stage_word="bubble", payouts=(50, 30, 20)))
@@ -504,9 +518,9 @@ class NamedStageTests(unittest.TestCase):
 
     def test_the_final_table_is_everyone_left(self):
         chosen = pushfold_chart.payouts(request(stack=10, stage_word="final", players=9))
-        self.assertEqual((len(chosen.prizes), chosen.crowd), (9, 0))
+        self.assertEqual((len(chosen.prizes), chosen.crowd), (5, 0))
         made = pushfold_chart.solved(request(stack=10, stage_word="final", players=9))
-        self.assertIn("final table: 9 of 1000 left", made.note)
+        self.assertIn("final table: 9 of 20 left", made.note)
         self.assertNotIn("others at", made.note)
 
     def test_numbers_beat_the_named_stage(self):
@@ -523,7 +537,7 @@ class NamedStageTests(unittest.TestCase):
 
 class StageChartTests(unittest.TestCase):
     def test_half_the_field_left_is_solved_with_a_crowd(self):
-        made = pushfold_chart.solved(request(stack=10, left_pct=50))
+        made = pushfold_chart.solved(request(stack=10, left_pct=50, entrants=1000))
         self.assertIn("500 of 1000 left (50%)", made.note)
         self.assertIn("150 paid", made.note)
         self.assertIn("others at 10bb", made.note)
@@ -532,8 +546,8 @@ class StageChartTests(unittest.TestCase):
     def test_half_the_field_left_is_close_to_chip_ev_but_the_bubble_is_not(self):
         seat = dict(hero="BB", villain="SB", stack=10)
         chip = pushfold_chart.solved(request(**seat)).chart["actions"].count("C")
-        early = pushfold_chart.solved(request(**seat, left_pct=50)).chart["actions"].count("C")
-        bubble = pushfold_chart.solved(request(**seat, players_left=155)).chart["actions"].count("C")
+        early = pushfold_chart.solved(request(**seat, left_pct=50, entrants=1000)).chart["actions"].count("C")
+        bubble = pushfold_chart.solved(request(**seat, players_left=155, entrants=1000)).chart["actions"].count("C")
         self.assertLessEqual(abs(chip - early), chip * 0.15)
         self.assertLess(bubble, chip * 0.8)
 

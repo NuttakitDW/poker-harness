@@ -81,7 +81,7 @@ HELP_GUIDE = {
   เจอคน shove         BB เจอ BTN ออลอิน 8bb
   เจอหลายคน           UTG all-in แล้ว BTN call เราอยู่ SB 5bb
   ขนาดโต๊ะ            heads-up, 6-max, 3 handed  (ไม่บอก = โต๊ะ 8 คน)
-  ICM                 icm 50/30/20, รางวัล 50/30/20  (icm เฉย ๆ = 50/30/20, chip ev = กลับ)
+  ICM                 icm 50/30/20, รางวัล 50/30/20  (icm เฉย ๆ = bubble เกม live, chip ev = กลับ)
   ช่วงของทัวร์ MTT     เหลือ 50%, เหลือ 120 คน, bubble, final table  เปลี่ยนได้: field 500, paid 12%, avg 25bb
   ถามมือ              ถือ K5s  ได้ % ของทุก action
   ถามต่อ              ขอ 12bb, เจอ CO แทน  (ใช้ตำแหน่งจากตาก่อน)
@@ -90,8 +90,8 @@ HELP_GUIDE = {
 Limits
   สแตกมากกว่า 0 ถึง 15bb ทศนิยมได้ เช่น 5.5bb  หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
   สแตกที่บอกคือที่เหลือหลังจ่าย ante  ทุกคนสแตกเท่ากัน
-  ICM นับว่าผู้เล่นที่เหลือทั้งหมดอยู่โต๊ะนี้ ถ้าไม่บอกช่วงของทัวร์
-  ช่วงของทัวร์: คนลง 1000 จ่าย 15% รางวัลแบบ MTT ทั่วไป คนโต๊ะอื่นสแตกเท่ากันหมด (ค่าเริ่มเท่าโต๊ะนี้)
+  บอกรางวัลเอง ICM นับว่าผู้เล่นที่เหลือทั้งหมดอยู่โต๊ะนี้
+  ช่วงของทัวร์: live คนลง 20 ซื้อเข้า 500 บาท (เกิน 47 หรือบอก paid: MTT จ่าย 15%)
   bubble = เหลือมากกว่าคนได้เงิน 3%  final table = ทุกคนที่เหลืออยู่โต๊ะนี้
   ทุกคนจ่าย ante 10% ของ BB  เปลี่ยนได้: ante 12.5%, ante 0.2bb, ไม่มี ante
   BB จ่าย ante แทนทั้งโต๊ะ: bb ante หรือ live (ค่าเริ่ม 1bb, bb ante 1.5 ก็ได้)
@@ -103,7 +103,7 @@ Colours
   facing a shove      BB vs BTN shove 8bb
   facing several      UTG all-in, BTN call, I'm in the SB 5bb
   table size          heads-up, 6-max, 3 handed  (unstated = 8-handed)
-  ICM                 icm 50/30/20, payout 50 30 20  (icm alone = 50/30/20, chip ev = back)
+  ICM                 icm 50/30/20, payout 50 30 20  (icm alone = live bubble, chip ev = back)
   MTT stage           50% left, 120 left, bubble, final table  change: field 500, paid 12%, avg 25bb
   ask about a hand    hold K5s  gives every action's %
   follow up           12bb, vs CO instead  (keeps the seats from before)
@@ -112,9 +112,9 @@ Colours
 Limits
   stacks up to 15bb, decimals ok (5.5bb), or say push/fold; above 15bb is approximate
   the stack is what is left after the ante; everyone has the same stack
-  ICM: this table is everyone left, unless a stage is given
-  a stage assumes 1000 entrants, 15% paid, a standard MTT curve, and one shared stack
-  for everyone at other tables (this table's stack unless avg is given)
+  ICM with your payouts: this table is everyone left, unless a stage is given
+  stage: live, 20 entries, 500 THB buy-in (>47 or paid %: MTT 15% paid)
+  other tables share one stack (this table's unless avg is given)
   bubble = 3% more players left than places paid; final table = everyone left is at this table
   everyone antes 10% of the BB; change it: ante 12.5%, ante 0.2bb, no ante
   big blind ante for the table: bb ante or live (1bb by default, or bb ante 1.5)
