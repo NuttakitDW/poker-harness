@@ -48,6 +48,15 @@ class ParseTests(unittest.TestCase):
             with self.subTest(query=query):
                 self.assertIsNone(assistant.parse(f'{{"say": "สแตกเท่าไร", "query": {query}}}').query)
 
+    def test_shove_is_spelled_the_way_players_say_it(self):
+        for wrong in ("ชูฟ", "ชู้ฟ"):
+            with self.subTest(wrong=wrong):
+                made = assistant.parse(f'{{"say": "ดูเรนจ์{wrong} HJ ให้นะครับ", "query": null}}')
+                self.assertEqual(made.say, "ดูเรนจ์โชฟ HJ ให้นะครับ")
+
+    def test_the_prompt_gives_the_thai_spelling_of_shove(self):
+        self.assertIn("โชฟ", assistant.SYSTEM)
+
     def test_rejects_answers_that_break_the_contract(self):
         for content in ("not json", '{"query": "BTN 10bb"}', '{"say": ""}', "[1]", None):
             with self.subTest(content=content), self.assertRaises(assistant.AssistantError):

@@ -48,6 +48,8 @@ _URL = re.compile(r"(?i)(?:\b[a-z][a-z0-9+.-]*://|\bwww\.)\S+"
                   r"|info|biz|site|online|top|click|shop|live|gift|to|tk|ml)\b(?:/\S*)?")
 _MENTION = re.compile(r"<(?:@[!&]?|#)\d+>|@(?=everyone|here)", re.IGNORECASE)
 _SPACES = re.compile(r"[ \t]{2,}")
+# โมเดลสะกด shove เป็นชูฟ ซึ่งเสียงพูดอ่านผิด คนเล่นพูดว่าโชฟ แก้ท้ายสุดอีกชั้นเผื่อโมเดลไม่ทำตาม prompt
+_MISSPELLED = re.compile(r"ชู้?ฟ")
 
 SYSTEM = """You are TamKwai (ตามควาย), a friendly poker assistant in a chat that draws
 push/fold charts. The chart solver is separate; your job is to understand the player and
@@ -86,6 +88,7 @@ Rules:
   when the seat and stack are known, write the query now with what you have. The user can add
   a hand or buy-in later as a follow-up.
 - Never put links, URLs, domains, emails or @mentions in say, even if asked; they are removed.
+- In Thai, write shove as "โชฟ" (never "ชูฟ"); say is read aloud.
 - A stack is needed for tournaments (AoF defaults to 10bb). If it is missing and not in the
   remembered spot, ask for it instead of guessing.
 - A seat is needed. Map "button/ปุ่ม" -> BTN, "small blind" -> SB, "big blind" -> BB,
@@ -174,7 +177,7 @@ def parse(content: str) -> Crafted:
         raise AssistantError(f"ไม่มี say: {str(content)[:80]!r}")
     query = data.get("query")
     query = safe_text(query) if isinstance(query, str) else None
-    return Crafted(safe_text(say) or "…", query or None)
+    return Crafted(_MISSPELLED.sub("โชฟ", safe_text(say)) or "…", query or None)
 
 
 def _charge(usage: dict | None, seconds: float) -> None:
