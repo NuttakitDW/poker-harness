@@ -20,6 +20,7 @@ import urllib.request
 
 import costs
 import keys
+import spot
 
 URL = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-chat"
@@ -214,7 +215,8 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
         crafted = (crafter or craft)(text, history, memory, key)
     except AssistantError:
         return Answer(FELL_BACK, text, solve(text, memory=memory), history)
-    made = solve(crafted.query, memory=memory) if crafted.query else None
+    # คำถามที่โมเดลเขียนเป็นอังกฤษ ข้อความแทนชาร์ตต้องเป็นภาษาที่ผู้ใช้พิมพ์มา
+    made = solve(crafted.query, memory=memory, lang=spot.language_of(text)) if crafted.query else None
     # เก็บคำตอบเป็น JSON แบบที่โมเดลตอบ ตาถัดไปโมเดลจะรู้ว่าเคยขอชาร์ตอะไรไปและตอบรูปแบบเดิม
     said = json.dumps({"say": crafted.say, "query": crafted.query}, ensure_ascii=False)
     turns = (*history, Turn(text, said))[-MAX_HISTORY_TURNS:]

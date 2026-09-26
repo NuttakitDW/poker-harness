@@ -156,6 +156,20 @@ class SeatAtTableTests(unittest.TestCase):
         self.assertIsNone(pushfold_chart.missing_seat(request(hero="BTN", stack=5, players=2)))
 
 
+    def test_a_bubble_says_why_the_table_is_short_and_which_size_has_the_seat(self):
+        problem = pushfold_chart.seat_problem(preflop.parse(
+            "SB vs UTG shove 13.2bb icm bubble field 10"))
+        self.assertEqual((problem.seat, problem.seats[0], problem.source), ("UTG", "HJ", "bubble"))
+        self.assertEqual((problem.stage.entrants, problem.stage.left), (10, 5))
+        self.assertEqual(problem.fits, 6)
+
+    def test_a_said_table_size_is_the_reason(self):
+        problem = pushfold_chart.seat_problem(request(hero="UTG", stack=5, players=4))
+        self.assertEqual((problem.source, problem.fits), ("said", 6))
+
+    def test_a_seat_that_exists_has_no_problem(self):
+        self.assertIsNone(pushfold_chart.seat_problem(request(hero="CO", stack=5, players=4)))
+
 class BigBlindAnteTests(unittest.TestCase):
     def test_bb_ante_and_live_switch_to_the_big_blind_paying_for_the_table(self):
         for said in ("BTN shove 10bb bb ante", "BTN shove 10bb big blind ante",
@@ -670,6 +684,20 @@ class AnswerTests(SpotTestCase):
         self.assertEqual(made.kind, "seat_not_at_table")
         self.assertIn("UTG", made.message)
         self.assertIn("CO, BTN, SB, BB", made.message)
+
+    def test_a_seat_missing_on_the_bubble_explains_why_and_how_to_fix_it(self):
+        self.use_books(book([chart(hero="SB", stack=30)], game="tournament"))
+        made = spot_chart.reply("SB vs UTG shove 13.2bb icm bubble field 10")
+        self.assertIn("bubble of 10 entries paying 4, so 5 left", made.message)
+        self.assertIn("HJ acts first", made.message)
+        self.assertIn("6 left", made.message)
+        self.assertEqual(spot_chart.reply("SB vs UTG shove 13.2bb icm field 10 6 left").kind, "chart")
+
+    def test_the_message_follows_the_language_it_is_asked_for(self):
+        self.use_books(book([chart(hero="SB", stack=30)], game="tournament"))
+        made = spot_chart.reply("SB vs UTG shove 13.2bb icm bubble field 10", lang="TH")
+        self.assertIn("เหลือ 6 คน", made.message)
+        self.assertIn("HJ", made.message)
 
     def test_more_places_paid_than_players_is_told_so(self):
         made = spot_chart.reply("heads-up BTN shove 10bb icm 50/30/20")

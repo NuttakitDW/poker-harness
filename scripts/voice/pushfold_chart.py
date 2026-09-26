@@ -28,7 +28,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 import preflop  # noqa: E402
 from pushfold import coach, floor, hands, icm, structures  # noqa: E402
-from pushfold.spot import Spot, SpotError  # noqa: E402
+from pushfold.spot import MAX_PLAYERS, Spot, SpotError  # noqa: E402
 
 MAX_STACK = 15
 MAX_PRIZES_SHOWN = 9
@@ -249,6 +249,38 @@ def missing_seat(request: preflop.Request) -> tuple[str, tuple[str, ...]] | None
             return seat, tuple(_label(names, name) for name in names)
     return None
 
+
+
+@dataclasses.dataclass(frozen=True)
+class SeatProblem:
+    """ตำแหน่งที่ไม่มีในโต๊ะ พร้อมเหตุผลที่โต๊ะมีคนเท่านี้ ให้บอกผู้ถามว่าต้องแก้คำถามยังไง"""
+
+    seat: str
+    seats: tuple[str, ...]
+    source: str                      # said | bubble | left | aof | default คือที่มาของขนาดโต๊ะ
+    stage: structures.Stage | None   # ช่วงของทัวร์ถ้าโต๊ะสั้นเพราะทัวร์เหลือคนน้อย
+    fits: int | None                 # โต๊ะเล็กสุดที่มีตำแหน่งนี้ None ถ้าไม่มีเลย
+
+
+def seat_problem(request: preflop.Request) -> SeatProblem | None:
+    """เหมือน missing_seat แต่บอกด้วยว่าโต๊ะมีคนเท่านี้เพราะอะไร และโต๊ะกี่คนถึงจะมีตำแหน่งนั้น"""
+    missing = missing_seat(request)
+    if missing is None:
+        return None
+    seat, seats = missing
+    found = None if request.players or request.aof else stage(request)
+    if request.players:
+        source = "said"
+    elif request.aof:
+        source = "aof"
+    elif found and found.left < TABLE_SIZE:
+        source = "left" if request.players_left or request.left_pct is not None else "bubble"
+    else:
+        source, found = "default", None
+    names = {n: _spot(_stack(request), n, 0.0, "each").names
+             for n in range(len(seats) + 1, MAX_PLAYERS + 1)}
+    fits = next((n for n, there in names.items() if _seat(there, seat) in there), None)
+    return SeatProblem(seat, seats, source, found, fits)
 
 def all_in_by_posting(request: preflop.Request) -> bool:
     """ผู้ถามจ่าย blind กับ ante แล้วหมดตัวพอดี ไม่มีอะไรให้ตัดสินใจ เช่น BB ที่เหลือไม่ถึง 1bb หลัง ante"""

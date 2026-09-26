@@ -109,6 +109,13 @@ class AnswerTests(unittest.TestCase):
         self.assertIn("bubble", made.made.note)
         self.assertEqual(json.loads(made.history[-1].assistant)["query"], made.query)
 
+    def test_a_problem_is_told_in_the_language_the_user_wrote(self):
+        made = assistant.answer("SB 13.2bb UTG all in มา ใกล้เข้าเงิน 10 คนลง", spot_chart.reply,
+                                key="k", crafter=model_says(
+                                    "ดูให้ครับ", "SB vs UTG shove 13.2bb icm bubble field 10"))
+        self.assertEqual(made.made.kind, "seat_not_at_table")
+        self.assertIn("เหลือ 6 คน", made.made.message)
+
     def test_no_query_is_just_talk(self):
         made = assistant.answer("สวัสดี", spot_chart.reply, key="k",
                                 crafter=model_says("สวัสดีครับ ถาม spot มาได้เลย", None))

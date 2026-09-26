@@ -57,8 +57,28 @@ MISSING = {
     "EN": "No spot found. Name a seat, e.g. BB vs BTN shove 10bb",
 }
 SEAT_NOT_AT_TABLE = {
-    "TH": "โต๊ะ {players} คนไม่มีตำแหน่ง {seat} มีแค่ {seats} ลองถามใหม่ด้วยตำแหน่งเหล่านี้",
-    "EN": "A {players}-handed table has no {seat}; the seats are {seats}",
+    "TH": "ไม่มีชาร์ต: โต๊ะนี้มี {players} คน{why} จึงไม่มีตำแหน่ง {seat} มีแค่ {seats}",
+    "EN": "No chart: this table is {players}-handed{why}, so there is no {seat}; the seats are {seats}",
+}
+# ทำไมโต๊ะมีคนเท่านี้ ตาม SeatProblem.source
+SEAT_WHY = {
+    "TH": {"said": " ตามที่บอกมา", "aof": " (GG AoF เล่นโต๊ะละ 4 คน)",
+           "bubble": " (bubble ของ {entrants} คนลง จ่าย {paid} อันดับ เลยเหลือ {left} คน)",
+           "left": " (ทัวร์เหลือ {left} คน)", "default": ""},
+    "EN": {"said": " as you said", "aof": " (GG AoF tables seat 4)",
+           "bubble": " (bubble of {entrants} entries paying {paid}, so {left} left)",
+           "left": " ({left} left in the tournament)", "default": ""},
+}
+# วิธีแก้ ใช้ตำแหน่งที่มี หรือบอกขนาดโต๊ะที่มีตำแหน่งนั้น ทัวร์สั้นให้บอกคนที่เหลือ นอกนั้นบอกขนาดโต๊ะ
+SEAT_FIX = {
+    "TH": "แก้ได้: ใช้ตำแหน่งที่มี เช่น {first} ที่พูดก่อนในโต๊ะ {players} คน",
+    "EN": "Fix: use a seat that exists, e.g. {first} acts first {players}-handed",
+}
+SEAT_FIX_SIZE = {
+    "TH": {"stage": " หรือถ้ามีคนมากกว่านี้ให้บอกว่า เหลือ {fits} คน",
+           "table": " หรือถ้าโต๊ะมีคนมากกว่านี้ให้บอกว่า {fits} handed"},
+    "EN": {"stage": ", or if more players are left say {fits} left",
+           "table": ", or if more players are seated say {fits} handed"},
 }
 BAD_PAYOUTS = {
     "TH": "คิด ICM ไม่ได้: {why} ลองบอกขนาดโต๊ะ รางวัล หรือจำนวนคนที่เหลือใหม่ เช่น 4 handed icm 50/30/20",
@@ -178,29 +198,45 @@ class Reply:
     kind: str = "chart"
 
 
-def reply(prompt: str, memory=None) -> Reply:
-    """ชาร์ตของคำถามหนึ่ง หรือข้อความบอกว่าทำไมไม่มีชาร์ต"""
+def reply(prompt: str, memory=None, lang: str | None = None) -> Reply:
+    """ชาร์ตของคำถามหนึ่ง หรือข้อความบอกว่าทำไมไม่มีชาร์ต
+
+    lang คือภาษาของข้อความ โหมด AI ส่งภาษาที่ผู้ใช้พิมพ์มา เพราะคำถามที่โมเดลเขียนเป็นอังกฤษเสมอ
+    """
     if mario.asked(prompt):
         return Reply(None, kind="mario")
     found = spot.lookup(prompt, memory=memory)
     if found is None:
-        return Reply(None, MISSING[spot.language_of(prompt)], kind="not_found")
+        return Reply(None, MISSING[lang or spot.language_of(prompt)], kind="not_found")
+    lang = lang or found.lang
     # ตอบแค่ push/fold ที่แก้สด นอกนั้นบอกว่ายังไม่มี แต่ยังจำตำแหน่งกับสแตกไว้ถามต่อได้
-    missing = pushfold_chart.missing_seat(found.request) if pushfold_chart.applies(found.request) else None
-    if missing:
-        seat, seats = missing
-        text = SEAT_NOT_AT_TABLE[found.lang].format(players=len(seats), seat=seat, seats=", ".join(seats))
-        return Reply(found, text, kind="seat_not_at_table")
+    seat = pushfold_chart.seat_problem(found.request) if pushfold_chart.applies(found.request) else None
+    if seat:
+        return Reply(found, seat_message(seat, lang), kind="seat_not_at_table")
     problem = pushfold_chart.payout_problem(found.request) if pushfold_chart.applies(found.request) else None
     if problem:
-        return Reply(found, BAD_PAYOUTS[found.lang].format(why=problem), kind="bad_payouts")
+        return Reply(found, BAD_PAYOUTS[lang].format(why=problem), kind="bad_payouts")
     if pushfold_chart.applies(found.request) and pushfold_chart.all_in_by_posting(found.request):
-        return Reply(found, ALL_IN_BY_POSTING[found.lang], kind="all_in_by_posting")
+        return Reply(found, ALL_IN_BY_POSTING[lang], kind="all_in_by_posting")
     made = pushfold_chart.solved(found.request) if pushfold_chart.applies(found.request) else None
     if made is None:
-        return Reply(found, PUSH_FOLD_ONLY[found.lang], kind="push_fold_only")
+        return Reply(found, PUSH_FOLD_ONLY[lang], kind="push_fold_only")
     return Reply(dataclasses.replace(found, book=made.book, chart=made.chart), note=made.note)
 
+
+
+def seat_message(problem: "pushfold_chart.SeatProblem", lang: str) -> str:
+    """บอกว่าไม่มีตำแหน่งนี้เพราะอะไร แล้วบอกวิธีแก้คำถาม"""
+    players, stage = len(problem.seats), problem.stage
+    facts = ({"entrants": stage.entrants, "paid": stage.paid, "left": stage.left} if stage else {})
+    why = SEAT_WHY[lang][problem.source].format(**facts)
+    said = SEAT_NOT_AT_TABLE[lang].format(players=players, why=why, seat=problem.seat,
+                                          seats=", ".join(problem.seats))
+    fix = SEAT_FIX[lang].format(first=problem.seats[0], players=players)
+    if problem.fits and problem.source != "aof":
+        size = "stage" if problem.source in ("bubble", "left") else "table"
+        fix += SEAT_FIX_SIZE[lang][size].format(fits=problem.fits)
+    return f"{said}\n{fix}"
 
 def answer(prompt: str, color: bool, memory=None) -> tuple[str, "spot.Spot | None"]:
     """ข้อความที่จะพิมพ์ในเทอร์มินัลให้หนึ่งคำถาม กับ spot ที่เจอไว้ใช้เป็นความจำตาถัดไป"""
