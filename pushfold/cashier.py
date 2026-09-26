@@ -7,6 +7,7 @@ Rules, in chips (big blinds):
 * Pots are layered by contribution. A layer goes to the best hand among the live players
   who put in at least that much. A layer nobody live reached goes back to whoever paid it,
   which is how a 100bb shove against a 10bb stack plays exactly like 10bb vs 10bb.
+* Spot.fee comes off every player in a showdown, outside the pot: it leaves the table.
 
 `settle` splits each ending into a fixed part (known before the cards) and the contested
 layers, so the solver only has to price the layers with the Oddsmaker's tables.
@@ -74,4 +75,6 @@ def settle(spot: Spot, jammers: tuple[int, ...]) -> Settlement:
         pots[0][0] += dead                      # main pot: every live seat is eligible
     elif dead:
         pots.insert(0, [dead, alive])           # a live seat all-in for the ante alone
+    if len(alive) > 1:
+        fixed[list(alive)] -= spot.fee
     return Settlement(fixed, tuple(Layer(float(a), e) for a, e in pots))

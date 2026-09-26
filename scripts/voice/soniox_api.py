@@ -63,7 +63,7 @@ def load_api_key() -> str:
 SPOT_TERMS = (
     "UTG", "UTG+1", "Lojack", "Hijack", "Cutoff", "Button", "Small blind", "Big blind",
     "BB", "SB", "all-in", "jam", "shove", "call", "fold", "push/fold", "heads-up", "6-max",
-    "BB ante", "ante", "offsuit", "suited", "Ace", "King", "Queen", "Jack", "Ten",
+    "BB ante", "ante", "AoF", "All-in or Fold", "offsuit", "suited", "Ace", "King", "Queen", "Jack", "Ten",
 )
 # ตัวอย่างประโยคถาม spot ที่เขียนแบบที่ตัวอ่าน regex อ่านออก ให้ตัวถอดเสียงเห็นรูปแบบที่ต้องการ
 SPOT_TEXT = ("Thai poker players ask push/fold questions mixing Thai and English. "
@@ -71,7 +71,7 @@ SPOT_TEXT = ("Thai poker players ask push/fold questions mixing Thai and English
              "Button all-in 10 big blinds, Small blind call ด้วยอะไร; "
              "Cutoff jam 15 big blinds เราอยู่ Big blind; "
              "UTG all-in แล้ว Button call เราอยู่ Small blind 5 big blinds; "
-             "ถือ Jack 2 offsuit; ถือ Ace King suited; heads-up; BB ante.")
+             "ถือ Jack 2 offsuit; ถือ Ace King suited; heads-up; BB ante; AoF Big blind เจอ Cutoff.")
 
 
 def _base_context() -> dict:

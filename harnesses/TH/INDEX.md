@@ -41,3 +41,4 @@
 - [PLO สถานการณ์หลัง flop](topics/26-plo-postflop-situations.md)
 - [PLO Hi/Lo แบ่ง pot สูงต่ำ](topics/27-plo-hi-lo.md)
 - [Staking การขายหุ้นและการหาคนแบ็ก](topics/28-staking-and-selling-action.md)
+- [GGPoker All-in or Fold (AoF)](topics/29-gg-all-in-or-fold.md)

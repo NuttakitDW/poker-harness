@@ -16,6 +16,7 @@
     /q      ออก
 
 ตอนนี้ตอบได้แค่ชาร์ต push/fold ทัวร์นาเมนต์ที่ solver แก้สด สแตกไม่เกิน 15bb หรือพูดว่า push/fold
+และเกม cash All-in or Fold ของ GGPoker (พูด aof)
 อย่างอื่นเช่น open 30bb หรือ cash game ตอบว่ายังไม่มี ไม่เปิดชาร์ตหนังสือแทน
 
 คำถามต่อเนื่องยืมสิ่งที่บอกไว้ตาก่อน เช่น "ขอเปลี่ยนเป็น 8bb" หรือ "เจอ button ไม่ใช่ UTG"
@@ -67,9 +68,9 @@ ALL_IN_BY_POSTING = {
 }
 PUSH_FOLD_ONLY = {
     "TH": "ตอนนี้ยังไม่มีชาร์ตแบบนี้ หาได้แค่ push/fold ทัวร์นาเมนต์ สแตกไม่เกิน 15bb "
-          "หรือบอกว่า push/fold เช่น BTN ออลอิน 10bb",
+          "หรือบอกว่า push/fold หรือ GG AoF เช่น BTN ออลอิน 10bb หรือ aof BTN",
     "EN": "Not available yet. Only tournament push/fold charts, 15bb or less or say push/fold, "
-          "e.g. BTN shove 10bb",
+          "or GG AoF, e.g. BTN shove 10bb or aof BTN",
 }
 HELP = "/v voice  /t text  /n new  /q quit  /h help (/help en English)  /contact"
 HELP_COMMANDS = ("/help", "/h", "/?")
@@ -84,6 +85,7 @@ HELP_GUIDE = {
   ช่วงของทัวร์ MTT     เหลือ 50%, เหลือ 120 คน, bubble, final table  เปลี่ยนได้: field 500, paid 12%, avg 25bb
   ถามมือ              ถือ K5s  ได้ % ของทุก action
   ถามต่อ              ขอ 12bb, เจอ CO แทน  (ใช้ตำแหน่งจากตาก่อน)
+  GG All-in or Fold   aof BB เจอ CO
 
 Limits
   สแตกมากกว่า 0 ถึง 15bb ทศนิยมได้ เช่น 5.5bb  หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
@@ -105,11 +107,12 @@ Colours
   MTT stage           50% left, 120 left, bubble, final table  change: field 500, paid 12%, avg 25bb
   ask about a hand    hold K5s  gives every action's %
   follow up           12bb, vs CO instead  (keeps the seats from before)
+  GG AoF              aof BB vs CO
 
 Limits
-  stacks above 0 up to 15bb, decimals fine (5.5bb), or say push/fold; above 15bb is approximate
+  stacks up to 15bb, decimals ok (5.5bb), or say push/fold; above 15bb is approximate
   the stack is what is left after the ante; everyone has the same stack
-  ICM counts the players at this table as everyone left, unless a stage is given
+  ICM: this table is everyone left, unless a stage is given
   a stage assumes 1000 entrants, 15% paid, a standard MTT curve, and one shared stack
   for everyone at other tables (this table's stack unless avg is given)
   bubble = 3% more players left than places paid; final table = everyone left is at this table

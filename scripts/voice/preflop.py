@@ -112,6 +112,8 @@ _BUBBLE = re.compile(r"bubble|บับเบิ้?ล")
 _FINAL_TABLE = re.compile(r"final\s*table|(?<![a-z])ft(?![a-z])|ไฟนอล\s*เทเบิ้?ล|โต๊ะสุดท้าย")
 _CHIP_EV = re.compile(r"chip\s*-?\s*ev|(?<![a-z])c\s*-?\s*ev(?![a-z])|ชิป\s*อีวี")  # cev = chip ev
 DEFAULT_PAYOUTS = (50, 30, 20)
+# GGPoker All-in or Fold คือเกม cash ที่ทุกคนมี 10bb ตัดคำออกก่อน ไม่ให้ all-in ในชื่อเกมถูกอ่านเป็นคนยัด
+_AOF = re.compile(r"(?<![a-z])aof(?![a-z])|all\s*-?\s*in\s*(?:or|/|-)\s*fold|ออลอิน\s*(?:หรือ|ออร์)\s*โฟลด์")
 
 # ช่วงของทัวร์ "50% left" "เหลือ 50%" "80% field" "field 80%" "120 left" "เหลือ 120 คน" คนลง "field 1000" "300 entrants"
 # จ่ายกี่ % "paid 12%" สแตกเฉลี่ยโต๊ะอื่น "avg 25bb" ตัดออกก่อนอ่านสแตก ขนาดโต๊ะ และรางวัล
@@ -196,6 +198,7 @@ class Request:
     paid_pct: float | None = None      # จ่ายรางวัลกี่ % ของคนลง
     field_avg: float | None = None     # สแตกเฉลี่ยของคนที่โต๊ะอื่น เป็น bb
     stage_word: str | None = None      # "bubble" หรือ "final" ช่วงของทัวร์ที่เรียกชื่อ ไม่บอกจำนวนคน
+    aof: bool = False                  # GGPoker All-in or Fold ใช้โต๊ะและค่าธรรมเนียมของเกมนั้น
 
     @property
     def usable(self) -> bool:
@@ -359,7 +362,9 @@ def _spaced_blinds(text: str) -> str:
 
 def parse(question: str) -> Request:
     """อ่านคำถามแล้วเดาว่าเป็นสถานการณ์ไหน"""
-    ante, ante_mode, lowered = _read_ante(_fix_seat_typos(question.lower()))
+    lowered = _fix_seat_typos(question.lower())
+    aof = bool(_AOF.search(lowered))
+    ante, ante_mode, lowered = _read_ante(_AOF.sub(" ", lowered))
     stage, lowered = _read_stage(lowered)
     payouts, lowered = _read_payouts(lowered)
     icm = payouts is None and bool(_ICM_WORD.search(lowered))
@@ -412,7 +417,7 @@ def parse(question: str) -> Request:
     return Request(game=game, stack=_stack_value(stack.group(1)) if stack else None,
                    hero=hero, villain=villain, scenario=scenario, players=players, shovers=shovers,
                    pushfold=bool(_PUSH_FOLD.search(lowered)), ante=ante, ante_mode=ante_mode,
-                   payouts=payouts, icm=icm, stage_word=stage_word, **stage)
+                   payouts=payouts, icm=icm, stage_word=stage_word, aof=aof, **stage)
 
 
 def carry(question: str, earlier: list[str]) -> str:

@@ -10,6 +10,9 @@
 บอก "bb ante" หรือ "live" คือ BB จ่าย ante แทนทั้งโต๊ะ ค่าเริ่ม 1bb บวก ante คืนให้แค่ BB
 heads-up คนที่เป็น button คือ SB จึงแสดงเป็น BTN/SB
 บอกรางวัลมา (icm 50/30/20) แก้แบบ ICM แทน chip EV ทุกคนที่โต๊ะคือผู้เล่นที่เหลือทั้งหมด
+บอก aof หรือ all-in or fold คือเกม cash ของ GGPoker สเตกต่ำสุด $0.05/$0.10 Hold'em
+ไม่บอกขนาดโต๊ะหรือสแตกใช้ 4 คน 10bb ไม่มี ante ทุกคนที่ถึง showdown เสียค่าธรรมเนียม 0.2bb นอกพอต
+ตัวเลขจาก ggpoker.com/poker-games/all-in-or-fold ตรวจ 2026-09-26 (harness หัวข้อ 29)
 """
 
 from __future__ import annotations
@@ -31,6 +34,12 @@ DEFAULT_ANTE = {"each": 0.1, "bb": 1.0}  # เป็น bb ต่อคนที
 FIRST_IN, FACING = "Push/Fold", "Call vs shove"
 TITLE = "Push/fold Nash solver ({model})"
 HU_BUTTON = "BTN/SB"
+# GGPoker All-in or Fold Hold'em $0.05/$0.10 ซื้อเข้า $1 = 10bb โต๊ะ 4 คน ไม่มี ante
+# ค่าธรรมเนียมไม่หักจากพอตและไม่ขึ้นในประวัติมือ rake 0.06bb + jackpot 0.07bb + All-In Fortune $0.007
+# สมมติว่าเก็บเฉพาะคนที่ถึง showdown fold หรือ shove แล้วทุกคน fold ไม่เสีย
+AOF_STACK, AOF_PLAYERS = 10, 4
+AOF_FEE = round(0.06 + 0.07 + 0.007 / 0.10, 9)
+AOF_TITLE = "GGPoker All-in or Fold $0.05/$0.10 ({model})"
 
 _LIBRARY = coach.Library()
 
@@ -44,6 +53,8 @@ class Solved:
 
 def applies(request: preflop.Request) -> bool:
     """สแตกที่ผู้ใช้บอกเองไม่เกิน 15bb หรือขอ push/fold มาตรง ๆ และไม่ใช่ cash game"""
+    if request.aof:
+        return True
     if request.game == "cash" or request.stack is None:
         return False
     return request.stack <= MAX_STACK or request.pushfold
@@ -77,25 +88,37 @@ def _mode(request: preflop.Request) -> str:
 
 
 def _ante(request: preflop.Request) -> float:
+    if request.ante is None and request.aof and request.ante_mode is None:
+        return 0.0
     return DEFAULT_ANTE[_mode(request)] if request.ante is None else request.ante
 
 
-def _spot(stack: float, players: int, ante: float, mode: str) -> Spot:
+def _stack(request: preflop.Request) -> float | None:
+    return request.stack or (AOF_STACK if request.aof else None)
+
+
+def _fee(request: preflop.Request) -> float:
+    return AOF_FEE if request.aof else 0.0
+
+
+def _spot(stack: float, players: int, ante: float, mode: str, fee: float = 0.0) -> Spot:
     # สแตกที่ถามไม่รวม ante จึงบวก ante กลับให้ทุกคนที่จ่าย ante ก่อนจ่าย
     payers = range(players) if mode == "each" else (players - 1,)
     stacks = tuple(round(stack + (ante if seat in payers else 0.0), 9) for seat in range(players))
-    return Spot(stacks=stacks, ante=ante, ante_mode=mode)
+    return Spot(stacks=stacks, ante=ante, ante_mode=mode, fee=fee)
 
 
 def table(request: preflop.Request) -> Spot:
     """โต๊ะที่จะแก้สำหรับคำถามนี้"""
-    return _spot(request.stack, _players(request), _ante(request), _mode(request))
+    return _spot(_stack(request), _players(request), _ante(request), _mode(request), _fee(request))
 
 
 def _players(request: preflop.Request) -> int:
-    """คนที่โต๊ะ ไม่บอกคือ 8 คน หรือน้อยกว่าถ้าทั้งทัวร์เหลือไม่ถึง เช่น bubble ของ SNG 50/30/20"""
+    """คนที่โต๊ะ ไม่บอกคือ 8 คน (AoF 4 คน) หรือน้อยกว่าถ้าทั้งทัวร์เหลือไม่ถึง เช่น bubble ของ SNG 50/30/20"""
     if request.players:
         return request.players
+    if request.aof:
+        return AOF_PLAYERS
     found = stage(request)
     return min(TABLE_SIZE, found.left) if found else TABLE_SIZE
 
@@ -121,7 +144,7 @@ def stage(request: preflop.Request) -> structures.Stage | None:
 
 def _others(request: preflop.Request) -> float:
     """สแตกของทุกคนที่โต๊ะอื่นเป็น bb ตามที่พูด ไม่บอกคือเท่าโต๊ะนี้"""
-    return request.field_avg or request.stack
+    return request.field_avg or _stack(request)
 
 
 def payouts(request: preflop.Request) -> icm.Payouts | None:
@@ -168,9 +191,15 @@ def _model(request: preflop.Request) -> str:
 
 @functools.lru_cache(maxsize=64)
 def _solve(stack: float, players: int, ante: float, mode: str,
-           prizes: icm.Payouts | None = None) -> coach.Result:
+           prizes: icm.Payouts | None = None, fee: float = 0.0) -> coach.Result:
     # ผลเดียวมีทุกที่นั่งทุกสถานการณ์ในโต๊ะ ถามที่นั่งอื่นในสแตกเดิมจึงไม่ต้องแก้ใหม่
-    return coach.solve(_spot(stack, players, ante, mode), library=_LIBRARY, payouts=prizes)
+    return coach.solve(_spot(stack, players, ante, mode, fee), library=_LIBRARY, payouts=prizes)
+
+
+def solve_table(request: preflop.Request) -> coach.Result:
+    """ผลแก้ของทั้งโต๊ะ ทุกที่นั่งทุกสถานการณ์ ใช้แก้ล่วงหน้าและส่งออกชาร์ตทั้งชุด"""
+    return _solve(_stack(request), _players(request), _ante(request), _mode(request),
+                  payouts(request), _fee(request))
 
 
 def missing_seat(request: preflop.Request) -> tuple[str, tuple[str, ...]] | None:
@@ -209,6 +238,8 @@ def _cells(frequencies, action: str, order: list[str]) -> tuple[str, dict]:
 
 
 def _ante_words(request: preflop.Request) -> str:
+    if _ante(request) == 0:
+        return "no ante"
     if _mode(request) == "bb":
         return f"BB ante {_ante(request):g}bb"
     return f"ante {_ante(request):g}bb each"
@@ -219,8 +250,7 @@ def solved(request: preflop.Request) -> Solved | None:
     if payout_problem(request):
         return None
     try:
-        result = _solve(request.stack, _players(request), _ante(request), _mode(request),
-                        payouts(request))
+        result = solve_table(request)
     except SpotError:
         return None
     names = result.spot.names
@@ -228,6 +258,14 @@ def solved(request: preflop.Request) -> Solved | None:
     if hero not in names or names.index(hero) in result.spot.forced:
         return None
     past = history(names, hero, villain, tuple(_seat(names, s) for s in request.shovers))
+    return chart_for(request, result, hero, past)
+
+
+def chart_for(request: preflop.Request, result: coach.Result, hero: str,
+              past: tuple[int, ...]) -> Solved:
+    """ชาร์ตของที่นั่ง hero หลัง action past จากผลแก้ทั้งโต๊ะ"""
+    names = result.spot.names
+    stack = _stack(request)
     seat = names.index(hero)
     node = result.node(seat, past)
     facing = floor.JAM in past
@@ -236,18 +274,24 @@ def solved(request: preflop.Request) -> Solved | None:
     action = "call" if facing else "raise"
     actions, mixed = _cells(result.strategy[node.index][:, floor.JAM], action, order)
     model = _model(request)
-    title = TITLE.format(model="ICM MTT" if stage(request) and payouts(request) else model)
-    book = {"game": "tournament", "title": title, "hand_order": order}
-    chart = {"stack": request.stack, "section": "SOLVER", "page": None,
+    if request.aof:
+        title = AOF_TITLE.format(model=model)
+    else:
+        title = TITLE.format(model="ICM MTT" if stage(request) and payouts(request) else model)
+    book = {"game": "cash" if request.aof else "tournament", "title": title, "hand_order": order}
+    chart = {"stack": stack, "section": "SOLVER", "page": None,
              "hero": _label(names, hero), "villain": villain,
              "scenario": FACING if facing else FIRST_IN, "actions": actions, "mixed": mixed,
              "names": {"raise": "shove"}}
     table = "heads-up" if len(names) == 2 else f"{len(names)}-handed"
-    note = (f"push/fold Nash, {model}, {table}, all stacks {request.stack}bb after the ante, "
-            f"{_ante_words(request)}, {result.range_pct(seat, past) * 100:.1f}% of hands "
+    fee = (f", {_fee(request):g}bb fee per player at showdown (rake + jackpot + All-In Fortune)"
+           if _fee(request) else "")
+    after = " after the ante" if _ante(request) else ""
+    note = (f"push/fold Nash, {model}, {table}, all stacks {stack}bb{after}, "
+            f"{_ante_words(request)}{fee}, {result.range_pct(seat, past) * 100:.1f}% of hands "
             f"{'call' if facing else 'shove'}, exploitability {result.exploitability:.3f}bb, "
             f"solved in {result.seconds:.1f}s")
-    if request.stack > MAX_STACK:
+    if stack > MAX_STACK:
         # สแตกลึกกว่านี้ Nash จริงมี min-raise กับ limp ด้วย ชาร์ตนี้จึงเป็นแค่ค่าประมาณ
         note += f"; above {MAX_STACK}bb real play also min-raises, treat as approximate"
     return Solved(book, chart, note)

@@ -5,6 +5,9 @@ The last two seats are always SB and BB (heads-up: SB then BB).
 
 A stack too short to cover its ante and blind posts what it has, ante first (the same
 order pokerkit uses), and is all-in by posting: it never acts and always sees the showdown.
+
+A fee is charged to every player in a showdown, outside the pot (GGPoker All-in or Fold
+takes rake, jackpot and All-In Fortune fees this way; the hand history never shows them).
 """
 
 from __future__ import annotations
@@ -37,6 +40,7 @@ class Spot:
     bb: float = 1.0
     ante: float = 0.0         # "each": every seat posts this. "bb": the BB posts this for the table.
     ante_mode: str = "each"
+    fee: float = 0.0          # bb each player pays when the hand reaches a showdown
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "stacks", tuple(float(s) for s in self.stacks))
@@ -49,6 +53,8 @@ class Spot:
             raise SpotError(f"need 0 < sb <= bb, got sb={self.sb} bb={self.bb}")
         if not (math.isfinite(self.ante) and self.ante >= 0):
             raise SpotError(f"ante must be >= 0, got {self.ante}")
+        if not (math.isfinite(self.fee) and self.fee >= 0):
+            raise SpotError(f"fee must be >= 0, got {self.fee}")
         if self.ante_mode not in ANTE_MODES:
             raise SpotError(f"ante_mode must be one of {ANTE_MODES}, got {self.ante_mode!r}")
 

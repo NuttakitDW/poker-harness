@@ -61,7 +61,7 @@ class Library:
 
     Neighbours must have the same tree shape: table size, ante mode and the same seats
     all-in by posting (a forced seat has no nodes, so its tree is smaller), and the same payouts.
-    Distance = sum of stack differences + ante difference, in bb.
+    Distance = sum of stack differences + ante and fee differences, in bb.
     """
 
     def __init__(self) -> None:
@@ -80,7 +80,7 @@ class Library:
         if not same:
             return None
         return min(same, key=lambda r: sum(abs(a - b) for a, b in zip(r.spot.stacks, spot.stacks))
-                   + abs(r.spot.ante - spot.ante))
+                   + abs(r.spot.ante - spot.ante) + abs(r.spot.fee - spot.fee))
 
 
 def _match(regret: np.ndarray) -> np.ndarray:

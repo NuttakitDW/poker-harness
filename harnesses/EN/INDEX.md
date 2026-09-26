@@ -41,3 +41,4 @@ PokerCoaching cheat sheets: [cash game](guides/pokercoaching-cash-game-cheat-she
 - [PLO post-flop situations](topics/26-plo-postflop-situations.md)
 - [PLO hi/lo split](topics/27-plo-hi-lo.md)
 - [Staking, backing and selling action](topics/28-staking-and-selling-action.md)
+- [GGPoker All-in or Fold (AoF)](topics/29-gg-all-in-or-fold.md)

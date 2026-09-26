@@ -36,6 +36,8 @@ FROM_MEMORY = 0.95
 _NEGATION = re.compile(r"ไม่ใช่|(?<![a-z])not(?![a-z])|isn't")
 # ตำแหน่งที่ตามหลังคำพวกนี้คือคู่มือ ไม่ใช่ผู้ถาม
 _FACING = re.compile(r"(?:เจอ|โดน|ใส่|vs\.?|versus|against|facing)\s*$")
+# คำแรกที่บอกว่าเจอใคร ทุกตำแหน่งหลังคำนี้คือคนที่ยัดมา "เจอ CO เจอ SB" "vs CO and SB"
+_FACING_WORD = re.compile(r"เจอ|โดน|(?<![a-z])(?:vs\.?|versus|against|facing)(?![a-z])")
 
 _THAI = re.compile(r"[฀-๿]")
 
@@ -167,7 +169,25 @@ def read(prompt: str) -> preflop.Request:
     seats = {name for _, _, name in mentions}
     if len(seats) == 1 and _FACING.search(text[:mentions[0][0]]):
         return dataclasses.replace(request, hero=None, villain=mentions[0][2])
+    facing = _FACING_WORD.search(text)
+    if facing and not request.shovers:
+        before = list(dict.fromkeys(name for start, _, name in mentions if start < facing.start()))
+        after = list(dict.fromkeys(name for start, _, name in mentions
+                                   if start > facing.start() and name not in before))
+        if len(after) > 1 and len(before) <= 1:
+            # เจอหลายคนพร้อมกันคือเจอคนยัดกับคนที่ call ตาม ผู้ถามคือคนที่พูดก่อนคำว่าเจอ หรือยืมจากตาก่อน
+            return dataclasses.replace(request, hero=before[0] if before else None,
+                                       villain=after[0], shovers=tuple(after), scenario="All-In")
     return request
+
+
+def _hero_after(request: preflop.Request) -> str | None:
+    """ผู้ถามต้องเล่นหลังทุกคนที่ยัดมา ถ้าตำแหน่งที่จำไว้เล่นก่อนก็ใช้ไม่ได้ เจอ SB ยัดมาเหลือแค่ BB"""
+    jammed = [seat for seat in (*request.shovers, request.villain) if seat]
+    hero = request.hero
+    if hero and not any(seat == hero or not preflop._acts_before(seat, hero) for seat in jammed):
+        return hero
+    return "BB" if "SB" in jammed else None if jammed else hero
 
 
 def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Request:
@@ -201,6 +221,7 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            stage_word=new.stage_word or (
                                None if new.left_pct is not None or new.players_left else base.stage_word),
                            entrants=new.entrants or base.entrants,
+                           aof=new.aof or base.aof,
                            paid_pct=new.paid_pct or base.paid_pct,
                            field_avg=new.field_avg or base.field_avg,
                            # คู่มือใหม่คนเดียวแทนคนยัดหมดชุดเดิมทั้งหมด
@@ -217,6 +238,8 @@ def lookup(prompt: str, lang: str | None = None,
     words = NOTES[lang]
     said = read(prompt)
     request = merge(said, memory)
+    if request.shovers:
+        request = dataclasses.replace(request, hero=_hero_after(request))
     if said == preflop.Request() and not _looks_like_spot(prompt, said):
         # ไม่ได้พูดอะไรเกี่ยวกับ spot เลย เช่น "ฮัลโหล ได้ยินไหม" อย่าวาดชาร์ตเดิมซ้ำ
         return None

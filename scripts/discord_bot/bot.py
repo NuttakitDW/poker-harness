@@ -120,7 +120,7 @@ Never sold, never used for ads
 Your rights: ask to see, delete, or object, by email to {spot_chart.CONTACT}
 If you don't want anything kept, don't ask the bot; ordinary chat is not recorded""",
 }
-WARM_UP_QUESTION = "BTN shove 10bb"
+WARM_UP_QUESTIONS = ("BTN shove 10bb", "aof CO", "aof 3 handed BTN", "aof heads-up SB")
 FAILED = "ขอโทษ ทำชาร์ตไม่สำเร็จ ลองถามใหม่อีกทีนะ"
 NOT_HEARD = "ถอดเสียงไม่ออก ลองพูดใหม่ชัด ๆ หรือพิมพ์มาแทนนะ"
 AUDIO_EXTENSIONS = (".ogg", ".oga", ".opus", ".mp3", ".m4a", ".wav", ".webm", ".aac", ".flac")
@@ -385,8 +385,9 @@ def warm_up() -> None:
     import os
     import time
     started = time.perf_counter()
-    spot_chart.reply(WARM_UP_QUESTION)
-    print(f"อุ่นเครื่อง: แก้ {WARM_UP_QUESTION!r} ใน {time.perf_counter() - started:.2f}s "
+    for question in WARM_UP_QUESTIONS:
+        spot_chart.reply(question)
+    print(f"อุ่นเครื่อง: แก้ {len(WARM_UP_QUESTIONS)} โต๊ะใน {time.perf_counter() - started:.2f}s "
           f"(cpu {os.cpu_count()}, ใช้ได้ {len(os.sched_getaffinity(0)) if hasattr(os, 'sched_getaffinity') else '?'}, "
           f"OPENBLAS_NUM_THREADS={os.environ.get('OPENBLAS_NUM_THREADS', '-')})", flush=True)
 

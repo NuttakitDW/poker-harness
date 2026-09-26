@@ -632,3 +632,81 @@ class AnswerTests(SpotTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AllInOrFoldTests(unittest.TestCase):
+    """GGPoker All-in or Fold Hold'em $0.05/$0.10: 4-max, 10bb, no ante, 0.2bb showdown fee."""
+
+    def test_parser_reads_every_way_of_saying_it(self):
+        for said in ("aof BTN 10bb", "BTN all-in or fold", "all in or fold เราอยู่ BTN",
+                     "ออลอินหรือโฟลด์ BTN", "AoF: BB vs CO"):
+            self.assertTrue(preflop.parse(said).aof, said)
+        self.assertFalse(preflop.parse("BTN all-in 10bb").aof)
+        self.assertFalse(preflop.parse("chaofan BTN 10bb").aof)
+
+    def test_all_in_does_not_become_a_shover(self):
+        said = preflop.parse("aof BB vs CO")
+        self.assertEqual((said.hero, said.villain), ("BB", "CO"))
+
+    def test_routes_to_the_solver_without_a_stack(self):
+        self.assertTrue(pushfold_chart.applies(preflop.Request(hero="BTN", aof=True)))
+        self.assertTrue(pushfold_chart.applies(preflop.Request(game="cash", hero="BTN", aof=True)))
+
+    def test_defaults_are_the_lowest_stake_table(self):
+        table = pushfold_chart.table(preflop.Request(hero="BTN", aof=True))
+        self.assertEqual(table.stacks, (10.0,) * 4)
+        self.assertEqual((table.ante, table.fee), (0.0, pushfold_chart.AOF_FEE))
+        self.assertAlmostEqual(pushfold_chart.AOF_FEE, 0.2)
+
+    def test_said_values_win_over_the_defaults(self):
+        table = pushfold_chart.table(preflop.Request(hero="BTN", aof=True, players=3, stack=8))
+        self.assertEqual(table.stacks, (8.0,) * 3)
+
+    def test_chart_names_the_game_and_the_fee(self):
+        made = pushfold_chart.solved(preflop.Request(hero="BB", villain="CO", aof=True))
+        self.assertEqual(made.book["game"], "cash")
+        self.assertIn("All-in or Fold", made.book["title"])
+        self.assertIn("0.2bb", made.note)
+        self.assertIn("4-handed", made.note)
+        self.assertEqual((made.chart["villain"], made.chart["stack"]), ("CO", 10))
+
+    def test_utg_is_not_at_a_four_max_table(self):
+        self.assertIsNotNone(pushfold_chart.missing_seat(preflop.Request(hero="UTG", aof=True)))
+
+    def test_follow_up_keeps_the_game(self):
+        first = spot_chart.reply("aof BTN")
+        second = spot_chart.reply("BB vs BTN", memory=first.found.request)
+        self.assertIn("All-in or Fold", second.found.book["title"])
+
+
+class FacingSeveralTests(unittest.TestCase):
+    """Every seat named after เจอ / vs is a shover; the asker is whoever is left."""
+
+    def test_every_seat_after_facing_is_a_shover(self):
+        for said in ("9 5 suited เจอ Cutoff เจอ Small blind", "aof 95s เจอ CO กับ SB",
+                     "aof BB vs CO and SB", "aof BB เจอ CO แล้วก็ SB"):
+            read = spot_chart.spot.read(said)
+            self.assertEqual(set(read.shovers), {"CO", "SB"}, said)
+            self.assertIn(read.hero, (None, "BB"), said)
+
+    def test_one_seat_after_facing_is_unchanged(self):
+        read = spot_chart.spot.read("aof BB vs CO")
+        self.assertEqual((read.hero, read.villain, read.shovers), ("BB", "CO", ()))
+
+    def test_facing_the_sb_leaves_only_the_bb(self):
+        made = spot_chart.reply("aof 9 5 suited เจอ Cutoff เจอ Small blind")
+        self.assertEqual(made.found.chart["hero"], "BB")
+        self.assertEqual(made.found.chart["villain"], "CO+SB")
+        self.assertEqual(made.found.chart["scenario"], pushfold_chart.FACING)
+
+    def test_remembered_hero_that_is_now_a_shover_is_dropped(self):
+        first = spot_chart.reply("aof CO")
+        made = spot_chart.reply("95s เจอ Cutoff เจอ Small blind", memory=first.found.request)
+        self.assertEqual((made.found.chart["hero"], made.found.chart["villain"]), ("BB", "CO+SB"))
+
+    def test_remembered_hero_after_the_shovers_is_kept(self):
+        first = spot_chart.reply("aof BTN")
+        made = spot_chart.reply("เจอ CO เจอ SB", memory=first.found.request)
+        self.assertEqual(made.found.chart["hero"], "BB")
+        made = spot_chart.reply("aof SB vs CO and BTN")
+        self.assertEqual((made.found.chart["hero"], made.found.chart["villain"]), ("SB", "CO+BTN"))
