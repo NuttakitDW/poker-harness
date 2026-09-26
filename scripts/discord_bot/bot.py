@@ -12,6 +12,7 @@
     ทุกคำถามชาร์ตถูกบันทึกลง tmp/logs/discord-YYYYMMDD.jsonl ดูที่พลาดด้วย make bot-review
     ไฟล์เสียงที่แนบในห้องต้องมี @TamKwai หรือ !chart กำกับ ใน DM ไม่ต้อง
     !new       ลืมตำแหน่งกับสแตกที่จำไว้ (จำแยกตามคนและห้อง)
+    !ai-off    โหมดพื้นฐาน อ่านคำถามเองไม่ผ่าน AI   !ai-on กลับโหมด AI (ค่าเริ่ม คุยภาษาคนได้)
     !help      วิธีใช้   !help en ภาษาอังกฤษ
     !privacy   เก็บข้อมูลอะไรบ้าง   !privacy en ภาษาอังกฤษ
 
@@ -40,6 +41,7 @@ import discord
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "voice"))
 
+import assistant  # noqa: E402
 import chart_image  # noqa: E402
 import mario  # noqa: E402
 import question_log  # noqa: E402
@@ -66,10 +68,10 @@ Commands
   ข้อความเสียง          กดไมค์ค้างในแอปมือถือแล้วพูดคำถาม
   รูปหน้าจอ            แนบรูปโต๊ะ บอทอ่านตำแหน่ง สแตก ไพ่ให้
   !new                ลืม spot เดิม (จำแยกตามคนและห้อง)
-  !help [th|en]       วิธีใช้นี้  (!help en ภาษาอังกฤษ)
-  !contact            อีเมลติดต่อผู้พัฒนา
+  !ai-off / !ai-on    ปิด/เปิด AI (เปิดอยู่: คุยภาษาคนได้)
+  !help [th|en]       วิธีใช้นี้
+  !contact · ping     อีเมลผู้พัฒนา · บอทออนไลน์ไหม
   !privacy            บอทเก็บข้อมูลอะไรบ้าง
-  ping                เช็คว่าบอทออนไลน์อยู่
 
 ตัวอย่างข้างล่าง ใส่หลัง @TamKwai หรือ !chart""",
     "en": """ตามควาย · How to use in Discord
@@ -82,16 +84,16 @@ Commands
   voice message        hold the mic in the app and ask
   screenshot           attach a picture of the table
   !new                 forget the spot
-  !help [th|en]        this help (default Thai)
-  !contact             the developer's email
+  !ai-off / !ai-on     AI off/on (on: just talk)
+  !help [th|en]        this help
+  !contact · ping      developer email · is the bot up
   !privacy             what the bot keeps
-  ping                 is the bot online
 
 Examples go after @TamKwai or !chart""",
 }
 PRIVACY = {
     "th": f"""ตามควาย · ความเป็นส่วนตัว
-เก็บอะไร: ข้อความคำถามชาร์ต (ถ้าเป็นเสียงคือข้อความที่ถอดได้ ถ้าเป็นรูปคือคำถามที่อ่านได้) เวลา ชื่อ server กับห้อง และ spot ที่อ่านได้
+เก็บอะไร: ข้อความที่ถามบอท กับคำถามชาร์ตที่ AI เขียนให้ (ถ้าเป็นเสียงคือข้อความที่ถอดได้ ถ้าเป็นรูปคือคำถามที่อ่านได้) เวลา ชื่อ server กับห้อง และ spot ที่อ่านได้
 ไม่เก็บ: ชื่อหรือไอดีของคนถาม ข้อความอื่นในห้อง ไฟล์เสียง และรูป
 spot ล่าสุดจำไว้ในหน่วยความจำเท่านั้น หายเมื่อพิมพ์ !new หรือบอทรีสตาร์ท
 
@@ -101,14 +103,14 @@ spot ล่าสุดจำไว้ในหน่วยความจำเ
 ส่งต่อให้ใคร:
   Discord  ข้อความทั้งหมดผ่าน Discord อยู่แล้ว
   Soniox   ไฟล์เสียงส่งไปถอดเป็นข้อความ แล้วบอทสั่งลบไฟล์กับผลถอดที่ Soniox ทันที
-  DeepSeek รูปหน้าจอส่งไปอ่านโต๊ะ เซิร์ฟเวอร์อยู่ในจีน บอทไม่เก็บรูป
+  DeepSeek คำถาม (โหมด AI ปิดได้ด้วย !ai-off) และรูปหน้าจอ ส่งไปอ่าน เซิร์ฟเวอร์อยู่ในจีน บอทไม่เก็บรูป
   Railway  เครื่องที่บอทรัน อยู่นอกประเทศไทย
 ไม่ขาย ไม่ใช้โฆษณา
 
 สิทธิ์ของคุณ: ขอดู ขอลบ หรือคัดค้านการเก็บ ส่งอีเมลมาที่ {spot_chart.CONTACT}
 ถ้าไม่ต้องการให้เก็บ อย่าถามบอท ข้อความทั่วไปในห้องบอทไม่ได้บันทึก""",
     "en": f"""ตามควาย · Privacy
-What we keep: the text of chart questions (for voice, the transcript; for a screenshot, the question read from it), the time, the server and channel name, and the spot the bot read
+What we keep: the text of questions to the bot and the chart query the AI wrote (for voice, the transcript; for a screenshot, the question read from it), the time, the server and channel name, and the spot the bot read
 What we don't keep: your name or user ID, other messages in the channel, audio files or images
 Your last spot is held in memory only, and is gone after !new or a restart
 
@@ -118,7 +120,7 @@ How long: {question_log.KEEP_DAYS} days, then deleted automatically
 Who else sees it:
   Discord  every message already passes through Discord
   Soniox   voice messages are sent for transcription; the bot deletes the file and transcript there right after
-  DeepSeek screenshots are sent to read the table, on servers in China; the bot keeps no images
+  DeepSeek questions (AI mode, turn off with !ai-off) and screenshots are sent to be read, on servers in China; the bot keeps no images
   Railway  hosts the bot, outside Thailand
 Never sold, never used for ads
 
@@ -245,6 +247,8 @@ class Bridge(discord.Client):
         self._reading = False
         self.terminal = has_terminal(sys.stdin)
         self.memory: dict[tuple[int, int], object] = {}  # (ห้อง, คน) -> สิ่งที่บอกไว้ตาก่อน
+        self.ai_off: set[tuple[int, int]] = set()          # คนที่ปิดโหมด AI ไว้ ไม่อยู่ในนี้คือเปิด
+        self.history: dict[tuple[int, int], tuple] = {}     # ประวัติคุยกับ AI
 
     async def on_ready(self) -> None:
         print(f"ตามควาย ออนไลน์แล้ว ({self.user}) อยู่ใน {len(self.guilds)} server", flush=True)
@@ -270,7 +274,10 @@ class Bridge(discord.Client):
             await message.channel.send(PONG)
         elif text.lower() == NEW_COMMAND:
             self.memory.pop(key, None)
+            self.history.pop(key, None)
             await message.reply(FORGOT)
+        elif assistant.toggle(text) is not None:
+            await message.reply(self._toggle_ai(key, assistant.toggle(text)))
         elif text.lower() in CONTACT_COMMANDS:
             await message.reply(f"{spot_chart.CONTACT}\n{spot_chart.COPYRIGHT}")
         elif help_message(text):
@@ -290,6 +297,14 @@ class Bridge(discord.Client):
             question = chart_question(text, self.user.id, direct)
             if question:
                 await self._chart(message, question, key)
+
+    def _toggle_ai(self, key: tuple[int, int], on: bool) -> str:
+        if on:
+            self.ai_off.discard(key)
+        else:
+            self.ai_off.add(key)
+            self.history.pop(key, None)
+        return assistant.TURNED[on]
 
     async def _voice(self, message: discord.Message, audio, key: tuple[int, int]) -> None:
         """ถอดข้อความเสียงด้วย Soniox แล้วถามชาร์ตเหมือนพิมพ์มา"""
@@ -334,7 +349,7 @@ class Bridge(discord.Client):
         # รูปคือ spot ใหม่ทั้งโต๊ะ ไม่ยืมตำแหน่งหรือคนที่ all-in จากคำถามก่อน
         self.memory.pop(key, None)
         await self._chart(message, question, key, heard=read_line(question),
-                          image=image.filename)
+                          image=image.filename, ai=False)
 
     def _log(self, message: discord.Message, question: str, source: str, kind: str,
              request=None, **fields) -> None:
@@ -346,9 +361,25 @@ class Bridge(discord.Client):
         except OSError as error:
             print(f"จดบันทึกคำถามไม่ได้: {error}", flush=True)
 
+    async def _ask(self, question: str, key: tuple[int, int], ai: bool) -> tuple[object, list[str], dict]:
+        """(ผลจาก solver หรือ None, บรรทัดข้อความของ AI, ช่องเพิ่มในบันทึก)
+
+        โหมด AI ให้ DeepSeek เขียนคำถามก่อน ปิด AI หรือรูปหน้าจอส่งเข้า solver ตรง ๆ
+        """
+        memory = self.memory.get(key)
+        if not ai or key in self.ai_off:
+            return await asyncio.to_thread(spot_chart.reply, question, memory=memory), [], {}
+        result = await asyncio.to_thread(assistant.answer, question, spot_chart.reply,
+                                         self.history.get(key, ()), memory)
+        self.history[key] = result.history
+        lines = [result.say]
+        if result.query and result.query != question:
+            lines.append(assistant.QUERY_LINE.format(query=result.query))
+        return result.made, lines, {"ai_query": result.query}
+
     async def _chart(self, message: discord.Message, question: str, key: tuple[int, int],
                      heard: str | None = None, audio: str | None = None,
-                     image: str | None = None) -> None:
+                     image: str | None = None, ai: bool = True) -> None:
         """แก้ชาร์ตในเธรดแยก gateway จะได้ไม่ค้างระหว่าง solver คิด แล้วตอบเป็นรูป
 
         heard คือบรรทัดบอกว่าถอดเสียงได้ว่าอะไร ให้ผู้ถามเห็นถ้าบอทได้ยินผิด
@@ -357,10 +388,14 @@ class Bridge(discord.Client):
         extra = {"audio": audio} if audio else {"image": image} if image else {}
         try:
             async with message.channel.typing():
-                made = await asyncio.to_thread(spot_chart.reply, question,
-                                               memory=self.memory.get(key))
+                made, said, logged = await self._ask(question, key, ai)
+                heard = "\n".join(filter(None, (heard, *said))) or None
+                if made is None:
+                    self._log(message, question, source, "talk", **extra, **logged)
+                    await message.reply(heard)
+                    return
                 self._log(message, question, source, made.kind,
-                          made.found.request if made.found else None, **extra)
+                          made.found.request if made.found else None, **extra, **logged)
                 if made.found is not None:
                     self.memory[key] = made.found.request
                 if made.kind == "mario":

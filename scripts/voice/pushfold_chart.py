@@ -11,6 +11,7 @@
 heads-up คนที่เป็น button คือ SB จึงแสดงเป็น BTN/SB
 บอกรางวัลมา (icm 50/30/20) แก้แบบ ICM แทน chip EV ทุกคนที่โต๊ะคือผู้เล่นที่เหลือทั้งหมด
 พูด icm เฉย ๆ คือ bubble ของเกม live คนลง 20 ซื้อเข้า 500 บาท รางวัลตามตาราง structures.LIVE
+บอก buy-in หรือเงินรางวัลรวม (pool) รางวัลคิดจากเงินจริง ไม่บอกคนลงก็หารเอาจาก pool ÷ buy-in
 บอก aof หรือ all-in or fold คือเกม cash ของ GGPoker สเตกต่ำสุด $0.05/$0.10 Hold'em
 ไม่บอกขนาดโต๊ะหรือสแตกใช้ 4 คน 10bb ไม่มี ante ทุกคนที่ถึง showdown เสียค่าธรรมเนียม 0.2bb นอกพอต
 ตัวเลขจาก ggpoker.com/poker-games/all-in-or-fold ตรวจ 2026-09-26 (harness หัวข้อ 29)
@@ -30,6 +31,7 @@ from pushfold import coach, floor, hands, icm, structures  # noqa: E402
 from pushfold.spot import Spot, SpotError  # noqa: E402
 
 MAX_STACK = 15
+MAX_PRIZES_SHOWN = 9
 TABLE_SIZE = 8
 DEFAULT_ANTE = {"each": 0.1, "bb": 1.0}  # เป็น bb ต่อคนที่จ่าย
 FIRST_IN, FACING = "Push/Fold", "Call vs shove"
@@ -132,11 +134,12 @@ def stage(request: preflop.Request) -> structures.Stage | None:
     พูด icm เฉย ๆ ไม่บอกรางวัลหรือช่วงของทัวร์ คือ bubble
     """
     named = request.left_pct is not None or request.players_left or request.stage_word
-    if not named and not (request.icm and request.payouts is None):
+    money = request.buy_in or request.prize_pool
+    if not named and not ((request.icm or money) and request.payouts is None):
         return None
-    entrants = request.entrants or (structures.DEFAULT_ENTRANTS
-                                    if (request.players_left or 0) <= structures.DEFAULT_ENTRANTS
-                                    else structures.MTT_ENTRANTS)
+    entrants = request.entrants or _entrants_from_pool(request) or (
+        structures.DEFAULT_ENTRANTS if (request.players_left or 0) <= structures.DEFAULT_ENTRANTS
+        else structures.MTT_ENTRANTS)
     share = None if request.paid_pct is None else request.paid_pct / 100
     given = tuple(request.payouts or ())
     if request.players_left or request.left_pct is not None:
@@ -146,6 +149,22 @@ def stage(request: preflop.Request) -> structures.Stage | None:
     else:
         return structures.Stage.bubble(entrants, share, given)
     return structures.Stage(entrants, left, share, given)
+
+
+def _buy_in(request: preflop.Request) -> float:
+    return request.buy_in or structures.BUY_IN_THB
+
+
+def _entrants_from_pool(request: preflop.Request) -> int | None:
+    """คนลงจากเงินรางวัลรวม ÷ ค่าซื้อเข้า เช่น pool 15000 ซื้อเข้า 500 คือ 30 คน"""
+    if not request.prize_pool:
+        return None
+    return max(2, round(request.prize_pool / _buy_in(request)))
+
+
+def pool_thb(request: preflop.Request, found: structures.Stage) -> float:
+    """เงินรางวัลรวมเป็นบาท บอกมาก็ใช้ตามนั้น ไม่บอกคือคนลง × ค่าซื้อเข้า"""
+    return request.prize_pool or found.entrants * _buy_in(request)
 
 
 def _others(request: preflop.Request) -> float:
@@ -185,8 +204,9 @@ def _model(request: preflop.Request) -> str:
     named = request.players_left is None and request.left_pct is None and (request.stage_word or "bubble")
     where = {"bubble": "bubble: ", "final": "final table: "}.get(named, "")
     money = " (in the money)" if found.in_money else ""
-    curve = {"given": "real payouts", "live": "live payouts " + _baht(found),
-             "mtt": "standard MTT payouts"}[found.curve]
+    curve = {"given": "real payouts", "live": "live payouts", "mtt": "standard MTT payouts"}[found.curve]
+    if found.curve != "given":
+        curve += " " + _baht(request, found)
     others = f", others at {_others(request):g}bb each" if chosen.crowd else ""
     # รางวัลจริงไม่ขึ้นกับคนลง ถ้าไม่ได้บอกคนลงก็ไม่ต้องโชว์ 1000 ที่สมมติไว้
     size = (f" of {found.entrants} left ({100 * found.left / found.entrants:.3g}%)"
@@ -194,10 +214,14 @@ def _model(request: preflop.Request) -> str:
     return f"ICM, {where}{found.left}{size}, {found.paid} paid{money}, {curve}{others}"
 
 
-def _baht(found: structures.Stage) -> str:
-    """รางวัลเป็นบาท ซื้อเข้า 500 บาท เช่น (500 THB buy-in: 3,880/2,590/1,660/1,110/760 THB)"""
-    prizes = "/".join(f"{p * structures.BUY_IN_THB:,.0f}" for p in found.prizes())
-    return f"({structures.BUY_IN_THB} THB buy-in: {prizes} THB)"
+def _baht(request: preflop.Request, found: structures.Stage) -> str:
+    """รางวัลเป็นบาท เช่น (pool 10,000 THB: 3,880/2,590/1,660/1,110/760 THB) รางวัลเยอะเกินแสดงแค่ pool"""
+    pool = pool_thb(request, found)
+    prizes = found.prizes()
+    if len(prizes) > MAX_PRIZES_SHOWN:
+        return f"(pool {pool:,.0f} THB)"
+    shown = "/".join(f"{p * pool / found.entrants:,.0f}" for p in prizes)
+    return f"(pool {pool:,.0f} THB: {shown} THB)"
 
 
 @functools.lru_cache(maxsize=64)

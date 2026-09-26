@@ -128,6 +128,12 @@ _ENTRANTS = re.compile(r"(?:field(?:\s*size)?|entrants?|runners?|คนลง(?:
                        r"|(?<![\d.])(\d+)\s*(?:entrants?|runners?|entries)")
 _PAID = re.compile(rf"(?:paid|itm|จ่าย(?:รางวัล)?)\s*{_NUMBER}{_PERCENT}|{_NUMBER}{_PERCENT}\s*(?:paid|itm)")
 _BB_UNIT = r"(?:bb|big\s*blinds?|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)"
+# เงินเป็นบาท "buy-in 1000" "ซื้อเข้า 1,000 บาท" "pool 15k" "total buy-in 15000" "เงินรางวัลรวม 15000"
+# ICM ไม่ขึ้นกับหน่วยเงิน ใช้หาจำนวนคนลงจากเงินรวม กับแสดงรางวัลเป็นบาท
+_MONEY = r"([\d,]+(?:\.\d+)?)\s*(k)?(?![\d%])\s*(?:บาท|thb|฿)?"
+_POOL = re.compile(rf"(?:(?:total\s*)?prize\s*pool|(?<![a-z])pool|total\s*buy\s*-?\s*ins?"
+                   rf"|(?:เงิน)?รางวัลรวม|บายอินรวม|ยอดรวม|พูล)\s*:?\s*{_MONEY}")
+_BUY_IN = re.compile(rf"(?:buy\s*-?\s*ins?|บายอิน|ซื้อเข้า|ค่าสมัคร)\s*:?\s*{_MONEY}")
 _AVERAGE = re.compile(rf"(?:avg|average|สแตกเฉลี่ย|เฉลี่ย)\s*(?:stack\s*)?{_NUMBER}\s*{_BB_UNIT}?"
                       rf"|(?<![\d.]){_NUMBER}\s*{_BB_UNIT}\s*(?:avg|average|เฉลี่ย)(?!\s*(?:stack\s*)?\d)")
 
@@ -196,6 +202,8 @@ class Request:
     entrants: int | None = None        # คนลงทั้งหมด
     paid_pct: float | None = None      # จ่ายรางวัลกี่ % ของคนลง
     field_avg: float | None = None     # สแตกเฉลี่ยของคนที่โต๊ะอื่น เป็น bb
+    buy_in: float | None = None        # ค่าซื้อเข้าต่อคน เป็นบาท
+    prize_pool: float | None = None    # เงินรางวัลรวม เป็นบาท
     stage_word: str | None = None      # "bubble" หรือ "final" ช่วงของทัวร์ที่เรียกชื่อ ไม่บอกจำนวนคน
     aof: bool = False                  # GGPoker All-in or Fold ใช้โต๊ะและค่าธรรมเนียมของเกมนั้น
 
@@ -503,6 +511,13 @@ def _read_payouts(text: str) -> tuple[tuple[float, ...] | None, str]:
 def _read_stage(text: str) -> tuple[dict, str]:
     """(ช่วงของทัวร์ที่บอกมา, ข้อความที่ตัดออกแล้ว) ไม่ให้ 120 ใน "เหลือ 120 คน" เป็นขนาดโต๊ะ"""
     found: dict = {}
+    for key, pattern in (("prize_pool", _POOL), ("buy_in", _BUY_IN)):
+        match = pattern.search(text)
+        if match:
+            text = text[:match.start()] + " " + text[match.end():]
+            value = _money(match)
+            if value > 0:
+                found[key] = value
     for key, pattern, read in (("left_pct", _LEFT_PCT, _stack_value), ("paid_pct", _PAID, _stack_value),
                                ("players_left", _LEFT_COUNT, int), ("entrants", _ENTRANTS, int),
                                ("field_avg", _AVERAGE, _stack_value)):
@@ -513,6 +528,15 @@ def _read_stage(text: str) -> tuple[dict, str]:
             if value > 0:   # "0 left" ไม่มีความหมาย ถือว่าไม่ได้บอก
                 found[key] = value
     return found, text
+
+
+def _money(match: re.Match) -> float:
+    """เงินที่อ่านได้ "1,000" เป็น 1000 "15k" เป็น 15000"""
+    try:
+        value = float(match.group(1).replace(",", "")) * (1000 if match.group(2) else 1)
+    except ValueError:
+        return 0
+    return _stack_value(str(value))
 
 
 def _stack_value(text: str) -> float:

@@ -399,7 +399,7 @@ class PayoutWordsTests(unittest.TestCase):
                 self.assertIsNone(made.payouts)
         note = pushfold_chart.solved(request(stack=10, icm=True)).note
         self.assertIn("bubble: 6 of 20 left", note)
-        self.assertIn("5 paid, live payouts (500 THB buy-in: 3,880/2,590/1,660/1,110/760 THB)", note)
+        self.assertIn("5 paid, live payouts (pool 10,000 THB: 3,880/2,590/1,660/1,110/760 THB)", note)
 
     def test_chip_ev_is_said_explicitly_or_left_out(self):
         self.assertEqual(preflop.parse("BTN 10bb chip ev").payouts, ())
@@ -533,6 +533,45 @@ class NamedStageTests(unittest.TestCase):
         self.assertEqual((moved.stage_word, moved.left_pct), ("bubble", None))
         back = spot.merge(preflop.Request(left_pct=40), preflop.Request(stage_word="final"))
         self.assertEqual((back.stage_word, back.left_pct), (None, 40))
+
+
+class MoneyTests(unittest.TestCase):
+    def test_buy_in_and_pool_are_read_in_both_languages(self):
+        for said, buy_in, pool in (("BTN 10bb bubble buy-in 1000", 1000, None),
+                                   ("BTN 10bb icm pool 15k", None, 15000),
+                                   ("BB vs SB shove 10bb total buyin 15,000 บาท", None, 15000),
+                                   ("BTN 10bb ซื้อเข้า 1000 บาท คนลง 30", 1000, None),
+                                   ("BTN 10bb เงินรางวัลรวม 12000", None, 12000)):
+            with self.subTest(said=said):
+                made = preflop.parse(said)
+                self.assertEqual((made.buy_in, made.prize_pool, made.stack), (buy_in, pool, 10))
+
+    def test_prizes_follow_the_buy_in(self):
+        note = pushfold_chart.solved(request(stack=10, icm=True, buy_in=1000)).note
+        self.assertIn("pool 20,000 THB: 7,760/5,180/3,320/2,220/1,520 THB", note)
+
+    def test_a_pool_without_entries_gives_the_entries(self):
+        found = pushfold_chart.stage(request(stack=10, prize_pool=15000))
+        self.assertEqual((found.entrants, found.paid, found.left), (30, 6, 7))
+        found = pushfold_chart.stage(request(stack=10, prize_pool=15000, buy_in=1000))
+        self.assertEqual(found.entrants, 15)
+
+    def test_a_pool_with_entries_sets_the_prizes(self):
+        note = pushfold_chart.solved(request(stack=10, prize_pool=12000, entrants=30)).note
+        self.assertIn("pool 12,000 THB: 4,092/", note)
+
+    def test_money_alone_means_icm_but_chip_ev_still_wins(self):
+        self.assertIsNotNone(pushfold_chart.payouts(request(stack=10, buy_in=1000)))
+        self.assertIsNone(pushfold_chart.payouts(request(stack=10, buy_in=1000, payouts=())))
+
+    def test_a_big_field_shows_only_the_pool(self):
+        note = pushfold_chart.solved(request(stack=10, stage_word="bubble", entrants=500, buy_in=300)).note
+        self.assertIn("standard MTT payouts (pool 150,000 THB)", note)
+
+    def test_a_follow_up_keeps_the_money(self):
+        import spot
+        kept = spot.merge(preflop.Request(stack=8), preflop.Request(buy_in=1000, prize_pool=30000))
+        self.assertEqual((kept.buy_in, kept.prize_pool), (1000, 30000))
 
 
 class StageChartTests(unittest.TestCase):

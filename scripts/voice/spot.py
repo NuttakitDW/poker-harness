@@ -235,6 +235,8 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            aof=new.aof or base.aof,
                            paid_pct=new.paid_pct or base.paid_pct,
                            field_avg=new.field_avg or base.field_avg,
+                           buy_in=new.buy_in or base.buy_in,
+                           prize_pool=new.prize_pool or base.prize_pool,
                            # คู่มือใหม่คนเดียวแทนคนยัดหมดชุดเดิมทั้งหมด
                            shovers=new.shovers or (() if new.villain else base.shovers))
 

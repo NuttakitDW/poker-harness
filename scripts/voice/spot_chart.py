@@ -11,6 +11,8 @@
     /v      สลับเป็นโหมดพูด
     /t      สลับเป็นโหมดพิมพ์
     /n      เริ่ม spot ใหม่ ลืมตำแหน่งและสแตกที่คุยกันมา
+    /ai-on  คุยภาษาคนแล้วให้ AI เขียนคำถามชาร์ตให้ (ค่าเริ่ม)
+    /ai-off โหมดพื้นฐาน อ่านคำถามเองไม่ผ่าน AI
     /help   วิธีใช้ภาษาไทย  /help en ภาษาอังกฤษ
     /contact  อีเมลติดต่อผู้พัฒนา
     /q      ออก
@@ -33,6 +35,7 @@ import threading
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
+import assistant  # noqa: E402
 import chart_grid  # noqa: E402
 import mario  # noqa: E402
 import pushfold_chart  # noqa: E402
@@ -72,7 +75,7 @@ PUSH_FOLD_ONLY = {
     "EN": "Not available yet. Only tournament push/fold charts, 15bb or less or say push/fold, "
           "or GG AoF, e.g. BTN shove 10bb or aof BTN",
 }
-HELP = "/v voice  /t text  /n new  /q quit  /h help (/help en English)  /contact"
+HELP = "/v voice  /t text  /n new  /ai-on /ai-off  /q quit  /h help (/help en English)  /contact"
 HELP_COMMANDS = ("/help", "/h", "/?")
 # ตัวอย่าง ข้อจำกัด และสี ใช้ร่วมกับวิธีใช้ใน Discord (scripts/discord_bot/bot.py) จะได้ไม่เขียนสองที่
 HELP_GUIDE = {
@@ -91,7 +94,7 @@ Limits
   สแตกมากกว่า 0 ถึง 15bb ทศนิยมได้ เช่น 5.5bb  หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
   สแตกที่บอกคือที่เหลือหลังจ่าย ante  ทุกคนสแตกเท่ากัน
   บอกรางวัลเอง ICM นับว่าผู้เล่นที่เหลือทั้งหมดอยู่โต๊ะนี้
-  ช่วงของทัวร์: live คนลง 20 ซื้อเข้า 500 บาท (เกิน 47 หรือบอก paid: MTT จ่าย 15%)
+  ช่วงของทัวร์: live คนลง 20 ซื้อเข้า 500 บาท เปลี่ยนได้: field 30, buy-in 1000, pool 15000
   bubble = เหลือมากกว่าคนได้เงิน 3%  final table = ทุกคนที่เหลืออยู่โต๊ะนี้
   ทุกคนจ่าย ante 10% ของ BB  เปลี่ยนได้: ante 12.5%, ante 0.2bb, ไม่มี ante
   BB จ่าย ante แทนทั้งโต๊ะ: bb ante หรือ live (ค่าเริ่ม 1bb, bb ante 1.5 ก็ได้)
@@ -113,8 +116,8 @@ Limits
   stacks up to 15bb, decimals ok (5.5bb), or say push/fold; above 15bb is approximate
   the stack is what is left after the ante; everyone has the same stack
   ICM with your payouts: this table is everyone left, unless a stage is given
-  stage: live, 20 entries, 500 THB buy-in (>47 or paid %: MTT 15% paid)
-  other tables share one stack (this table's unless avg is given)
+  stage: 20 entries, 500 THB buy-in; change: field 30, buy-in 1000, pool 15000
+  other tables share one stack (this table's unless avg)
   bubble = 3% more players left than places paid; final table = everyone left is at this table
   everyone antes 10% of the BB; change it: ante 12.5%, ante 0.2bb, no ante
   big blind ante for the table: bb ante or live (1bb by default, or bb ante 1.5)
@@ -134,6 +137,8 @@ Commands
   /v, /voice          สลับเป็นโหมดพูด
   /t, /text           สลับเป็นโหมดพิมพ์
   /n, /new            เริ่ม spot ใหม่ ลืมตำแหน่ง สแตก และคนที่ all-in ที่จำไว้
+  /ai-on              คุยภาษาคน AI เขียนคำถามชาร์ตให้ (ค่าเริ่ม)
+  /ai-off             โหมดพื้นฐาน ไม่ผ่าน AI
   /h, /help [th|en]   วิธีใช้ ไม่บอกภาษา = ไทย  (/? ก็ได้)
   /contact            อีเมลติดต่อผู้พัฒนา
   /q, /quit           ออก  (exit, quit, ออก ก็ได้)
@@ -150,6 +155,8 @@ Commands
   /v, /voice          switch to voice
   /t, /text           switch to text
   /n, /new            new spot: forget the remembered seats, stack and shovers
+  /ai-on              talk naturally, the AI writes the chart query (default)
+  /ai-off             basic mode, no AI
   /h, /help [th|en]   this help; Thai unless en  (/? also works)
   /contact            the developer's email
   /q, /quit           quit  (exit, quit also work)
@@ -197,7 +204,24 @@ def reply(prompt: str, memory=None) -> Reply:
 
 def answer(prompt: str, color: bool, memory=None) -> tuple[str, "spot.Spot | None"]:
     """ข้อความที่จะพิมพ์ในเทอร์มินัลให้หนึ่งคำถาม กับ spot ที่เจอไว้ใช้เป็นความจำตาถัดไป"""
-    made = reply(prompt, memory=memory)
+    return render(reply(prompt, memory=memory), color)
+
+
+def ai_answer(prompt: str, color: bool, history: tuple = (),
+              memory=None) -> tuple[str, "spot.Spot | None", tuple]:
+    """โหมด AI: ข้อความคุย คำถามที่ AI เขียน แล้วชาร์ต คืนประวัติคุยใหม่ด้วย"""
+    made = assistant.answer(prompt, reply, history, memory)
+    lines = [made.say]
+    if made.query:
+        lines.append(assistant.QUERY_LINE.format(query=made.query))
+    found = None
+    if made.made is not None:
+        shown, found = render(made.made, color)
+        lines += ["", shown]
+    return "\n".join(lines), found, made.history
+
+
+def render(made: Reply, color: bool) -> tuple[str, "spot.Spot | None"]:
     if made.kind == "mario":
         return mario.render(color), None
     if made.message is not None:
@@ -306,7 +330,7 @@ def _loop(args: argparse.Namespace, session: Session) -> int:
     if args.voice and not session.start_voice():
         return 1
     _prompt(session.voice.is_set())
-    memory = None
+    memory, ai, history = None, not args.ai_off, ()
     while True:
         try:
             kind, text = session.events.get()
@@ -321,7 +345,10 @@ def _loop(args: argparse.Namespace, session: Session) -> int:
         elif kind == "typed" and text.lower() in TEXT_COMMANDS:
             session.stop_voice()
         elif kind == "typed" and text.lower() in NEW_COMMANDS:
-            memory = None
+            memory, history = None, ()
+        elif kind == "typed" and assistant.toggle(text) is not None:
+            ai = assistant.toggle(text)
+            print(f"\n{assistant.TURNED[ai]}")
         elif kind == "typed" and text.lower() in CONTACT_COMMANDS:
             print(f"\n{CONTACT}\n{COPYRIGHT}")
         elif kind == "typed" and help_for(text):
@@ -329,7 +356,10 @@ def _loop(args: argparse.Namespace, session: Session) -> int:
         elif text:
             if kind == "heard":
                 print(f"\n> {text}")
-            shown, found = answer(text, color, memory=memory)
+            if ai:
+                shown, found, history = ai_answer(text, color, history, memory)
+            else:
+                shown, found = answer(text, color, memory=memory)
             # หาไม่เจอก็จำของเดิมไว้ พูดเรื่องอื่นแทรกแล้วกลับมาถามต่อได้
             memory = found.request if found else memory
             print(f"\n{shown}")
@@ -341,9 +371,11 @@ def main() -> int:
     parser.add_argument("prompt", nargs="?", help="ถามครั้งเดียวแล้วจบ")
     parser.add_argument("--voice", action="store_true", help="เริ่มในโหมดพูด")
     parser.add_argument("--input-device", type=int, help="หมายเลขอุปกรณ์เสียงเข้า")
+    parser.add_argument("--ai-off", action="store_true", help="โหมดพื้นฐาน ไม่ผ่าน AI")
     args = parser.parse_args()
     if args.prompt:
-        print(answer(args.prompt, sys.stdout.isatty())[0])
+        color = sys.stdout.isatty()
+        print(answer(args.prompt, color)[0] if args.ai_off else ai_answer(args.prompt, color)[0])
         return 0
     try:
         return run(args)
