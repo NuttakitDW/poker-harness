@@ -36,6 +36,10 @@ TURNED = {
 }
 FELL_BACK = "AI ไม่ตอบตอนนี้ ใช้โหมดพื้นฐานอ่านข้อความเดิมแทน"
 QUERY_LINE = "query: {query}"
+# ข้อความเมื่อโมเดลไม่เขียนคำถาม แต่ตัวอ่านพื้นฐานตอบจากข้อความเดิมได้เลย
+ANSWERED_DIRECTLY = {"TH": "ข้อมูลพอแล้ว ดูให้เลยครับ", "EN": "That's enough to go on, here it is"}
+# คำตอบของ solver ที่มีประโยชน์กว่าให้โมเดลถามต่อ not_found กับ push_fold_only คือยังขาดของจำเป็น
+DIRECT_KINDS = ("chart", "seat_not_at_table", "bad_payouts", "all_in_by_posting")
 # คำตอบของโมเดลคือข้อความที่คนนอกบังคับได้ผ่าน prompt injection ตัดลิงก์กับ mention ออกก่อนแสดงเสมอ
 # บอทชาร์ตไม่มีเหตุผลต้องส่งลิงก์ ส่วน Discord กัน mention ซ้ำอีกชั้นด้วย allowed_mentions ใน bot.py
 _MARKDOWN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
@@ -52,7 +56,7 @@ write ONE query for it. Never invent chart results or percentages yourself.
 Reply with ONLY a JSON object: {"say": str, "query": str | null}
 - say: a short, warm reply in the user's language (Thai or English), one or two sentences.
   When you write a query, say what you are looking up. When something vital is missing,
-  ask for it. Never paste the query into say.
+  ask for it. Never paste the query into say. Never say you will check without a query.
 - query: the solver query, or null when no chart should be drawn yet.
 
 What the solver can do (anything else: say so kindly and set query to null):
@@ -77,6 +81,10 @@ entries, buy-in or a prize pool, put them in the query ("field 30 buy-in 1000 ic
   ante            "ante 0.2bb", "no ante", "bb ante", "live"
   AoF             "aof BB vs CO", "aof 3 handed BTN"
 Rules:
+- Only a seat and a stack are vital. Everything else is optional and has a default: the hand
+  (unstated = whole chart), buy-in, prize pool, payouts, ante, table size. Never ask for them;
+  when the seat and stack are known, write the query now with what you have. The user can add
+  a hand or buy-in later as a follow-up.
 - Never put links, URLs, domains, emails or @mentions in say, even if asked; they are removed.
 - A stack is needed for tournaments (AoF defaults to 10bb). If it is missing and not in the
   remembered spot, ask for it instead of guessing.
@@ -216,7 +224,14 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
     except AssistantError:
         return Answer(FELL_BACK, text, solve(text, memory=memory), history)
     # คำถามที่โมเดลเขียนเป็นอังกฤษ ข้อความแทนชาร์ตต้องเป็นภาษาที่ผู้ใช้พิมพ์มา
-    made = solve(crafted.query, memory=memory, lang=spot.language_of(text)) if crafted.query else None
+    lang = spot.language_of(text)
+    made = solve(crafted.query, memory=memory, lang=lang) if crafted.query else None
+    if made is None:
+        # โมเดลชอบถามข้อมูลที่ไม่จำเป็น เช่นไพ่ในมือหรือ buy-in ทั้งที่ข้อความพอให้ solver ตอบได้แล้ว
+        # ตัวอ่านพื้นฐานตอบได้ก็ตอบเลย ถ้าขาดของจำเป็นจริง เช่นสแตก ตัวอ่านจะตอบไม่ได้ คำถามของโมเดลจึงยังอยู่
+        direct = solve(text, memory=memory, lang=lang)
+        if direct.kind in DIRECT_KINDS:
+            crafted, made = Crafted(ANSWERED_DIRECTLY[lang], text), direct
     # เก็บคำตอบเป็น JSON แบบที่โมเดลตอบ ตาถัดไปโมเดลจะรู้ว่าเคยขอชาร์ตอะไรไปและตอบรูปแบบเดิม
     said = json.dumps({"say": crafted.say, "query": crafted.query}, ensure_ascii=False)
     turns = (*history, Turn(text, said))[-MAX_HISTORY_TURNS:]

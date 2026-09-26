@@ -116,6 +116,23 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(made.made.kind, "seat_not_at_table")
         self.assertIn("เหลือ 6 คน", made.made.message)
 
+    def test_a_spot_the_solver_can_answer_is_answered_even_if_the_model_asks_for_more(self):
+        made = assistant.answer("BTN shove 10bb ใกล้เข้าเงิน", spot_chart.reply, key="k",
+                                crafter=model_says("ถือไพ่อะไรครับ buy-in เท่าไหร่", None))
+        self.assertEqual(made.made.kind, "chart")
+        self.assertEqual(made.query, "BTN shove 10bb ใกล้เข้าเงิน")
+        self.assertEqual(made.say, assistant.ANSWERED_DIRECTLY["TH"])
+        self.assertEqual(json.loads(made.history[-1].assistant)["query"], made.query)
+
+    def test_a_question_for_a_vital_missing_stack_is_kept(self):
+        made = assistant.answer("SB เจอ UTG all in", spot_chart.reply, key="k",
+                                crafter=model_says("เหลือกี่ bb ครับ", None))
+        self.assertIsNone(made.made)
+        self.assertEqual(made.say, "เหลือกี่ bb ครับ")
+
+    def test_the_prompt_says_only_seat_and_stack_are_vital(self):
+        self.assertIn("Only a seat and a stack are vital", assistant.SYSTEM)
+
     def test_no_query_is_just_talk(self):
         made = assistant.answer("สวัสดี", spot_chart.reply, key="k",
                                 crafter=model_says("สวัสดีครับ ถาม spot มาได้เลย", None))
