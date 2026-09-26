@@ -53,6 +53,7 @@ import table_image  # noqa: E402
 # ดูห้อง ส่งข้อความ ฝังลิงก์ แนบไฟล์ อ่านประวัติ พอสำหรับส่งชาร์ตเป็นรูปในขั้นต่อไป
 PERMISSIONS = 1024 | 2048 | 16384 | 32768 | 65536
 QUIT_COMMANDS = ("/q", "/quit")
+ALLOWED_MENTIONS = discord.AllowedMentions(everyone=False, roles=False, users=False, replied_user=True)
 PING, PONG = "ping", "pong"
 CHART_PREFIX, NEW_COMMAND, HELP_PREFIX = "!chart", "!new", "!help"
 CONTACT_COMMANDS = ("!contact", "/contact")
@@ -242,7 +243,9 @@ class Bridge(discord.Client):
     def __init__(self, channel_id: int | None) -> None:
         intents = discord.Intents.default()
         intents.message_content = True  # ต้องเปิด Message Content Intent ใน Developer Portal ด้วย
-        super().__init__(intents=intents)
+        # ข้อความที่บอทส่งมีส่วนที่คนนอกบังคับได้ (คำตอบ AI เสียงที่ถอด ข้อความจากรูป)
+        # Discord บังคับฝั่ง server ว่าไม่แท็กใครนอกจากคนที่บอทตอบกลับ หลบด้วยการเขียนแปลก ๆ ไม่ได้
+        super().__init__(intents=intents, allowed_mentions=ALLOWED_MENTIONS)
         self.target = channel_id
         self._reading = False
         self.terminal = has_terminal(sys.stdin)
@@ -392,7 +395,7 @@ class Bridge(discord.Client):
                 heard = "\n".join(filter(None, (heard, *said))) or None
                 if made is None:
                     self._log(message, question, source, "talk", **extra, **logged)
-                    await message.reply(heard)
+                    await message.reply(heard, suppress_embeds=True)
                     return
                 self._log(message, question, source, made.kind,
                           made.found.request if made.found else None, **extra, **logged)
@@ -400,16 +403,17 @@ class Bridge(discord.Client):
                     self.memory[key] = made.found.request
                 if made.kind == "mario":
                     png = await asyncio.to_thread(mario.png)
-                    await message.reply(heard,
+                    await message.reply(heard, suppress_embeds=True,
                                         file=discord.File(io.BytesIO(png), filename="mario.png"))
                     return
                 if made.message is not None:
-                    await message.reply("\n".join(filter(None, (heard, made.message))))
+                    await message.reply("\n".join(filter(None, (heard, made.message))),
+                                        suppress_embeds=True)
                     return
                 found = made.found
                 png = await asyncio.to_thread(chart_image.render, found.book, found.chart,
                                               found.hands, found.lang, (made.note,))
-                await message.reply(heard,
+                await message.reply(heard, suppress_embeds=True,
                                     file=discord.File(io.BytesIO(png), filename="chart.png"))
         except Exception as error:  # noqa: BLE001 บอทต้องไม่ตายเพราะคำถามเดียว เก็บรายละเอียดไว้ในเทอร์มินัล
             traceback.print_exc()

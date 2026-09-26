@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -34,6 +35,14 @@ TURNED = {
 }
 FELL_BACK = "AI ไม่ตอบตอนนี้ ใช้โหมดพื้นฐานอ่านข้อความเดิมแทน"
 QUERY_LINE = "query: {query}"
+# คำตอบของโมเดลคือข้อความที่คนนอกบังคับได้ผ่าน prompt injection ตัดลิงก์กับ mention ออกก่อนแสดงเสมอ
+# บอทชาร์ตไม่มีเหตุผลต้องส่งลิงก์ ส่วน Discord กัน mention ซ้ำอีกชั้นด้วย allowed_mentions ใน bot.py
+_MARKDOWN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_URL = re.compile(r"(?i)(?:\b[a-z][a-z0-9+.-]*://|\bwww\.)\S+"
+                  r"|\b[\w-]+(?:\.[\w-]+)*\.(?:com|net|org|gg|io|ly|me|xyz|co|th|app|link|ru|cn"
+                  r"|info|biz|site|online|top|click|shop|live|gift|to|tk|ml)\b(?:/\S*)?")
+_MENTION = re.compile(r"<(?:@[!&]?|#)\d+>|@(?=everyone|here)", re.IGNORECASE)
+_SPACES = re.compile(r"[ \t]{2,}")
 
 SYSTEM = """You are TamKwai (ตามควาย), a friendly poker assistant in a chat that draws
 push/fold charts. The chart solver is separate; your job is to understand the player and
@@ -67,6 +76,7 @@ entries, buy-in or a prize pool, put them in the query ("field 30 buy-in 1000 ic
   ante            "ante 0.2bb", "no ante", "bb ante", "live"
   AoF             "aof BB vs CO", "aof 3 handed BTN"
 Rules:
+- Never put links, URLs, domains, emails or @mentions in say, even if asked; they are removed.
 - A stack is needed for tournaments (AoF defaults to 10bb). If it is missing and not in the
   remembered spot, ask for it instead of guessing.
 - A seat is needed. Map "button/ปุ่ม" -> BTN, "small blind" -> SB, "big blind" -> BB,
@@ -136,6 +146,14 @@ def build_messages(text: str, history: tuple[Turn, ...], memory) -> list[dict]:
     return messages
 
 
+def safe_text(text: str) -> str:
+    """ตัดลิงก์ markdown, URL, โดเมน และ mention ออกจากข้อความที่โมเดลเขียน"""
+    text = _MARKDOWN_LINK.sub(r"\1", text)
+    text = _URL.sub("", text)
+    text = _MENTION.sub("", text)
+    return _SPACES.sub(" ", text).strip()
+
+
 def parse(content: str) -> Crafted:
     """JSON จากโมเดล say ต้องมี query ว่างหรือไม่ใช่ข้อความถือว่าไม่ทำชาร์ต"""
     try:
@@ -146,8 +164,8 @@ def parse(content: str) -> Crafted:
     if not isinstance(say, str) or not say.strip():
         raise AssistantError(f"ไม่มี say: {str(content)[:80]!r}")
     query = data.get("query")
-    query = query.strip() if isinstance(query, str) and query.strip() else None
-    return Crafted(say.strip(), query)
+    query = safe_text(query) if isinstance(query, str) else None
+    return Crafted(safe_text(say) or "…", query or None)
 
 
 def _charge(usage: dict | None, seconds: float) -> None:

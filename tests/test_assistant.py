@@ -54,6 +54,39 @@ class ParseTests(unittest.TestCase):
                 assistant.parse(content)
 
 
+class InjectionTests(unittest.TestCase):
+    def test_links_are_removed(self):
+        for say in ("free nitro https://evil.example/x now", "go to www.evil.com now",
+                    "claim at discord.gg/abc123 now", "see [your prize](https://evil.example) now",
+                    "visit bit.ly/xyz now", "open hxxp://evil.ru/login now"):
+            with self.subTest(say=say):
+                cleaned = assistant.safe_text(say)
+                for bad in ("http", "www", "discord.gg", "bit.ly", "evil", "hxxp"):
+                    self.assertNotIn(bad, cleaned)
+                self.assertTrue(cleaned.endswith("now"))
+
+    def test_mentions_are_removed(self):
+        cleaned = assistant.safe_text("@everyone @here <@123> <@!456> <@&789> <#42> hi")
+        for bad in ("@", "<", "123", "789"):
+            self.assertNotIn(bad, cleaned)
+        self.assertTrue(cleaned.endswith("hi"))
+
+    def test_poker_words_survive(self):
+        text = "BB vs SB shove 5.5bb ante 0.1bb, K9o, pool 15,000 THB"
+        self.assertEqual(assistant.safe_text(text), text)
+
+    def test_the_model_reply_is_cleaned(self):
+        made = assistant.parse('{"say": "@everyone free nitro https://evil.example", "query": null}')
+        self.assertEqual(made.say, "everyone free nitro")
+        self.assertEqual(assistant.parse('{"say": "https://evil.example", "query": null}').say, "…")
+
+    def test_the_bot_can_only_ping_the_person_it_replies_to(self):
+        allowed = bot.ALLOWED_MENTIONS
+        self.assertEqual((allowed.everyone, allowed.roles, allowed.users, allowed.replied_user),
+                         (False, False, False, True))
+        self.assertIs(bot.Bridge(None).allowed_mentions, allowed)
+
+
 class MessagesTests(unittest.TestCase):
     def test_the_remembered_spot_and_recent_turns_go_to_the_model(self):
         history = tuple(assistant.Turn(f"q{i}", "{}") for i in range(10))
