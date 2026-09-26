@@ -190,6 +190,14 @@ def _hero_after(request: preflop.Request) -> str | None:
     return "BB" if "SB" in jammed else None if jammed else hero
 
 
+def _seated(seat: str, memory: preflop.Request) -> bool:
+    """ตำแหน่งนี้มีในโต๊ะขนาดที่จำไว้หรือไม่"""
+    import pushfold_chart  # solver หนัก โหลดเมื่อต้องเช็คโต๊ะเท่านั้น
+
+    return pushfold_chart.missing_seat(preflop.Request(players=memory.players, hero=seat,
+                                                       stack=memory.stack or 10)) is None
+
+
 def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Request:
     """เติมสิ่งที่ตานี้ไม่ได้บอกจากตาก่อน เปลี่ยนผู้ถามเมื่อไรก็ทิ้งคู่มือกับสถานการณ์เดิม"""
     if memory is None:
@@ -197,6 +205,9 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
     base = memory
     if new.hero and new.hero != memory.hero:
         base = dataclasses.replace(memory, villain=None, scenario=None, shovers=())
+    if new.hero and not new.players and memory.players and not _seated(new.hero, memory):
+        # ตำแหน่งใหม่ไม่มีในโต๊ะที่จำไว้ เช่นถาม UTG หลังโต๊ะ AoF 4 คน คือถามโต๊ะใหม่ ทิ้งขนาดโต๊ะกับ AoF
+        base = dataclasses.replace(base, players=None, aof=False)
     return preflop.Request(game=new.game or base.game, stack=new.stack or base.stack,
                            hero=new.hero or base.hero, villain=new.villain or base.villain,
                            scenario=new.scenario or base.scenario,

@@ -209,6 +209,22 @@ class TableSizeTests(unittest.TestCase):
         merged = spot.merge(preflop.Request(stack=8), preflop.Request(players=2, hero="BTN"))
         self.assertEqual(merged.players, 2)
 
+    def test_a_seat_missing_from_the_remembered_table_starts_a_new_table(self):
+        import spot
+        memory = preflop.parse("aof 4 handed BB vs CO shove 10bb")
+        merged = spot.merge(preflop.parse("ขอทัวร์ธรรมดา 14bb utg"), memory)
+        self.assertIsNone(merged.players)
+        self.assertFalse(merged.aof)
+        self.assertEqual((merged.hero, merged.stack), ("UTG", 14))
+
+    def test_a_seat_at_the_remembered_table_keeps_it(self):
+        import spot
+        merged = spot.merge(preflop.parse("CO 10bb"), preflop.parse("aof 4 handed BB 10bb"))
+        self.assertEqual((merged.players, merged.aof), (4, True))
+
+    def test_handed_typo_is_read(self):
+        self.assertEqual(preflop.parse("13.2 bb UTG tournament 8 haned").players, 8)
+
 
 class AskedForPushFoldTests(unittest.TestCase):
     def test_push_fold_words_are_read(self):

@@ -72,7 +72,7 @@ _STACK = re.compile(r"(?<![\d.])(\d{1,3}(?:\.\d+)?)\s*(?:bb|big\s*blind|บี�
 
 # ขนาดโต๊ะ heads-up คือสองคน ตัวถอดเสียงเขียนเป็นไทยได้หลายแบบ ส่วน 6-max 3 handed โต๊ะ 9 คน บอกเลขตรง ๆ
 _HEADS_UP = re.compile(r"(?<![a-z])(?:heads?\s*-?\s*up|hu)(?![a-z])|เฮด(?:ส์)?อัพ|ฮัดอัพ|ตัวต่อตัว")
-_TABLE_SIZE = re.compile(r"(?<!\d)([2-9])\s*-?\s*(?:max|handed|คน)")
+_TABLE_SIZE = re.compile(r"(?<!\d)([2-9])\s*-?\s*(?:max|han(?:d?e)d|คน)")
 
 # ขอ push/fold ตรง ๆ หรือพูดถึงการยัดหมด ใช้ solver แม้สแตกเกิน 15bb
 _PUSH_FOLD = re.compile(r"push\s*[-/]?\s*fold|(?<![a-z])(?:jam\w*|shov\w*|push\w*|all\s*-?\s*in)(?![a-z])"
@@ -101,7 +101,7 @@ _LIVE = re.compile(r"(?<![a-z])live(?![a-z])|ไลฟ์")
 
 # เงินรางวัลแต่ละอันดับ "icm 50/30/20" "payout 50 30 20" "รางวัล 50%/30%/20%" เปลี่ยนชาร์ตเป็น ICM
 # เลขที่ตามด้วย bb หรือขนาดโต๊ะไม่ใช่รางวัล "icm 50/30/20 4 handed 10bb" คือรางวัลสามอันดับ
-_PRIZE = (r"\d+(?:\.\d+)?(?![\d.])(?!\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ|-?\s*max|handed|คน))"
+_PRIZE = (r"\d+(?:\.\d+)?(?![\d.])(?!\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ|-?\s*max|han(?:d?e)d|คน))"
           r"\s*%?")
 _PAYOUTS = re.compile(rf"(?:(?<![a-z])icm|payouts?|prizes?|ไอซีเอ็ม|เงินรางวัล|รางวัล)\s*:?\s*"
                       rf"({_PRIZE}(?:\s*[/,\-]?\s*{_PRIZE})+)")
@@ -164,7 +164,7 @@ _HAND = re.compile(rf"(?<![A-Za-z0-9])([AKQJT2-9])\s?[,\-]?\s?([AKQJT2-9])"
 # เลขคู่ติดกันอย่าง 99 คือพ็อกเก็ตแพร์ เว้นแต่อยู่ในบริบทตัวเลข เช่น เหลือ 55 คน, 33/33/33, field 88
 _COUNT_BEFORE = re.compile(r"(?i)(?:[/.]|field(?:\s*size)?|entrants?|avg|average|เฉลี่ย|paid|itm"
                            r"|จ่าย(?:รางวัล)?|ante|เหลือ|คนลง(?:แข่ง)?|ผู้เข้าแข่ง(?:ขัน)?)\s*$")
-_COUNT_AFTER = re.compile(r"(?i)\s*(?:[%/.]|เปอร์|percent|คน|left|players?|remain|handed|max"
+_COUNT_AFTER = re.compile(r"(?i)\s*(?:[%/.]|เปอร์|percent|คน|left|players?|remain|han(?:d?e)d|max"
                           r"|entrants?|runners?|entries|paid|itm)")
 
 
