@@ -66,8 +66,8 @@ class ChartQuestionTests(unittest.TestCase):
         self.assertIsNone(bot.chart_question("<@42>", 42, False))
 
 
-def attachment(filename, content_type=None):
-    return SimpleNamespace(filename=filename, content_type=content_type)
+def attachment(filename, content_type=None, size=1000):
+    return SimpleNamespace(filename=filename, content_type=content_type, size=size)
 
 
 class AudioTests(unittest.TestCase):
@@ -146,6 +146,29 @@ class TerminalTests(unittest.TestCase):
         self.assertTrue(bot.has_terminal(SimpleNamespace(isatty=lambda: True)))
         self.assertFalse(bot.has_terminal(SimpleNamespace(isatty=lambda: False)))
         self.assertFalse(bot.has_terminal(None))
+
+
+class ImageTests(unittest.TestCase):
+    def test_a_screenshot_is_found_by_type_or_extension(self):
+        self.assertEqual(bot.image_attachment([attachment("table.png", "image/png")]).filename,
+                         "table.png")
+        self.assertIsNotNone(bot.image_attachment([attachment("table.JPG")]))
+
+    def test_audio_is_not_a_screenshot(self):
+        self.assertIsNone(bot.image_attachment([attachment("voice-message.ogg", "audio/ogg")]))
+
+    def test_a_huge_file_is_not_read(self):
+        self.assertIsNone(bot.image_attachment([attachment("big.png", "image/png",
+                                                           size=bot.MAX_IMAGE_BYTES + 1)]))
+
+    def test_the_reply_says_what_was_read(self):
+        self.assertEqual(bot.read_line("aof 4 handed BTN 10bb"), "อ่านจากรูปได้ว่า: aof 4 handed BTN 10bb")
+
+    def test_help_and_privacy_mention_screenshots(self):
+        self.assertIn("screenshot", bot.help_message("!help en"))
+        self.assertIn("รูป", bot.help_message("!help"))
+        self.assertIn("DeepSeek", bot.privacy_message("!privacy en"))
+        self.assertIn("DeepSeek", bot.privacy_message("!privacy th"))
 
 
 class PrivacyTests(unittest.TestCase):

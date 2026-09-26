@@ -46,6 +46,7 @@ import question_log  # noqa: E402
 import keys  # noqa: E402
 import soniox_api  # noqa: E402
 import spot_chart  # noqa: E402
+import table_image  # noqa: E402
 
 # ดูห้อง ส่งข้อความ ฝังลิงก์ แนบไฟล์ อ่านประวัติ พอสำหรับส่งชาร์ตเป็นรูปในขั้นต่อไป
 PERMISSIONS = 1024 | 2048 | 16384 | 32768 | 65536
@@ -63,6 +64,7 @@ Commands
   !chart <คำถาม>       ถามในห้องโดยไม่ต้อง mention
   DM                  ส่งคำถามมาตรง ๆ ได้เลย ไม่ต้องมีคำนำหน้า
   ข้อความเสียง          กดไมค์ค้างในแอปมือถือแล้วพูดคำถาม
+  รูปหน้าจอ            แนบรูปโต๊ะ บอทอ่านตำแหน่ง สแตก ไพ่ให้
   !new                ลืม spot เดิม (จำแยกตามคนและห้อง)
   !help [th|en]       วิธีใช้นี้  (!help en ภาษาอังกฤษ)
   !contact            อีเมลติดต่อผู้พัฒนา
@@ -76,20 +78,21 @@ Name a seat and a stack, get a solved push/fold chart
 Commands
   @ตามควาย <question>  ask in a channel
   !chart <question>    ask in a channel without a mention
-  DM                   just send the question, no prefix
-  voice message        hold the mic in the mobile app and ask
-  !new                 forget the remembered spot
+  DM                   ask with no prefix
+  voice message        hold the mic in the app and ask
+  screenshot           attach a picture of the table
+  !new                 forget the spot
   !help [th|en]        this help (default Thai)
   !contact             the developer's email
-  !privacy             what the bot keeps about you
-  ping                 check the bot is online
+  !privacy             what the bot keeps
+  ping                 is the bot online
 
-Put the examples below after @ตามควาย or !chart""",
+Examples go after @ตามควาย or !chart""",
 }
 PRIVACY = {
     "th": f"""ตามควาย · ความเป็นส่วนตัว
-เก็บอะไร: ข้อความคำถามชาร์ต (ถ้าเป็นเสียงคือข้อความที่ถอดได้) เวลา ชื่อ server กับห้อง และ spot ที่อ่านได้
-ไม่เก็บ: ชื่อหรือไอดีของคนถาม ข้อความอื่นในห้อง และไฟล์เสียง
+เก็บอะไร: ข้อความคำถามชาร์ต (ถ้าเป็นเสียงคือข้อความที่ถอดได้ ถ้าเป็นรูปคือคำถามที่อ่านได้) เวลา ชื่อ server กับห้อง และ spot ที่อ่านได้
+ไม่เก็บ: ชื่อหรือไอดีของคนถาม ข้อความอื่นในห้อง ไฟล์เสียง และรูป
 spot ล่าสุดจำไว้ในหน่วยความจำเท่านั้น หายเมื่อพิมพ์ !new หรือบอทรีสตาร์ท
 
 เพื่ออะไร: ตอบคำถาม และหาคำถามที่บอทยังอ่านไม่ออกเพื่อปรับปรุง (ประโยชน์โดยชอบด้วยกฎหมาย ตาม PDPA มาตรา 24(5))
@@ -98,14 +101,15 @@ spot ล่าสุดจำไว้ในหน่วยความจำเ
 ส่งต่อให้ใคร:
   Discord  ข้อความทั้งหมดผ่าน Discord อยู่แล้ว
   Soniox   ไฟล์เสียงส่งไปถอดเป็นข้อความ แล้วบอทสั่งลบไฟล์กับผลถอดที่ Soniox ทันที
+  DeepSeek รูปหน้าจอส่งไปอ่านโต๊ะ เซิร์ฟเวอร์อยู่ในจีน บอทไม่เก็บรูป
   Railway  เครื่องที่บอทรัน อยู่นอกประเทศไทย
 ไม่ขาย ไม่ใช้โฆษณา
 
 สิทธิ์ของคุณ: ขอดู ขอลบ หรือคัดค้านการเก็บ ส่งอีเมลมาที่ {spot_chart.CONTACT}
 ถ้าไม่ต้องการให้เก็บ อย่าถามบอท ข้อความทั่วไปในห้องบอทไม่ได้บันทึก""",
     "en": f"""ตามควาย · Privacy
-What we keep: the text of chart questions (for voice, the transcript), the time, the server and channel name, and the spot the bot read
-What we don't keep: your name or user ID, other messages in the channel, or audio files
+What we keep: the text of chart questions (for voice, the transcript; for a screenshot, the question read from it), the time, the server and channel name, and the spot the bot read
+What we don't keep: your name or user ID, other messages in the channel, audio files or images
 Your last spot is held in memory only, and is gone after !new or a restart
 
 Why: to answer you, and to find questions the bot could not read so it can improve (legitimate interest, Thai PDPA s.24(5))
@@ -114,6 +118,7 @@ How long: {question_log.KEEP_DAYS} days, then deleted automatically
 Who else sees it:
   Discord  every message already passes through Discord
   Soniox   voice messages are sent for transcription; the bot deletes the file and transcript there right after
+  DeepSeek screenshots are sent to read the table, on servers in China; the bot keeps no images
   Railway  hosts the bot, outside Thailand
 Never sold, never used for ads
 
@@ -123,6 +128,10 @@ If you don't want anything kept, don't ask the bot; ordinary chat is not recorde
 WARM_UP_QUESTIONS = ("BTN shove 10bb", "aof CO", "aof 3 handed BTN", "aof heads-up SB")
 FAILED = "ขอโทษ ทำชาร์ตไม่สำเร็จ ลองถามใหม่อีกทีนะ"
 NOT_HEARD = "ถอดเสียงไม่ออก ลองพูดใหม่ชัด ๆ หรือพิมพ์มาแทนนะ"
+NOT_READ = "อ่านรูปนี้เป็นโต๊ะไม่ออก ลองแคปจอให้เห็นทั้งโต๊ะ หรือพิมพ์มาแทนนะ"
+NO_VISION = "ตอนนี้ยังอ่านรูปไม่ได้ พิมพ์คำถามมาแทนนะ"
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+MAX_IMAGE_BYTES = 10_000_000
 AUDIO_EXTENSIONS = (".ogg", ".oga", ".opus", ".mp3", ".m4a", ".wav", ".webm", ".aac", ".flac")
 FORGOT = "ลืม spot เดิมแล้ว ถามใหม่ได้เลย"
 NO_TARGET = "ยังไม่รู้จะส่งไปห้องไหน พิมพ์อะไรก็ได้ใน Discord ก่อน หรือ /channels แล้ว /to <id>"
@@ -167,6 +176,19 @@ def answers_audio(voice: bool, direct: bool, text: str, bot_id: int) -> bool:
     if voice or direct:
         return True
     return bool(re.search(rf"<@!?{bot_id}>", text)) or text.lower().startswith(CHART_PREFIX)
+
+
+def image_attachment(attachments) -> object | None:
+    """รูปแรกในข้อความ ดูจากชนิดไฟล์ก่อน ถ้าไม่บอกชนิดดูจากนามสกุล รูปใหญ่เกินไม่อ่าน"""
+    return next((item for item in attachments
+                 if ((item.content_type or "").startswith("image/")
+                     or item.filename.lower().endswith(IMAGE_EXTENSIONS))
+                 and item.size <= MAX_IMAGE_BYTES), None)
+
+
+def read_line(question: str) -> str:
+    """บอกผู้ถามว่าอ่านรูปได้ว่าอะไร อ่านผิดจะได้พิมพ์แก้ต่อได้"""
+    return f"อ่านจากรูปได้ว่า: {question}"
 
 
 def heard_line(text: str) -> str:
@@ -261,6 +283,10 @@ class Bridge(discord.Client):
             if audio and answers_audio(message.flags.voice, direct, text, self.user.id):
                 await self._voice(message, audio, key)
                 return
+            image = image_attachment(message.attachments)
+            if image and answers_audio(False, direct, text, self.user.id):
+                await self._image(message, image, key, chart_question(text, self.user.id, True))
+                return
             question = chart_question(text, self.user.id, direct)
             if question:
                 await self._chart(message, question, key)
@@ -286,6 +312,30 @@ class Bridge(discord.Client):
         await self._chart(message, result.text, key, heard=heard_line(result.text),
                           audio=audio.filename)
 
+    async def _image(self, message: discord.Message, image, key: tuple[int, int],
+                     extra: str | None) -> None:
+        """อ่านรูปโต๊ะด้วย DeepSeek เป็นคำถาม แล้วถามชาร์ตเหมือนพิมพ์มา ข้อความที่แนบมาต่อท้ายคำถาม"""
+        api_key = keys.find(*table_image.KEY_NAMES)
+        if not api_key:
+            await message.reply(NO_VISION)
+            return
+        try:
+            async with message.channel.typing():
+                data = await image.read()
+                table = await asyncio.to_thread(table_image.read, data,
+                                                image.content_type or "image/png", api_key)
+        except Exception:  # noqa: BLE001 อ่านรูปพังก็ต้องตอบ ไม่ใช่เงียบหาย
+            traceback.print_exc()
+            self._log(message, "", "image", "not_read", image=image.filename)
+            await message.reply(NOT_READ)
+            return
+        question = " ".join(filter(None, (table_image.question(table), extra)))
+        print(f"  อ่านรูปได้: {question!r}", flush=True)
+        # รูปคือ spot ใหม่ทั้งโต๊ะ ไม่ยืมตำแหน่งหรือคนที่ all-in จากคำถามก่อน
+        self.memory.pop(key, None)
+        await self._chart(message, question, key, heard=read_line(question),
+                          image=image.filename)
+
     def _log(self, message: discord.Message, question: str, source: str, kind: str,
              request=None, **fields) -> None:
         """จดคำถามลงบันทึก พังก็แค่เตือน ไม่ให้การจดทำให้ตอบไม่ได้"""
@@ -297,13 +347,14 @@ class Bridge(discord.Client):
             print(f"จดบันทึกคำถามไม่ได้: {error}", flush=True)
 
     async def _chart(self, message: discord.Message, question: str, key: tuple[int, int],
-                     heard: str | None = None, audio: str | None = None) -> None:
+                     heard: str | None = None, audio: str | None = None,
+                     image: str | None = None) -> None:
         """แก้ชาร์ตในเธรดแยก gateway จะได้ไม่ค้างระหว่าง solver คิด แล้วตอบเป็นรูป
 
         heard คือบรรทัดบอกว่าถอดเสียงได้ว่าอะไร ให้ผู้ถามเห็นถ้าบอทได้ยินผิด
         """
-        source = "voice" if audio else "text"
-        extra = {"audio": audio} if audio else {}
+        source = "voice" if audio else "image" if image else "text"
+        extra = {"audio": audio} if audio else {"image": image} if image else {}
         try:
             async with message.channel.typing():
                 made = await asyncio.to_thread(spot_chart.reply, question,
