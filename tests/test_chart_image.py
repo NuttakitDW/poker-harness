@@ -42,6 +42,16 @@ class ChartImageTests(unittest.TestCase):
         self.assertGreater(longer.height, plain.height)
         self.assertEqual(longer.width, plain.width)
 
+    def test_the_legend_paints_a_swatch_for_every_action_in_the_chart(self):
+        picture = self.draw(lang="EN")
+        entries = chart_grid.legend_entries(self.chart, "EN")
+        self.assertEqual([code for code, _ in entries], ["R", "C", "F"])
+        for index, (code, _) in enumerate(entries):
+            with self.subTest(code=code):
+                x, y = chart_image.legend_swatch(entries, index)
+                expected = chart_image.rgb(chart_grid.tone(code, None)[1])
+                self.assertEqual(picture.getpixel((x + 2, y + 2)), expected)
+
     def test_the_xterm_palette_is_converted_to_rgb(self):
         self.assertEqual(chart_image.rgb(16), (0, 0, 0))
         self.assertEqual(chart_image.rgb(231), (255, 255, 255))

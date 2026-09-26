@@ -101,14 +101,30 @@ def rows(book: dict, chart: dict, color: bool = True,
     return lines
 
 
-def legend(color: bool = True, lang: str = "TH") -> str:
-    """คำอธิบายสี"""
+def legend_entries(chart: dict | None = None, lang: str = "TH") -> tuple[tuple[str, str], ...]:
+    """(รหัส, ชื่อ) ของสีที่มีในชาร์ตจริง ตามลำดับ raise call fold แล้วช่องนอกเรนจ์ปิดท้าย
+
+    ชื่อตาม chart["names"] เช่นชาร์ต push/fold เรียก raise ว่า shove ไม่มีชาร์ตก็แสดงครบทุกสี
+    """
+    if chart is None:
+        return (*LEGEND, ("-", LEGEND_WORDS[lang]["none"]))
+    used = set(chart["actions"]) | {tone("F", shares)[0] for shares in chart.get("mixed", {}).values()}
+    names = chart.get("names", {})
+    actions = {code: action for action, code in ACTION_CODES.items()}
+    entries = tuple((code, names.get(actions[code], name)) for code, name in LEGEND if code in used)
+    return entries + ((("-", LEGEND_WORDS[lang]["none"]),) if "-" in used else ())
+
+
+def legend(color: bool = True, lang: str = "TH", chart: dict | None = None) -> str:
+    """คำอธิบายสี เฉพาะ action ที่มีในชาร์ต"""
     words = LEGEND_WORDS[lang]
+    entries = legend_entries(chart, lang)
     if not color:
-        return f"   R raise  C call/check  . fold  - {words['none']}  {words['lower']}"
+        keys = "  ".join(f"{PLAIN[code]} {name}" for code, name in entries)
+        return f"   {keys}  {words['lower']}"
     # แต่ละสีตามด้วยเฉดที่อ่อนลง เช่น ฟ้าอ่อนคือ fold เป็นส่วนใหญ่แต่บางครั้งก็เล่น
-    parts = [f"{STYLES[code]} {name} {_ramp(code)}{RESET}" for code, name in LEGEND]
-    parts.append(f"{STYLES['-']}{words['none']}{RESET}")
+    parts = [f"{STYLES[code]} {name} {_ramp(code)}{RESET}" if code in SHADES
+             else f"{STYLES[code]}{name}{RESET}" for code, name in entries]
     parts.append(words["mixed"])
     return "   " + "  ".join(parts)
 
@@ -137,7 +153,7 @@ def render(book: dict, chart: dict, color: bool = True,
         f"{DIM}{source}{RESET}" if color else source,
         f"{DIM}{header}{RESET}" if color else header,
         *rows(book, chart, color, asked),
-        legend(color, lang),
+        legend(color, lang, chart),
     ]
     if asked:
         # คำตอบของมือที่ถามต้องเด่น เว้นบรรทัด แล้วแต่ละ action เป็นป้ายสีเดียวกับตาราง

@@ -25,6 +25,7 @@ BACKGROUND = (24, 26, 31)
 TEXT, DIM, OUT_OF_RANGE = (236, 238, 242), (140, 146, 158), (48, 52, 60)
 DARK_TEXT = (0, 0, 0)
 LEVELS = (0, 95, 135, 175, 215, 255)  # ขั้นสีของลูกบาศก์ xterm-256
+SWATCH, SWATCH_GAP, ENTRY_GAP = 14, 2, 22  # ช่องสีในคำอธิบายสี
 
 
 def rgb(index: int) -> tuple[int, int, int]:
@@ -51,6 +52,44 @@ def cell_origin(row: int, col: int) -> tuple[int, int]:
     return (MARGIN + LABEL_W + col * (CELL_W + GAP), _grid_top() + row * (CELL_H + GAP))
 
 
+def _grid_bottom() -> int:
+    return cell_origin(SIZE - 1, 0)[1] + CELL_H
+
+
+def _swatches(code: str) -> list[tuple[int, int, int]]:
+    """สีเต็มของ action ตามด้วยเฉดที่อ่อนลงของช่องผสม ช่องนอกเรนจ์มีสีเดียว"""
+    if code not in chart_grid.SHADES:
+        return [OUT_OF_RANGE]
+    return [rgb(background) for _, background in chart_grid.SHADES[code]]
+
+
+def _entry_widths(entries: tuple, font: ImageFont.FreeTypeFont) -> list[int]:
+    return [len(_swatches(code)) * (SWATCH + SWATCH_GAP) + 6 + int(font.getlength(name))
+            for code, name in entries]
+
+
+def legend_swatch(entries: tuple, index: int) -> tuple[int, int]:
+    """มุมซ้ายบนของช่องสีเต็มของ entry ที่ index ในแถวคำอธิบายสีใต้ตาราง"""
+    widths = _entry_widths(entries, _font(TEXT_SIZE))
+    x = MARGIN + sum(width + ENTRY_GAP for width in widths[:index])
+    return x, _grid_bottom() + LINE_H // 2 + (LINE_H - SWATCH) // 2
+
+
+def _draw_legend(draw: ImageDraw.ImageDraw, chart: dict, lang: str, y: int,
+                 text_font: ImageFont.FreeTypeFont, note_font: ImageFont.FreeTypeFont) -> int:
+    """แถวช่องสีพร้อมชื่อ action แล้วบรรทัดบอกว่าสีอ่อนคือเล่นผสม คืน y ถัดไป"""
+    entries = chart_grid.legend_entries(chart, lang)
+    for index, (code, name) in enumerate(entries):
+        x, top = legend_swatch(entries, index)
+        for colour in _swatches(code):
+            draw.rectangle((x, top, x + SWATCH - 1, top + SWATCH - 1), fill=colour)
+            x += SWATCH + SWATCH_GAP
+        draw.text((x + 6, y + LINE_H // 2), name, font=text_font, fill=TEXT, anchor="lm")
+    draw.text((MARGIN, y + LINE_H), chart_grid.LEGEND_WORDS[lang]["mixed"], font=note_font,
+              fill=DIM)
+    return y + LINE_H + NOTE_H + LINE_H // 2
+
+
 def _answer_lines(book: dict, chart: dict, asked: tuple[str, ...]) -> list[tuple[str, list]]:
     names = chart.get("names", {})
     return [(hand, [(chart_grid.ACTION_CODES.get(name, "F"),
@@ -74,15 +113,15 @@ def _wrap(text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
 
 def render(book: dict, chart: dict, asked: tuple[str, ...] = (), lang: str = "TH",
            notes: tuple[str, ...] = ()) -> bytes:
-    """รูป PNG ของชาร์ต มือที่ถามเป็นป้ายสี % ใต้ตาราง notes ต่อท้ายเป็นตัวจาง"""
+    """รูป PNG ของชาร์ต ใต้ตารางมีคำอธิบายสี มือที่ถามเป็นป้ายสี % notes ต่อท้ายเป็นตัวจาง"""
     title_font, cell_font, text_font = _font(TITLE_SIZE), _font(CELL_SIZE), _font(TEXT_SIZE)
     note_font = _font(NOTE_SIZE)
     answers = _answer_lines(book, chart, asked)
     grid_w = LABEL_W + SIZE * (CELL_W + GAP)
     note_lines = [line for note in notes for line in _wrap(note, note_font, grid_w)]
-    grid_bottom = cell_origin(SIZE - 1, 0)[1] + CELL_H
-    height = (grid_bottom + LINE_H // 2 + len(answers) * LINE_H + len(note_lines) * NOTE_H
-              + MARGIN)
+    grid_bottom = _grid_bottom()
+    height = (grid_bottom + LINE_H // 2 + LINE_H + NOTE_H + LINE_H // 2
+              + len(answers) * LINE_H + len(note_lines) * NOTE_H + MARGIN)
     picture = Image.new("RGB", (MARGIN * 2 + grid_w, height), BACKGROUND)
     draw = ImageDraw.Draw(picture)
 
@@ -108,7 +147,7 @@ def render(book: dict, chart: dict, asked: tuple[str, ...] = (), lang: str = "TH
             draw.text((MARGIN, y + CELL_H // 2), chart_grid.RANKS[row], font=text_font, fill=DIM,
                       anchor="lm")
 
-    y = grid_bottom + LINE_H // 2
+    y = _draw_legend(draw, chart, lang, grid_bottom + LINE_H // 2, text_font, note_font)
     for hand, badges in answers:
         x = MARGIN
         draw.text((x, y), hand, font=title_font, fill=TEXT)

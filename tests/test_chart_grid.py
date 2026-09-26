@@ -72,6 +72,25 @@ class GridTests(unittest.TestCase):
             with self.subTest(action=action):
                 self.assertIn(chart_grid.shade({action: 0.6, "x": 0.4})[1], text)
 
+    def test_legend_entries_follow_the_chart_names_and_actions_in_use(self):
+        made_chart = chart(raises=("AA",))
+        made_chart["names"] = {"raise": "shove"}
+        self.assertEqual(chart_grid.legend_entries(made_chart, "EN"),
+                         (("R", "shove"), ("F", "fold")))
+
+    def test_legend_entries_list_out_of_range_hands_last(self):
+        made_chart = chart(calls=("AA",))
+        made_chart["actions"] = made_chart["actions"][:-1] + "-"
+        self.assertEqual(chart_grid.legend_entries(made_chart, "EN"),
+                         (("C", "call/check"), ("F", "fold"), ("-", "not in range")))
+
+    def test_the_rendered_legend_uses_the_chart_names(self):
+        made_chart = chart(raises=("AA",))
+        made_chart["names"] = {"raise": "shove"}
+        text = chart_grid.render(book([made_chart]), made_chart, lang="EN")
+        self.assertIn(f"{chart_grid.STYLES['R']} shove ", text)
+        self.assertNotIn(f"{chart_grid.STYLES['C']} call", text)
+
     def test_an_asked_hand_gets_a_coloured_badge_per_action(self):
         made_chart = chart(raises=("AA",))
         made_chart["mixed"] = {"AA": {"raise": 0.7, "fold": 0.3}}
