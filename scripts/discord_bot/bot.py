@@ -6,11 +6,11 @@
 ในห้อง Discord พิมพ์ ping บอทตอบ pong
 
 ถามชาร์ต push/fold จาก Discord ได้ ตอบเป็นรูปชาร์ตแบบเดียวกับ make chart
-    @ตามควาย BTN shove 10bb     หรือ   !chart BTN shove 10bb
+    @TamKwai BTN shove 10bb     หรือ   !chart BTN shove 10bb
     ใน DM พิมพ์คำถามตรง ๆ ได้เลย
     ข้อความเสียง (กดไมค์ค้างในแอปมือถือ) ถอดเป็นข้อความด้วย Soniox แล้วตอบเป็นชาร์ต
     ทุกคำถามชาร์ตถูกบันทึกลง tmp/logs/discord-YYYYMMDD.jsonl ดูที่พลาดด้วย make bot-review
-    ไฟล์เสียงที่แนบในห้องต้องมี @ตามควาย หรือ !chart กำกับ ใน DM ไม่ต้อง
+    ไฟล์เสียงที่แนบในห้องต้องมี @TamKwai หรือ !chart กำกับ ใน DM ไม่ต้อง
     !new       ลืมตำแหน่งกับสแตกที่จำไว้ (จำแยกตามคนและห้อง)
     !help      วิธีใช้   !help en ภาษาอังกฤษ
     !privacy   เก็บข้อมูลอะไรบ้าง   !privacy en ภาษาอังกฤษ
@@ -60,7 +60,7 @@ DISCORD_HELP = {
 ถามตำแหน่งกับสแตก ได้รูปชาร์ต push/fold ที่ solver แก้สด
 
 Commands
-  @ตามควาย <คำถาม>    ถามในห้อง
+  @TamKwai <คำถาม>    ถามในห้อง
   !chart <คำถาม>       ถามในห้องโดยไม่ต้อง mention
   DM                  ส่งคำถามมาตรง ๆ ได้เลย ไม่ต้องมีคำนำหน้า
   ข้อความเสียง          กดไมค์ค้างในแอปมือถือแล้วพูดคำถาม
@@ -71,12 +71,12 @@ Commands
   !privacy            บอทเก็บข้อมูลอะไรบ้าง
   ping                เช็คว่าบอทออนไลน์อยู่
 
-ตัวอย่างข้างล่าง ใส่หลัง @ตามควาย หรือ !chart""",
+ตัวอย่างข้างล่าง ใส่หลัง @TamKwai หรือ !chart""",
     "en": """ตามควาย · How to use in Discord
 Name a seat and a stack, get a solved push/fold chart
 
 Commands
-  @ตามควาย <question>  ask in a channel
+  @TamKwai <question>  ask in a channel
   !chart <question>    ask in a channel without a mention
   DM                   ask with no prefix
   voice message        hold the mic in the app and ask
@@ -87,7 +87,7 @@ Commands
   !privacy             what the bot keeps
   ping                 is the bot online
 
-Examples go after @ตามควาย or !chart""",
+Examples go after @TamKwai or !chart""",
 }
 PRIVACY = {
     "th": f"""ตามควาย · ความเป็นส่วนตัว

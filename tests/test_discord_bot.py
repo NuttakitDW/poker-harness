@@ -103,7 +103,7 @@ class HelpTests(unittest.TestCase):
     def test_help_lists_the_discord_commands_not_the_terminal_ones(self):
         for lang in ("th", "en"):
             text = bot.help_message(f"!help {lang}")
-            for command in ("@ตามควาย", "!chart", "!new", "!help", "ping"):
+            for command in ("@TamKwai", "!chart", "!new", "!help", "ping"):
                 with self.subTest(lang=lang, command=command):
                     self.assertIn(command, text)
             for terminal_only in ("/voice", "/text", "make chart", "--input-device"):
