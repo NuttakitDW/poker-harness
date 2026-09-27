@@ -4,9 +4,11 @@
 เก็บคำถาม (ถ้าเป็นเสียงคือข้อความที่ถอดได้) ค่าที่ตัวอ่านได้ และชนิดคำตอบ
 ไม่เก็บว่าใครถาม และลบไฟล์ที่เก่ากว่า KEEP_DAYS วันทิ้งทุกครั้งที่จด ตามที่บอกไว้ใน !privacy
 
+คำถามจากเว็บ (scripts/web/watch.py เก็บให้) อยู่ไฟล์ web-YYYYMMDD.jsonl ในโฟลเดอร์เดียวกัน
+
 ดูเฉพาะคำถามที่ไม่ได้ชาร์ต:
-    .venv/bin/python scripts/discord_bot/question_log.py
-    make bot-review
+    .venv/bin/python scripts/discord_bot/question_log.py         make bot-review
+    .venv/bin/python scripts/discord_bot/question_log.py web     make web-review
 """
 
 from __future__ import annotations
@@ -19,7 +21,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 LOG_DIR = ROOT / "tmp" / "logs"
-PATTERN = "discord-*.jsonl"
+PREFIX = "discord"
+PREFIXES = ("discord", "web")
 ANSWERED = "chart"
 KEEP_DAYS = 90
 
@@ -31,34 +34,35 @@ def entry(question: str, source: str, kind: str, request=None, **fields) -> dict
 
 
 def record(line: dict, when: datetime.datetime | None = None,
-           folder: pathlib.Path = LOG_DIR) -> pathlib.Path:
+           folder: pathlib.Path = LOG_DIR, prefix: str = PREFIX) -> pathlib.Path:
     """ต่อท้ายไฟล์ของวันนั้น คืนพาธไฟล์"""
     when = when or datetime.datetime.now()
     folder.mkdir(parents=True, exist_ok=True)
-    prune(folder, when.date())
-    path = folder / f"discord-{when:%Y%m%d}.jsonl"
+    prune(folder, when.date(), prefix)
+    path = folder / f"{prefix}-{when:%Y%m%d}.jsonl"
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps({"at": when.isoformat(timespec="seconds"), **line},
                                 ensure_ascii=False) + "\n")
     return path
 
 
-def prune(folder: pathlib.Path = LOG_DIR, today: datetime.date | None = None) -> None:
+def prune(folder: pathlib.Path = LOG_DIR, today: datetime.date | None = None,
+          prefix: str = PREFIX) -> None:
     """ลบบันทึกที่เก่ากว่า KEEP_DAYS วัน ไฟล์ที่ชื่ออ่านวันที่ไม่ออกปล่อยไว้"""
     cutoff = (today or datetime.date.today()) - datetime.timedelta(days=KEEP_DAYS)
-    for path in folder.glob(PATTERN):
+    for path in folder.glob(f"{prefix}-*.jsonl"):
         try:
-            day = datetime.datetime.strptime(path.stem.removeprefix("discord-"), "%Y%m%d").date()
+            day = datetime.datetime.strptime(path.stem.removeprefix(f"{prefix}-"), "%Y%m%d").date()
         except ValueError:
             continue
         if day < cutoff:
             path.unlink(missing_ok=True)
 
 
-def misses(folder: pathlib.Path = LOG_DIR) -> list[dict]:
+def misses(folder: pathlib.Path = LOG_DIR, prefix: str = PREFIX) -> list[dict]:
     """ทุกคำถามที่ไม่ได้ชาร์ต เรียงตามเวลา ข้ามบรรทัดที่อ่านไม่ได้"""
     found = []
-    for path in sorted(folder.glob(PATTERN)):
+    for path in sorted(folder.glob(f"{prefix}-*.jsonl")):
         for line in path.read_text(encoding="utf-8").splitlines():
             try:
                 row = json.loads(line)
@@ -87,7 +91,10 @@ def review(rows: list[dict]) -> str:
 
 
 def main() -> int:
-    print(review(misses()))
+    prefix = sys.argv[1] if len(sys.argv) > 1 else PREFIX
+    if prefix not in PREFIXES:
+        raise SystemExit(f"ใช้ได้แค่ {', '.join(PREFIXES)}")
+    print(review(misses(prefix=prefix)))
     return 0
 
 
