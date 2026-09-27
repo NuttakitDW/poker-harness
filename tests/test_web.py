@@ -392,5 +392,30 @@ class WsgiTests(unittest.TestCase):
                                    {"HTTP_X_FORWARDED_FOR": "2.2.2.2"})[0], 200)
 
 
+
+class DiscordInviteTests(unittest.TestCase):
+    """The website invites the same bot, with the same permissions the bot itself asks for."""
+
+    APP_ID = "1552877762950332417"  # TamKwai on the Discord developer portal
+
+    def test_the_home_page_has_a_discord_button_with_the_logo(self):
+        page = (ROOT / "public" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('class="discord-btn"', page)
+        self.assertIn('class="discord-logo"', page)
+
+    def test_the_trust_link_asks_the_question_people_ask(self):
+        page = (ROOT / "public" / "index.html").read_text(encoding="utf-8")
+        self.assertIn(">ชาร์ตนี้แม่นแค่ไหน?</a>", page)
+        self.assertNotIn("เทียบกับชาร์ต Jonathan Little", page)
+
+    def test_every_page_links_the_bot_invite(self):
+        sys.path.insert(0, str(ROOT / "scripts" / "discord_bot"))
+        import bot
+        invite = bot.invite_url(int(self.APP_ID)).replace("&", "&amp;")
+        for page in (ROOT / "public" / "index.html", ROOT / "scripts" / "web" / "method_template.html"):
+            with self.subTest(page=page.name):
+                self.assertIn(invite, page.read_text(encoding="utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()

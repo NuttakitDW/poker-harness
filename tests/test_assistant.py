@@ -4,6 +4,7 @@ import asyncio
 import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -53,6 +54,15 @@ class ParseTests(unittest.TestCase):
             with self.subTest(wrong=wrong):
                 made = assistant.parse(f'{{"say": "ดูเรนจ์{wrong} HJ ให้นะครับ", "query": null}}')
                 self.assertEqual(made.say, "ดูเรนจ์โชฟ HJ ให้นะครับ")
+
+    def test_solver_stays_in_english(self):
+        for wrong in ("โซลเวอร์", "โซลเว่อร์", "ซอลเวอร์"):
+            with self.subTest(wrong=wrong):
+                made = assistant.parse(f'{{"say": "แก้ด้วย{wrong}ของเราเอง", "query": null}}')
+                self.assertEqual(made.say, "แก้ด้วย solver ของเราเอง")
+
+    def test_the_prompt_keeps_technical_terms_in_english(self):
+        self.assertIn("never transliterate", assistant.SYSTEM)
 
     def test_the_prompt_gives_the_thai_spelling_of_shove(self):
         self.assertIn("โชฟ", assistant.SYSTEM)
@@ -133,6 +143,21 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(made.say, assistant.ANSWERED_DIRECTLY["TH"])
         self.assertEqual(json.loads(made.history[-1].assistant)["query"], made.query)
 
+    def test_a_remembered_spot_does_not_turn_a_question_into_a_chart(self):
+        # the fallback is for a message that is itself a spot; the remembered spot alone must not trigger it
+        remembered = preflop.Request(game="tournament", hero="BTN", stack=10, scenario="RFI", pushfold=True)
+        made = assistant.answer("อยากรู้เรื่องความน่าเชื่อถือ", spot_chart.reply, memory=remembered, key="k",
+                                crafter=model_says("เทียบกับชาร์ตของ Jonathan Little ตรงกัน 162 จาก 169 มือ", None))
+        self.assertIsNone(made.made)
+        self.assertEqual(made.say, "เทียบกับชาร์ตของ Jonathan Little ตรงกัน 162 จาก 169 มือ")
+
+    def test_a_spot_in_the_message_still_uses_the_remembered_details(self):
+        remembered = preflop.Request(game="tournament", hero="BTN", stack=10, scenario="RFI", pushfold=True,
+                                     payouts=(50.0, 30.0, 20.0))
+        made = assistant.answer("CO shove 8bb", spot_chart.reply, memory=remembered, key="k",
+                                crafter=model_says("ถือไพ่อะไรครับ", None))
+        self.assertEqual(made.made.kind, "chart")
+
     def test_a_question_for_a_vital_missing_stack_is_kept(self):
         made = assistant.answer("SB เจอ UTG all in", spot_chart.reply, key="k",
                                 crafter=model_says("เหลือกี่ bb ครับ", None))
@@ -206,3 +231,55 @@ class BotTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+SUMMARY = {
+    "reference": "Jonathan Little, PokerCoaching.com push/fold charts (10% ante table)",
+    "spot": "UTG first in, 10bb, 9-handed, ante 10% of the big blind per player, chip EV",
+    "matched": 162, "total": 169, "ours_percent": 13.7, "theirs_percent": 14.3,
+    "exploitability_bb": 0.0007, "differ": ["A8s", "ATo", "22"], "close_calls": 2, "close_bb": 0.05,
+    "widest": {"hand": "ATo", "gap_bb": -0.139},
+    "stacks": {"from": 5, "to": 15, "matched_min": 160, "matched_max": 166},
+}
+
+
+class MethodFactsTests(unittest.TestCase):
+    """Asked whether the charts can be trusted, the model answers from the Method page's real numbers."""
+
+    def write(self, folder, data):
+        path = Path(folder) / "method-summary.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return path
+
+    def test_the_facts_carry_the_comparison_numbers(self):
+        with tempfile.TemporaryDirectory() as folder:
+            facts = assistant.method_facts(self.write(folder, SUMMARY))
+        for piece in ("Jonathan Little", "162 of 169", "95.9%", "13.7%", "14.3%", "0.0007",
+                      "ATo", "160-166", "วิธีคำนวณ"):
+            with self.subTest(piece=piece):
+                self.assertIn(piece, facts)
+
+    def test_the_facts_say_who_jonathan_little_is(self):
+        with tempfile.TemporaryDirectory() as folder:
+            facts = assistant.method_facts(self.write(folder, SUMMARY))
+        for piece in ("founder and owner of PokerCoaching", "many players study", "Do not give numbers"):
+            with self.subTest(piece=piece):
+                self.assertIn(piece, facts)
+
+    def test_no_summary_means_no_facts(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(assistant.method_facts(Path(folder) / "missing.json"), "")
+            self.assertEqual(assistant.method_facts(self.write(folder, {"matched": 1})), "")
+
+    def test_the_facts_reach_the_model(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with mock.patch.object(assistant, "METHOD_SUMMARY", self.write(folder, SUMMARY)):
+                system = assistant.build_messages("ชาร์ตนี้น่าเชื่อถือแค่ไหน", (), None)[0]["content"]
+        self.assertIn("162 of 169", system)
+
+    def test_the_prompt_says_to_answer_trust_questions_from_the_facts(self):
+        self.assertIn("Method facts", assistant.SYSTEM)
+
+    def test_the_shipped_summary_matches_the_method_page(self):
+        facts = assistant.method_facts(assistant.METHOD_SUMMARY)
+        self.assertIn("Jonathan Little", facts)

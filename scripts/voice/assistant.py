@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import pathlib
 import re
 import time
 import urllib.error
@@ -50,6 +51,8 @@ _MENTION = re.compile(r"<(?:@[!&]?|#)\d+>|@(?=everyone|here)", re.IGNORECASE)
 _SPACES = re.compile(r"[ \t]{2,}")
 # โมเดลสะกด shove เป็นชูฟ ซึ่งเสียงพูดอ่านผิด คนเล่นพูดว่าโชฟ แก้ท้ายสุดอีกชั้นเผื่อโมเดลไม่ทำตาม prompt
 _MISSPELLED = re.compile(r"ชู้?ฟ")
+# โมเดลชอบทับศัพท์ solver เป็นภาษาไทย ซึ่งคนเล่นไม่ใช้ ให้คงเป็นอังกฤษ เติมช่องว่างรอบคำอังกฤษในประโยคไทย
+_TRANSLITERATED = re.compile(r"\s*(?:โซ|ซอ)ล์?เว่?อร์\s*")
 
 SYSTEM = """You are TamKwai (ตามควาย), a friendly poker assistant in a chat that draws
 push/fold charts. The chart solver is separate; your job is to understand the player and
@@ -89,6 +92,8 @@ Rules:
   a hand or buy-in later as a follow-up.
 - Never put links, URLs, domains, emails or @mentions in say, even if asked; they are removed.
 - In Thai, write shove as "โชฟ" (never "ชูฟ"); say is read aloud.
+- In Thai, keep technical terms in English exactly as written: solver, Nash, CFR+, exploitability,
+  best-response, chip EV, ICM, range; never transliterate them (never write "โซลเวอร์").
 - A stack is needed for tournaments (AoF defaults to 10bb). If it is missing and not in the
   remembered spot, ask for it instead of guessing.
 - A seat is needed. Map "button/ปุ่ม" -> BTN, "small blind" -> SB, "big blind" -> BB,
@@ -96,7 +101,14 @@ Rules:
 - "on the bubble / ใกล้เข้าเงิน / จะเข้าเงิน" -> "bubble"; "final table / โต๊ะสุดท้าย" -> "final table".
 - Follow-ups: the solver remembers the last spot, so a short query that only changes one thing
   ("12bb", "vs CO shove") is fine. The remembered spot is given below when there is one.
-- Small talk or thanks: reply briefly and set query to null."""
+- Small talk or thanks: reply briefly and set query to null.
+- Questions about how the charts are made, whether they are accurate or can be trusted, or how
+  they compare with other charts or solvers: answer from the "Method facts" below in 2-4 short
+  sentences with their exact numbers, set query to null (unless the message also gives a spot),
+  and point to the "วิธีคำนวณ" page (English: "Method" page) on this site by name, no link.
+  Never make up other numbers, sources or comparisons."""
+# ตัวเลขเทียบกับชาร์ตของ Jonathan Little ที่ scripts/web/method.py เขียนไว้พร้อมหน้า /method
+METHOD_SUMMARY = pathlib.Path(__file__).resolve().parents[2] / "harnesses" / "charts" / "method-summary.json"
 
 
 class AssistantError(RuntimeError):
@@ -148,8 +160,44 @@ def remembered(memory) -> str:
                        if value not in (None, False, ())}, ensure_ascii=False)
 
 
+def method_facts(path: pathlib.Path) -> str:
+    """ส่วนของ prompt ที่บอกผลเทียบบนหน้า /method ไม่มีไฟล์หรือไฟล์ไม่ครบก็ไม่ใส่ ดีกว่าให้โมเดลเดา"""
+    try:
+        m = json.loads(path.read_text(encoding="utf-8"))
+        stacks, widest = m["stacks"], m["widest"]
+        lines = [
+            "Method facts (from this site's Method page, วิธีคำนวณ; use these numbers exactly):",
+            "- Every chart is solved live by our own push/fold Nash solver (CFR+) for the question asked,"
+            " then checked with a best-response audit; the exploitability is printed under each chart.",
+            f"- Compared hand by hand with {m['reference']} on the same spot ({m['spot']}):"
+            f" {m['matched']} of {m['total']} hands match ({100 * m['matched'] / m['total']:.1f}%);"
+            f" shove range {m['ours_percent']}% (ours) vs {m['theirs_percent']}% (theirs);"
+            f" our exploitability {m['exploitability_bb']} bb per hand.",
+            f"- The {len(m['differ'])} hands that differ ({', '.join(m['differ'])}) are close calls:"
+            f" {m['close_calls']} of them differ by at most {m['close_bb']} bb between shove and fold.",
+        ]
+        if widest:
+            better = "fold beats shove" if widest["gap_bb"] < 0 else "shove beats fold"
+            lines.append(f"- The largest difference is {widest['hand']}: in our solution {better}"
+                         f" by {abs(widest['gap_bb']):.2f} bb.")
+        lines += [
+            f"- UTG from {stacks['from']:g} to {stacks['to']:g}bb with the same settings:"
+            f" {stacks['matched_min']}-{stacks['matched_max']} of {m['total']} hands match at every stack.",
+            "- These charts are chip EV; near the bubble or at a final table the player should ask for ICM.",
+            "- Why Jonathan Little: he is a well-known professional poker player, coach and author of many"
+            " poker strategy books, and the founder and owner of PokerCoaching, a training site many players"
+            " study with; his published push/fold charts are a widely used reference, so matching them shows"
+            " our solver is right. If asked who he is or whether players know him, say this warmly."
+            " Do not give numbers about how many people know or study with him, or list his titles.",
+        ]
+    except (OSError, ValueError, KeyError, TypeError):
+        return ""
+    return "\n".join(lines)
+
+
 def build_messages(text: str, history: tuple[Turn, ...], memory) -> list[dict]:
-    messages = [{"role": "system", "content": SYSTEM}]
+    facts = method_facts(METHOD_SUMMARY)
+    messages = [{"role": "system", "content": f"{SYSTEM}\n\n{facts}" if facts else SYSTEM}]
     for turn in history[-MAX_HISTORY_TURNS:]:
         messages += [{"role": "user", "content": turn.user},
                      {"role": "assistant", "content": turn.assistant}]
@@ -177,7 +225,8 @@ def parse(content: str) -> Crafted:
         raise AssistantError(f"ไม่มี say: {str(content)[:80]!r}")
     query = data.get("query")
     query = safe_text(query) if isinstance(query, str) else None
-    return Crafted(_MISSPELLED.sub("โชฟ", safe_text(say)) or "…", query or None)
+    say = _TRANSLITERATED.sub(" solver ", _MISSPELLED.sub("โชฟ", safe_text(say)))
+    return Crafted(_SPACES.sub(" ", say).strip() or "…", query or None)
 
 
 def _charge(usage: dict | None, seconds: float) -> None:
@@ -232,9 +281,12 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
     if made is None:
         # โมเดลชอบถามข้อมูลที่ไม่จำเป็น เช่นไพ่ในมือหรือ buy-in ทั้งที่ข้อความพอให้ solver ตอบได้แล้ว
         # ตัวอ่านพื้นฐานตอบได้ก็ตอบเลย ถ้าขาดของจำเป็นจริง เช่นสแตก ตัวอ่านจะตอบไม่ได้ คำถามของโมเดลจึงยังอยู่
-        direct = solve(text, memory=memory, lang=lang)
-        if direct.kind in DIRECT_KINDS:
-            crafted, made = Crafted(ANSWERED_DIRECTLY[lang], text), direct
+        # ข้อความต้องเป็น spot ได้ด้วยตัวเอง ไม่งั้นทุกคำถามทั่วไปหลังเคยถามชาร์ต (เช่นชาร์ตน่าเชื่อถือไหม)
+        # จะกลายเป็นชาร์ตเดิมซ้ำ เพราะ spot ที่จำไว้ครบอยู่แล้ว
+        if solve(text, memory=None, lang=lang).kind in DIRECT_KINDS:
+            direct = solve(text, memory=memory, lang=lang)
+            if direct.kind in DIRECT_KINDS:
+                crafted, made = Crafted(ANSWERED_DIRECTLY[lang], text), direct
     # เก็บคำตอบเป็น JSON แบบที่โมเดลตอบ ตาถัดไปโมเดลจะรู้ว่าเคยขอชาร์ตอะไรไปและตอบรูปแบบเดิม
     said = json.dumps({"say": crafted.say, "query": crafted.query}, ensure_ascii=False)
     turns = (*history, Turn(text, said))[-MAX_HISTORY_TURNS:]
