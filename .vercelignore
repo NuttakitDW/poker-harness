@@ -1,0 +1,29 @@
+# Only what the website needs is uploaded. tmp/ caches are prebuilt (35 min to build) and gitignored,
+# so they are listed back in here. Everything else ignored here must never leave this machine.
+.env
+.env.*
+.git/
+.venv/
+.venv-voice/
+__pycache__/
+*.pyc
+.DS_Store
+sources/
+bots
+*.zip
+*.pdf
+tests/
+deploy/
+Dockerfile
+.railwayignore
+scripts/voice/*.swift
+scripts/voice/*.sh
+scripts/voice/*.plist
+harnesses/TH/
+harnesses/EN/sources/
+tmp/*
+!tmp/equity.sqlite
+!tmp/equity-tables.npz
+!tmp/pushfold-e2.npz
+!tmp/pushfold-e3.npz
+.ruff_cache/

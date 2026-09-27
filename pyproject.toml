@@ -1,0 +1,13 @@
+# Vercel reads this to run the website (api/index.py). The Discord bot uses deploy/requirements-bot.txt.
+[project]
+name = "tamkwai-web"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy==2.5.3",
+    "pillow==12.3.0",
+    "pokerkit==0.7.6",
+]
+
+[tool.vercel]
+entrypoint = "api.index:app"

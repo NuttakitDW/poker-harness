@@ -8,3 +8,5 @@ __pycache__/
 bots
 .venv-voice/
 *_Preflop_Guide_LT.pdf
+
+.vercel
