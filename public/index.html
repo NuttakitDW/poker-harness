@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย Push/Fold</title>
+<meta name="description" content="บอกตำแหน่งกับสแตก ได้ชาร์ต push/fold ที่ solver แก้สดตรง spot ของคุณ">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* ปักใต้ / nang talung CI. Two registers: puppet-leather stage for the story (hero only),
+     parchment ledger for everything that carries a number. Logo red has one job per screen. */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6;      /* parchment ledger */
+    --paper: #FBF8EE;       /* raised sheet */
+    --lamp: #FFF8E6;        /* the lit screen, same cream as the logo artwork */
+    --edge: #D9D0B8;        /* hairline on parchment */
+    --ink: #14213D;         /* text 14.3:1 */
+    --blue: #1B2A4A;        /* calm accent, headings 12.7:1 */
+    --ash: #4F5667;         /* muted text 6.6:1 */
+    --ash-2: #636A7A;       /* micro labels 5.1:1 on paper */
+    --bronze: #A87C3F;      /* rules and ornament only, never text (3.3:1) */
+    --bronze-txt: #6B4E22;  /* bronze words 6.9:1 */
+    --puppet: #171512;      /* puppet leather, hero only */
+    --puppet-edge: #3A3628;
+    --on-puppet: #F6F2E6;   /* 16.3:1 */
+    --on-puppet-2: #D8D2BE; /* 12.1:1 */
+    --on-puppet-3: #C9BFA3; /* 10:1 */
+    --red: #C6322A;         /* logo red: headline mark + one CTA, nothing else */
+    --red-edge: #8F221C;
+    --critical: #8F1D1D;    /* error state, not the brand red */
+
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+
+    --cut: 4px 3px 5px 2px;   /* hand-cut leather corners */
+    --cut-soft: 12px 10px 13px 9px;
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 780px;
+    --wide: 1120px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body {
+    margin: 0;
+    font: 400 1rem/1.7 var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(120% 80% at 50% 0%, transparent 60%, rgba(107, 78, 34, .07)),
+      var(--ground);
+  }
+  /* parchment fibre: warm, faint, fixed */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .31 0 0 0 0 .13 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  a { color: inherit; }
+  ::selection { background: var(--blue); color: var(--paper); }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-size: .92em; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* the logo's white dot outline, reused as a rule */
+  .stipple { height: 3px; border: 0; margin: 0; background: radial-gradient(circle, var(--bronze) 1.1px, transparent 1.4px) 0 50% / 8px 3px repeat-x; }
+
+  /* ================= stage (hero) ================= */
+  .stage {
+    position: relative; overflow: hidden;
+    background: var(--puppet); color: var(--on-puppet);
+    padding: 0 var(--gutter) clamp(2rem, 5vw, 3.5rem);
+  }
+  .stage::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px);
+    background-size: 9px 9px;
+  }
+  .stage :focus-visible { outline-color: var(--on-puppet); }
+  .stage-inner { position: relative; max-width: var(--wide); margin: 0 auto; }
+
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; }
+  .brand { display: inline-flex; align-items: baseline; gap: .6rem; text-decoration: none; }
+  .brand b { font: 700 1.25rem/1 var(--font-display); letter-spacing: .01em; }
+  .brand span { font: 500 .75rem/1 var(--font-body); color: var(--on-puppet-3); }
+  .nav-links { display: flex; gap: clamp(1rem, 3vw, 2rem); font: 500 .9375rem/1 var(--font-body); }
+  .nav-links a { text-decoration: none; color: var(--on-puppet-2); padding-block: .5rem; }
+  .nav-links a:hover { color: var(--on-puppet); text-decoration: underline dotted; text-underline-offset: .35em; }
+
+  .stage-grid {
+    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    gap: clamp(1.5rem, 5vw, 4rem); align-items: center; padding-top: clamp(.5rem, 3vw, 2rem);
+  }
+  .eyebrow-dark { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin-bottom: 1rem; }
+  .headline { font-size: clamp(1.9rem, 4.6vw, 3.25rem); line-height: 1.22; font-weight: 700; }
+  .hoof {
+    display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em;
+    background: var(--red); border-radius: 2px 1px 3px 1px;
+  }
+  .lede { margin-top: 1rem; max-width: 36ch; color: var(--on-puppet-2); font-size: 1.0625rem; line-height: 1.65; }
+  .lede .mono { color: var(--on-puppet); }
+  .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; margin-top: 1.75rem; }
+  .cta {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 1.75rem;
+    background: var(--red); color: var(--on-puppet); border: 2px solid var(--red-edge); border-radius: var(--cut);
+    font: 600 1.125rem/1 var(--font-display); text-decoration: none; cursor: pointer;
+    transition: transform .2s var(--ease-out), background-color .2s;
+  }
+  .cta:hover { background: #B02C25; transform: translateY(-1px); }
+  .cta:active { transform: translateY(1px); }
+  .cta-note { font: 400 .8125rem/1.5 var(--font-body); color: var(--on-puppet-3); }
+
+  /* the lit screen (จอหนัง): the logo is performed on it */
+  .screen {
+    position: relative; justify-self: end; width: min(100%, 380px); aspect-ratio: 1;
+    background: var(--lamp); border: 1px solid var(--puppet-edge); border-radius: var(--cut);
+    box-shadow: 0 0 0 10px rgba(246, 242, 230, .04), 0 0 90px rgba(255, 214, 150, .10);
+  }
+  .screen::after {
+    content: ""; position: absolute; inset: 9px; pointer-events: none; border-radius: 2px;
+    background:
+      radial-gradient(circle, rgba(23, 21, 18, .35) 1px, transparent 1.4px) 0 0 / 8px 3px repeat-x,
+      radial-gradient(circle, rgba(23, 21, 18, .35) 1px, transparent 1.4px) 0 100% / 8px 3px repeat-x;
+  }
+  .screen img { display: block; width: 100%; height: 100%; object-fit: contain; padding: 6%; }
+  .lockup { display: none; }
+
+  /* ================= app frame: messages scroll, the composer stays docked at the bottom ================= */
+  html, body { height: 100%; }
+  body { overflow: hidden; }
+  .app { position: relative; z-index: 1; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+  .scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  .column { max-width: var(--column); margin: 0 auto; }
+  main { padding: clamp(1.5rem, 4vw, 2.5rem) var(--gutter) 2rem; }
+  /* labels carry Thai, and tracking breaks Thai vowel stacking: no letter-spacing */
+  .section-tag { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); margin-bottom: 1rem; scroll-margin-top: 1rem; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+    min-height: 44px; padding: 0 1rem; border: 1px solid var(--ink); border-radius: var(--cut);
+    background: transparent; color: var(--ink); cursor: pointer;
+    font: 600 .9375rem/1 var(--font-display);
+    transition: background-color .15s, color .15s, transform .15s var(--ease-out);
+  }
+  .btn:hover { background: var(--ground); }
+  .btn:active { transform: translateY(1px); }
+  .btn--solid { background: var(--blue); border-color: var(--blue); color: var(--paper); }
+  .btn--solid:hover { background: var(--ink); }
+  .btn--small { min-height: 34px; padding: 0 .7rem; font-size: .8125rem; }
+  .btn:disabled { opacity: .5; cursor: progress; }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+
+  .switch .knob { position: relative; width: 28px; height: 16px; border-radius: 8px; background: var(--edge); transition: background-color .2s; }
+  .switch .knob::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--paper); box-shadow: 0 0 0 1px rgba(20, 33, 61, .25); transition: transform .2s var(--ease-out);
+  }
+  .switch[aria-pressed="true"] .knob { background: var(--blue); }
+  .switch[aria-pressed="true"] .knob::after { transform: translateX(12px); }
+  .switch small { font: 500 .75rem/1 var(--font-mono); color: var(--ash); }
+
+  .thread { display: flex; flex-direction: column; gap: 1.25rem; }
+  .empty { display: flex; flex-direction: column; gap: .35rem; }
+  .empty h3 { font-size: 1.375rem; color: var(--ink); }
+  .empty p { color: var(--ash); }
+  .try { margin-top: 1rem; }
+  .try-label { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); margin-bottom: .6rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chip {
+    min-height: 40px; padding: 0 .875rem; border: 1px dashed var(--bronze); border-radius: var(--cut);
+    background: var(--paper); color: var(--ink); cursor: pointer;
+    font: 500 .875rem/1 var(--font-mono); transition: background-color .15s, border-color .15s, color .15s;
+  }
+  .chip:hover { background: var(--blue); border-color: var(--blue); border-style: solid; color: var(--paper); }
+
+  .msg { display: flex; flex-direction: column; gap: .3rem; max-width: 100%; }
+  .msg--me { align-self: flex-end; align-items: flex-end; max-width: min(34rem, 88%); }
+  .msg--bot { align-self: flex-start; align-items: flex-start; max-width: min(46rem, 100%); }
+  .speaker { font: 600 .75rem/1.2 var(--font-body); color: var(--ash-2); }
+  .bubble { padding: .65rem .95rem; border-radius: var(--cut-soft); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+  .msg--me .bubble { background: var(--blue); color: var(--paper); border-bottom-right-radius: 3px; }
+  .msg--bot .bubble { background: var(--paper); border: 1px solid var(--edge); border-bottom-left-radius: 3px; }
+  .bubble .line + .line { margin-top: .35rem; }
+  .bubble .query { font-family: var(--font-mono); font-size: .875rem; color: var(--blue); }
+  .bubble.problem { border-color: var(--critical); color: var(--critical); }
+  .msg--me img.thumb { max-width: 200px; max-height: 140px; border-radius: var(--cut); border: 1px solid var(--edge); display: block; }
+
+  .chart {
+    margin: .25rem 0 0; padding: .6rem; max-width: 100%;
+    background: var(--paper); border: 1px solid var(--ink); border-radius: var(--cut);
+  }
+  .chart img { display: block; max-width: 100%; height: auto; border-radius: 2px; }
+  .chart figcaption { display: flex; gap: 1.25rem; padding: .55rem .2rem 0; font: 500 .8125rem/1 var(--font-body); }
+  .chart figcaption a { color: var(--blue); text-decoration: underline dotted; text-underline-offset: .3em; }
+  .kind { font: 500 .6875rem/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--bronze-txt); padding: .3rem .5rem; border: 1px solid var(--edge); border-radius: 2px; }
+
+  .thinking { display: inline-flex; gap: 6px; padding: .9rem 1rem; background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut-soft); }
+  .thinking span { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); opacity: .3; }
+
+  /* ---------- the dock: always at the bottom, like every chat app ---------- */
+  .dock {
+    flex: none; position: relative; z-index: 2;
+    padding: .75rem var(--gutter) max(.75rem, env(safe-area-inset-bottom));
+    background: var(--paper); border-top: 1px solid var(--ink);
+  }
+  .dock::before {  /* stipple seam between the ledger and the dock */
+    content: ""; position: absolute; left: 0; right: 0; top: -5px; height: 3px;
+    background: radial-gradient(circle, var(--bronze) 1.1px, transparent 1.4px) 0 50% / 8px 3px repeat-x;
+  }
+  .dock.drag { background: var(--ground); outline: 2px dotted var(--blue); outline-offset: -6px; }
+  .dock-inner { display: flex; flex-direction: column; gap: .55rem; }
+  .row { display: flex; gap: .5rem; align-items: flex-end; }
+  .dock textarea {
+    flex: 1; min-width: 0; min-height: 44px; max-height: 10rem; resize: none;
+    padding: .6rem .75rem; border: 1px solid var(--edge); border-radius: var(--cut);
+    background: var(--ground); color: var(--ink); font: 400 1rem/1.5 var(--font-mono);
+  }
+  .dock textarea::placeholder { font-family: var(--font-body); color: var(--ash-2); }
+  .dock textarea:focus-visible { outline-offset: 1px; }
+  .pending { display: flex; align-items: center; gap: .75rem; font-size: .8125rem; color: var(--ash); }
+  .pending[hidden] { display: none; }
+  .pending img { width: 44px; height: 44px; object-fit: cover; border-radius: var(--cut); border: 1px solid var(--edge); }
+  .pending button { border: 0; background: none; padding: 0; color: var(--blue); font: inherit; text-decoration: underline dotted; cursor: pointer; }
+  .dock-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .hint { font-size: .75rem; color: var(--ash-2); }
+  .hint kbd { font: 500 .6875rem/1 var(--font-mono); padding: .15rem .35rem; border: 1px solid var(--edge); border-radius: 3px; background: var(--ground); }
+  .fine { display: flex; flex-wrap: wrap; gap: .2rem .9rem; font-size: .75rem; color: var(--ash-2); }
+  .fine a { color: var(--ash); text-decoration: underline dotted; text-underline-offset: .3em; }
+
+  /* ---------- guide and privacy open as sheets, off the first page ---------- */
+  .sheet {
+    width: min(760px, calc(100% - 2rem)); max-height: min(85dvh, 780px); padding: 0;
+    border: 1px solid var(--ink); border-radius: var(--cut); background: var(--paper); color: var(--ink);
+  }
+  .sheet::backdrop { background: rgba(23, 21, 18, .62); }
+  .sheet:focus-visible { outline: none; }  /* the dialog itself gets focus on open; its buttons keep their ring */
+  .sheet-body { display: flex; flex-direction: column; gap: .9rem; padding: 1.25rem; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .sheet h2 { font-size: 1.25rem; color: var(--blue); }
+  .sheet pre { margin: 0; padding: .9rem; overflow-x: auto; background: var(--ground); border: 1px solid var(--edge); border-radius: 3px; font: 400 .75rem/1.65 var(--font-mono); color: var(--ink); }
+  .tabs { display: flex; gap: .4rem; }
+  .tabs button { min-height: 32px; padding: 0 .75rem; border: 1px solid var(--ink); border-radius: var(--cut); background: transparent; font: 600 .75rem/1 var(--font-mono); letter-spacing: .06em; color: var(--ink); cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--blue); border-color: var(--blue); color: var(--paper); }
+  .sheet ul { margin: 0; padding-left: 1.1rem; font-size: .9375rem; display: flex; flex-direction: column; gap: .45rem; }
+
+  /* ================= motion ================= */
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll { scroll-behavior: smooth; }
+    .rise { animation: rise .7s var(--ease-out) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; } .d3 { animation-delay: .28s; } .d4 { animation-delay: .38s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+    /* a puppet only turns sharp when it touches the screen */
+    .screen img, .chart img { animation: focus-in 1.1s var(--ease-out) backwards; }
+    .screen img { animation-delay: .3s; }
+    @keyframes focus-in { from { opacity: 0; filter: blur(10px); transform: scale(1.05) translateX(-10px); } }
+    .thinking span { animation: blink 1.2s ease-in-out infinite; }
+    .thinking span:nth-child(2) { animation-delay: .2s; }
+    .thinking span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 50% { opacity: 1; } }
+    .sheet[open] { animation: rise .35s var(--ease-out); }
+  }
+
+  /* ================= responsive ================= */
+  @media (max-width: 860px) {
+    .stage-grid { grid-template-columns: minmax(0, 1fr); }
+    .screen { display: none; }
+    .lockup { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.25rem; }
+    .lockup .screen-mini {
+      width: 76px; height: 76px; flex: none; padding: 4px;
+      background: var(--lamp); border: 1px solid var(--puppet-edge); border-radius: var(--cut);
+    }
+    .lockup img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .lockup b { display: block; font: 700 1.375rem/1.1 var(--font-display); }
+    .lockup small { display: block; margin-top: .25rem; font: 500 .75rem/1 var(--font-mono); letter-spacing: .06em; color: var(--on-puppet-3); }
+  }
+  @media (max-width: 560px) {
+    .nav .brand span, .nav-links .wide { display: none; }
+    .cta { width: 100%; }
+    .attach .label, .hint { display: none; }
+    .dock { padding-inline: .75rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="scroll" id="scroll">
+    <header class="stage">
+      <div class="stage-inner">
+        <nav class="nav rise" aria-label="Main">
+          <a class="brand" href="/"><b>ตามควาย</b><span>ตามควาย.com</span></a>
+          <div class="nav-links">
+            <a href="#guide" data-open="guide">คู่มือ</a>
+            <a class="wide" href="#privacy" data-open="privacy">ความเป็นส่วนตัว</a>
+          </div>
+        </nav>
+
+        <div class="stage-grid">
+          <div>
+            <div class="lockup rise d1">
+              <span class="screen-mini"><img src="/static/tamkwai-logo.png" alt="" width="68" height="68"></span>
+              <div><b>ตามควาย</b><small>a friend at the table</small></div>
+            </div>
+            <p class="eyebrow-dark rise d1">Push/fold · chip EV · ICM</p>
+            <h1 class="headline rise d2"><span class="hoof" aria-hidden="true"></span>เล่นแบบมีคนคอยเตือน<br>ก่อนที่จะ &ldquo;ตามควาย&rdquo;</h1>
+            <p class="lede rise d3">บอกตำแหน่งกับสแตก ได้ชาร์ตที่ solver แก้สดตรง spot ของคุณ ถึง <span class="mono">15bb</span> ไม่ใช่ครูสอน ไม่จับผิด</p>
+            <div class="cta-row rise d4">
+              <button class="cta" type="button" id="start">เริ่มดูชาร์ตฟรี</button>
+              <span class="cta-note">ไม่ต้องสมัคร · ใช้บนมือถือได้ทันที</span>
+            </div>
+          </div>
+          <figure class="screen rise d2" aria-hidden="true" style="margin:0">
+            <img src="/static/tamkwai-logo.png" alt="" width="380" height="380">
+          </figure>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="column">
+        <p class="section-tag" id="ask">ถามตามควาย · push/fold chat</p>
+        <div class="thread" id="thread" aria-live="polite">
+          <div class="empty" id="empty">
+            <h3>ถาม spot ไหนดี</h3>
+            <p>พิมพ์ได้ทั้งไทยและอังกฤษ หรือแนบรูปหน้าจอโต๊ะ ตามควายอ่านตำแหน่ง สแตก และไพ่ให้</p>
+            <div class="try">
+              <p class="try-label">ลองถาม</p>
+              <div class="chips" id="examples"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <form class="dock" id="composer" aria-label="ถามตามควาย">
+    <div class="dock-inner column">
+      <div class="pending" id="pending" hidden>
+        <img id="pending-img" alt="">
+        <span id="pending-name"></span>
+        <button type="button" id="pending-drop">เอาออก</button>
+      </div>
+      <div class="row">
+        <label class="btn attach" for="file" title="แนบรูปหน้าจอโต๊ะ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 15l-5-5-9 9"/>
+          </svg>
+          <span class="label">แนบรูป</span>
+        </label>
+        <input class="sr-only" id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+        <label class="sr-only" for="q">คำถาม</label>
+        <textarea id="q" rows="1" maxlength="500" placeholder="เช่น BB เจอ BTN ออลอิน 8bb" autocomplete="off"></textarea>
+        <button class="btn btn--solid" id="send" type="submit">ส่ง</button>
+      </div>
+      <div class="dock-foot">
+        <div class="controls">
+          <button class="btn btn--small switch" id="ai" type="button" aria-pressed="true" title="AI แปลงภาษาคนเป็นคำถามชาร์ต">
+            <span class="knob" aria-hidden="true"></span><span>AI</span><small id="ai-state">on</small>
+          </button>
+          <button class="btn btn--small" id="new" type="button">spot ใหม่</button>
+          <p class="hint"><kbd>Enter</kbd> ส่ง · <kbd>Shift</kbd>+<kbd>Enter</kbd> ขึ้นบรรทัดใหม่ · วางหรือลากรูปมาได้</p>
+        </div>
+        <p class="fine">
+          <span>เช็กสแตก ante และรางวัลก่อนใช้ทุกครั้ง</span>
+          <a href="#guide" data-open="guide">คู่มือ</a>
+          <a href="#privacy" data-open="privacy">ความเป็นส่วนตัว</a>
+          <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+        </p>
+      </div>
+    </div>
+  </form>
+</div>
+
+<dialog class="sheet" id="guide" aria-labelledby="guide-h">
+  <div class="sheet-body">
+    <div class="sheet-head">
+      <h2 id="guide-h">ถามอะไรได้บ้าง</h2>
+      <button class="btn btn--small" type="button" data-close>ปิด</button>
+    </div>
+    <hr class="stipple">
+    <div class="tabs" role="tablist" aria-label="ภาษาของคู่มือ">
+      <button type="button" role="tab" data-lang="th" aria-selected="true">TH</button>
+      <button type="button" role="tab" data-lang="en" aria-selected="false">EN</button>
+    </div>
+    <pre id="guide-text">กำลังโหลด…</pre>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="privacy" aria-labelledby="privacy-h">
+  <div class="sheet-body">
+    <div class="sheet-head">
+      <h2 id="privacy-h">หน้านี้เก็บอะไรบ้าง</h2>
+      <button class="btn btn--small" type="button" data-close>ปิด</button>
+    </div>
+    <hr class="stipple">
+    <ul>
+      <li>จดคำถามชาร์ตพร้อมสิ่งที่ตัวอ่านเข้าใจ แต่ไม่จดว่าใครถาม บันทึกถูกลบภายใน <span class="mono">90</span> วัน</li>
+      <li>รูปหน้าจอกับคำถามในโหมด AI ส่งไปให้ DeepSeek อ่าน หน้านี้ไม่เก็บตัวรูป</li>
+      <li>เบราว์เซอร์จำ spot ล่าสุดกับบทสนทนา AI ไว้ในแท็บนี้เท่านั้น ปิดแท็บแล้วลืม ไม่มี cookie</li>
+      <li>อยากดูหรือลบข้อมูล อีเมลหา <span id="contact" class="mono">ผู้พัฒนา</span></li>
+    </ul>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+  const EXAMPLES = [
+    "BTN shove 10bb", "BB vs BTN shove 8bb", "SB vs BTN 6bb hold K5s",
+    "heads-up SB 12bb", "icm 50/30/20 CO 7bb", "aof BB vs CO",
+  ];
+  const MAX_IMAGE = 10_000_000;
+  const TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+  const OFFLINE = "ต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกทีนะ";
+  const PLACEHOLDER = "เช่น BB เจอ BTN ออลอิน 8bb";
+  // stacks, percentages, payouts and hand notation are data: they get the mono face
+  const TOKEN = /(\d+(?:\.\d+)?\s?bb\b|\d+(?:\.\d+)?%|\b\d+(?:\/\d+){1,}\b|\b[AKQJT2-9]{2}[so]?\b)/g;
+
+  const $ = (id) => document.getElementById(id);
+  const thread = $("thread"), q = $("q"), send = $("send"), form = $("composer");
+  const aiButton = $("ai"), fileInput = $("file");
+  let pendingImage = null;
+  let charts = 0;
+  let busy = false;
+
+  // the server keeps nothing: it hands back a signed state with every answer, kept per tab
+  const STATE_KEY = "tamkwai-state", AI_KEY = "tamkwai-ai";
+  const stored = (key) => { try { return sessionStorage.getItem(key); } catch { return null; } };
+  const store = (key, value) => { try { sessionStorage.setItem(key, value); } catch { /* private mode */ } };
+  let stateToken = stored(STATE_KEY);
+
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  };
+
+  function withTokens(node, text) {
+    text.split(TOKEN).forEach((part, i) => {
+      if (!part) return;
+      node.append(i % 2 ? el("span", "mono", part) : document.createTextNode(part));
+    });
+    return node;
+  }
+
+  // the thread scrolls inside .scroll; the dock never moves
+  const scroller = $("scroll");
+  const scrollDown = () => requestAnimationFrame(() => scroller.scrollTo({ top: scroller.scrollHeight }));
+
+  function message(who) {
+    $("empty")?.remove();
+    const msg = el("div", `msg msg--${who}`);
+    msg.append(el("span", "speaker", who === "me" ? "คุณ" : "ตามควาย"));
+    thread.append(msg);
+    return msg;
+  }
+
+  function addMine(text, imageUrl) {
+    const msg = message("me");
+    if (imageUrl) {
+      const img = el("img", "thumb");
+      img.src = imageUrl;
+      img.alt = "รูปหน้าจอโต๊ะที่แนบมา";
+      msg.append(img);
+    }
+    if (text) msg.append(withTokens(el("div", "bubble"), text));
+    scrollDown();
+  }
+
+  function addThinking() {
+    const msg = message("bot");
+    const dots = el("div", "thinking");
+    dots.setAttribute("aria-label", "กำลังคิด");
+    dots.append(el("span"), el("span"), el("span"));
+    msg.append(dots);
+    scrollDown();
+    return msg;
+  }
+
+  function chartFigure(base64) {
+    const url = `data:image/png;base64,${base64}`;
+    charts += 1;
+    const figure = el("figure", "chart");
+    const img = el("img");
+    img.src = url;
+    img.alt = "ชาร์ต push/fold";
+    img.addEventListener("load", scrollDown);
+    const caption = el("figcaption");
+    const open = el("a", "", "เปิดเต็มจอ");
+    open.href = url;
+    open.target = "_blank";
+    open.rel = "noopener";
+    const save = el("a", "", "บันทึกรูป");
+    save.href = url;
+    save.download = `tamkwai-chart-${charts}.png`;
+    caption.append(open, save);
+    figure.append(img, caption);
+    return figure;
+  }
+
+  function fillBot(msg, data, failed) {
+    msg.querySelector(".thinking")?.remove();
+    const lines = data.lines || [];
+    if (lines.length) {
+      const bubble = el("div", failed ? "bubble problem" : "bubble");
+      lines.forEach((line) => {
+        const query = line.startsWith("query: ");
+        bubble.append(query ? el("div", "line query", line) : withTokens(el("div", "line"), line));
+      });
+      msg.append(bubble);
+    }
+    if (data.chart) msg.append(chartFigure(data.chart));
+    if (data.kind && !["talk", "chart"].includes(data.kind)) msg.append(el("span", "kind", data.kind.replaceAll("_", " ")));
+    scrollDown();
+  }
+
+  async function post(path, body) {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ ...(body || {}), state: stateToken || undefined }),
+    });
+    let data;
+    try { data = await response.json(); } catch { data = { lines: [`server error ${response.status}`] }; }
+    if (typeof data.state === "string") { stateToken = data.state; store(STATE_KEY, data.state); }
+    return { ok: response.ok, data };
+  }
+
+  function setAi(on) {
+    store(AI_KEY, String(on));
+    aiButton.setAttribute("aria-pressed", String(on));
+    $("ai-state").textContent = on ? "on" : "off";
+  }
+
+  function setBusy(value) {
+    busy = value;
+    send.disabled = value;
+  }
+
+  // fresh: examples are standalone questions, so they don't inherit the previous spot or its ICM payouts
+  async function ask(event, fresh = false) {
+    event?.preventDefault?.();
+    const text = q.value.trim();
+    if (busy || (!text && !pendingImage)) return;
+    setBusy(true);
+    const image = pendingImage;
+    addMine(text, image?.url);
+    q.value = "";
+    resize();
+    clearImage();
+    const msg = addThinking();
+    try {
+      const { ok, data } = image
+        ? await post("/api/image", { image: image.base64, mime: image.mime, question: text || undefined })
+        : await post("/api/ask", { question: text, fresh: fresh || undefined });
+      if (typeof data.ai === "boolean") setAi(data.ai);
+      fillBot(msg, data, !ok);
+    } catch {
+      fillBot(msg, { lines: [OFFLINE] }, true);
+    } finally {
+      setBusy(false);
+      q.focus({ preventScroll: true });
+    }
+  }
+
+  async function control(path, body) {
+    const msg = addThinking();
+    try {
+      const { ok, data } = await post(path, body);
+      if (typeof data.ai === "boolean") setAi(data.ai);
+      fillBot(msg, data, !ok);
+    } catch {
+      fillBot(msg, { lines: [OFFLINE] }, true);
+    }
+  }
+
+  function takeImage(file) {
+    if (!file) return;
+    if (!TYPES.includes(file.type) || file.size > MAX_IMAGE) {
+      fillBot(addThinking(), { lines: ["ใช้รูป PNG, JPEG, WebP หรือ GIF ไม่เกิน 10 MB นะ"] }, true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result);
+      pendingImage = { url, mime: file.type, base64: url.slice(url.indexOf(",") + 1) };
+      $("pending-img").src = url;
+      $("pending-name").textContent = file.name || "screenshot";
+      $("pending").hidden = false;
+      q.placeholder = "เพิ่มได้ เช่น ถือ AJo";
+      q.focus();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImage() {
+    pendingImage = null;
+    fileInput.value = "";
+    $("pending").hidden = true;
+    q.placeholder = PLACEHOLDER;
+  }
+
+  function resize() {
+    q.style.height = "auto";
+    q.style.height = `${Math.min(q.scrollHeight, 160)}px`;
+  }
+
+  let guideLang = null;
+  async function loadGuide(lang) {
+    guideLang = lang;
+    document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.lang === lang)));
+    try {
+      const data = await (await fetch(`/api/help?lang=${lang}`)).json();
+      $("guide-text").textContent = data.text;
+      $("contact").textContent = data.contact;
+    } catch {
+      $("guide-text").textContent = "โหลดคู่มือไม่ได้";
+    }
+  }
+
+  EXAMPLES.forEach((text) => {
+    const chip = el("button", "chip", text);
+    chip.type = "button";
+    chip.addEventListener("click", () => { q.value = text; resize(); ask(null, true); });
+    $("examples").append(chip);
+  });
+
+  $("start").addEventListener("click", () => {
+    $("ask").scrollIntoView({ block: "start" });
+    q.focus({ preventScroll: true });
+  });
+  form.addEventListener("submit", ask);
+  q.addEventListener("input", resize);
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) ask(e);
+  });
+  fileInput.addEventListener("change", () => takeImage(fileInput.files[0]));
+  $("pending-drop").addEventListener("click", clearImage);
+  document.addEventListener("paste", (e) => {
+    const file = [...(e.clipboardData?.files || [])].find((f) => f.type.startsWith("image/"));
+    if (file) { e.preventDefault(); takeImage(file); }
+  });
+  ["dragenter", "dragover"].forEach((type) => form.addEventListener(type, (e) => { e.preventDefault(); form.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((type) => form.addEventListener(type, () => form.classList.remove("drag")));
+  form.addEventListener("drop", (e) => { e.preventDefault(); takeImage(e.dataTransfer.files[0]); });
+  aiButton.addEventListener("click", () => control("/api/ai", { on: aiButton.getAttribute("aria-pressed") !== "true" }));
+  $("new").addEventListener("click", () => control("/api/new"));
+  document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => loadGuide(b.dataset.lang)));
+
+  // guide and privacy are sheets: opened from the header and the dock, not part of the first page
+  function openSheet(id) {
+    const sheet = $(id);
+    if (!sheet || sheet.open) return;
+    if (guideLang === null) loadGuide("th");  // also fills the contact email in the privacy sheet
+    sheet.showModal();
+  }
+  document.querySelectorAll("[data-open]").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    openSheet(a.dataset.open);
+  }));
+  document.querySelectorAll(".sheet").forEach((sheet) => {
+    sheet.querySelector("[data-close]").addEventListener("click", () => sheet.close());
+    sheet.addEventListener("click", (e) => { if (e.target === sheet) sheet.close(); });  // backdrop
+  });
+
+  setAi(stored(AI_KEY) !== "false");
+  if (["#guide", "#privacy"].includes(location.hash)) openSheet(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
