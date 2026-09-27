@@ -1,0 +1,30 @@
+{
+  "reference": "Jonathan Little's PokerCoaching push/fold chart (10% ante table, retrieved 2026-09-27)",
+  "spot": "UTG first in, 10bb, 9-handed, ante 10% of the big blind per player, chip EV",
+  "matched": 162,
+  "total": 169,
+  "ours_percent": 13.7,
+  "theirs_percent": 14.3,
+  "exploitability_bb": 0.0007,
+  "differ": [
+    "A8s",
+    "KQo",
+    "ATo",
+    "T8s",
+    "98s",
+    "33",
+    "22"
+  ],
+  "close_calls": 5,
+  "close_bb": 0.05,
+  "widest": {
+    "hand": "ATo",
+    "gap_bb": -0.139
+  },
+  "stacks": {
+    "from": 5,
+    "to": 15,
+    "matched_min": 160,
+    "matched_max": 166
+  }
+}

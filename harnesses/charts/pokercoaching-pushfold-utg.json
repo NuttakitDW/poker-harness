@@ -1,0 +1,72 @@
+{
+  "source": "Jonathan Little, PokerCoaching.com — Push Fold Charts, table \"Push Fold Charts 10% Ante\"",
+  "url": "https://pokercoaching.com/push-fold-charts/",
+  "retrieved_on": "2026-09-27",
+  "assumptions": "Nash equilibrium, chip EV (not ICM), 9-handed full ring, ante 10% of the big blind per player",
+  "note": "Only the UTG column is kept, for the comparison on /method. On the retrieval date the site's 12.5% ante and BB ante tables were identical to each other.",
+  "position": "UTG",
+  "players": 9,
+  "ante_per_player_bb": 0.1,
+  "ranges": {
+    "1": {
+      "percent": 91.9,
+      "range": "22+, 9x+ 82s+, 84o+ 72s+, 74o+ 62s+, 63o+ 52s+, 53o+ 42s+, 32s"
+    },
+    "2": {
+      "percent": 83.7,
+      "range": "22+, Jx+ T2s+, T4o+ 92s+, 95o+ 82s+, 85o+ 72s+, 75o+ 62s+, 64o+ 52s+, 54o 42s+, 32s"
+    },
+    "3": {
+      "percent": 47.2,
+      "range": "22+, Ax K2s+, K6o+ Q3s+, Q8o+ J5s+, J9o+ T6s+, T8o+ 96s+, 98o 85s+, 75s+ 64s+, 54s"
+    },
+    "4": {
+      "percent": 25.6,
+      "range": "33+, A2s+ A7o+, A5o K6s+, KTo+ Q8s+, QTo+ J9s+, T8s+ 98s"
+    },
+    "5": {
+      "percent": 22.6,
+      "range": "33+, A2s+ A7o+, K8s+ KTo+, Q9s+ QJo, J9s+ T9s, 98s"
+    },
+    "6": {
+      "percent": 20.1,
+      "range": "22+, A2s+ A8o+, K9s+ KJo+, Q9s+ J9s+, T9s 98s"
+    },
+    "7": {
+      "percent": 18.4,
+      "range": "33+, A3s+ A9o+, K9s+ KJo+, Q9s+ J9s+, T9s 98s"
+    },
+    "8": {
+      "percent": 16.9,
+      "range": "33+, A4s+ ATo+, K9s+ KJo+, Q9s+ J9s+, T9s"
+    },
+    "9": {
+      "percent": 15.7,
+      "range": "33+, A7s+ A5s-A4s, ATo+ K9s+, KQo Q9s+, J9s+ T9s"
+    },
+    "10": {
+      "percent": 14.3,
+      "range": "44+, A8s+ ATo+, K9s+ KQo, Q9s+ J9s+, T9s"
+    },
+    "11": {
+      "percent": 13.4,
+      "range": "44+, A8s+ A5s, AJo+ K9s+, KQo QTs+, J9s+ T9s"
+    },
+    "12": {
+      "percent": 12.7,
+      "range": "55+, A8s+ A5s, AJo+ K9s+, KQo QTs+, JTs T9s"
+    },
+    "13": {
+      "percent": 11.8,
+      "range": "55+, A9s+ A5s, AJo+ KTs+, KQo QTs+, JTs"
+    },
+    "14": {
+      "percent": 10.9,
+      "range": "55+, A9s+ A5s, AJo+ KTs+, QTs+ JTs"
+    },
+    "15": {
+      "percent": 9.8,
+      "range": "66+, A9s+ A5s-A4s, AQo+ KTs+, QTs+ JTs"
+    }
+  }
+}
