@@ -1,0 +1,29 @@
+   icm 8bb crowd A=20: 6875 it 942.4s gain 0.000997
+--- 8bb, crowd A=20 => icm(crowd=hero) dTV=84.1% | icm(crowd=20) dTV=84.6%
+    seat 1: chip 0.698 | icm(crowd=hero) 0.077 | icm(crowd=20) 0.059
+    seat 2: chip 0.704 | icm(crowd=hero) 0.092 | icm(crowd=20) 0.073
+    seat 3: chip 0.552 | icm(crowd=hero) 0.107 | icm(crowd=20) 0.086
+    seat 4: chip 0.575 | icm(crowd=hero) 0.166 | icm(crowd=20) 0.135
+    seat 5: chip 0.617 | icm(crowd=hero) 0.354 | icm(crowd=20) 0.336
+
+   icm 8bb crowd A=12: 4750 it 646.2s gain 0.000997
+--- 8bb, crowd A=12 => icm(crowd=hero) dTV=84.1% | icm(crowd=12) dTV=83.5%
+    seat 1: chip 0.698 | icm(crowd=hero) 0.077 | icm(crowd=12) 0.071
+    seat 2: chip 0.704 | icm(crowd=hero) 0.092 | icm(crowd=12) 0.083
+    seat 3: chip 0.552 | icm(crowd=hero) 0.107 | icm(crowd=12) 0.095
+    seat 4: chip 0.575 | icm(crowd=hero) 0.166 | icm(crowd=12) 0.150
+    seat 5: chip 0.617 | icm(crowd=hero) 0.354 | icm(crowd=12) 0.351
+
+Traceback (most recent call last):
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/bard/crowdvar.py", line 72, in <module>
+    main()
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/bard/crowdvar.py", line 51, in main
+    self_sig = icm_cell_sigma(stack)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/bard/chartdepth.py", line 83, in icm_cell_sigma
+    return np.load(p)["sigma"]
+           ^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/.venv/lib/python3.12/site-packages/numpy/lib/_npyio_impl.py", line 454, in load
+    fid = stack.enter_context(open(os.fspath(file), "rb"))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'deepstack-swarm/workspace/bowling/tier1chart/cells/small-bubble-n6-30bb-left46.npz'

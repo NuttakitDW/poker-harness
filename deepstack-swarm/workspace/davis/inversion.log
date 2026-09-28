@@ -1,0 +1,11 @@
+spot: 6h 10bb bb-ante 1.0 chip EV, seat 2 responder, 400,000 hands, CRN, seed 20260927
+      rung    t=0.003   t=0.0005      diff  se(diff)  chart with lower gain
+      self    0.33531    0.33274  -0.00257   0.00987               t=0.0005 (=
+    static    0.31032    0.30996  -0.00036   0.00799               t=0.0005 (=
+     k=100    0.05517    0.05357  -0.00160   0.01603               t=0.0005 (=
+   k=1,000    0.23566    0.23492  -0.00074   0.01388               t=0.0005 (=
+  k=10,000    0.32248    0.32562   0.00314   0.01128                t=0.003 (=
+
+  t=0.003: exploitability (max over seats) 0.00163, gain at seat 2 0.001465
+  t=0.0005: exploitability (max over seats) 0.00043, gain at seat 2 0.000421
+  a lower-gain column wins on the weak rungs iff the 'chart with lower gain' column reads t=0.0005 everywhere at the top (rungs above the CRN resolution floor)

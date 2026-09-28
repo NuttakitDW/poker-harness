@@ -1,0 +1,23 @@
+{
+ "n": 3,
+ "stack": 30.0,
+ "setting": "small",
+ "stage": "bubble",
+ "left": 46,
+ "tier15": true,
+ "target": 0.002,
+ "seconds": 50.44,
+ "nodes": 24,
+ "terminals": 30,
+ "counts": {
+  "allfold": 1,
+  "uncontested": 14,
+  "showdown": 15,
+  "flop": 0
+ },
+ "max_own_decisions": 2,
+ "converged": true,
+ "iters": 4875,
+ "final_gain": 0.001958008417059739,
+ "unit": "ICM chips/hand"
+}

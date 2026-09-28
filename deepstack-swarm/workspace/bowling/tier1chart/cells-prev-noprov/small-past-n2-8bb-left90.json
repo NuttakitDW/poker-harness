@@ -1,0 +1,53 @@
+{
+ "cell": "small-past-n2-8bb-left90",
+ "setting": "small",
+ "stage": "past",
+ "n": 2,
+ "stack": 8.0,
+ "left": 90,
+ "target": 0.0006,
+ "check_every": 100,
+ "method": "cfr+",
+ "commit": "b75e315",
+ "unit": "ICM chips/hand",
+ "crowd": 88,
+ "prizes_paid": 45,
+ "nodes": 4,
+ "terminals": 6,
+ "counts": {
+  "allfold": 1,
+  "uncontested": 3,
+  "showdown": 2,
+  "flop": 0
+ },
+ "converged": true,
+ "iters": 500,
+ "seconds": 0.1,
+ "final_gain": 0.0005829675627560403,
+ "history": [
+  [
+   100,
+   0.005175146889540887
+  ],
+  [
+   200,
+   0.002248524455616266
+  ],
+  [
+   300,
+   0.0012828788508805057
+  ],
+  [
+   400,
+   0.0008209355776666037
+  ],
+  [
+   500,
+   0.0005829675627560564
+  ]
+ ],
+ "fasticm3_gain": 0.0005829675627560403,
+ "slow_auditor_gain": 0.0005829675627560564,
+ "auditor_diff": 1.6046192152785466e-17,
+ "auditor": "fasticm3.FastAuditor"
+}

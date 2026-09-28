@@ -1,0 +1,266 @@
+big-bubble-n2-8bb-left226      [grid cell] 600 it, gain 0.000569, 0.1s; nodes 4, crowd 224
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.13881   0.00638   2.8513   0.0073  0.000597   -0.14117   0.00237
+       1   -0.37058   0.00578   2.5871   0.0072  0.000542   -0.38305   0.01247
+    sigma 2.5871-2.8513 ICM chips; eps at max sigma 0.5972 mICM/hand, at min sigma 0.5418; sim 3.8s
+big-bubble-n2-12bb-left226     [grid cell] 1000 it, gain 0.000543, 0.2s; nodes 4, crowd 224
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.17227   0.00761   3.4049   0.0131  0.000713   -0.16726  -0.00501
+       1   -0.31895   0.00702   3.1406   0.0124  0.000658   -0.33245   0.01351
+    sigma 3.1406-3.4049 ICM chips; eps at max sigma 0.7131 mICM/hand, at min sigma 0.6577; sim 4.5s
+big-bubble-n2-15bb-left226     [grid cell] 1000 it, gain 0.000565, 0.2s; nodes 4, crowd 224
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.17614   0.00829   3.7061   0.0172  0.000776   -0.17989   0.00375
+       1   -0.30223   0.00787   3.5210   0.0145  0.000737   -0.30993   0.00770
+    sigma 3.5210-3.7061 ICM chips; eps at max sigma 0.7762 mICM/hand, at min sigma 0.7374; sim 3.7s
+big-bubble-n2-20bb-left226     [grid cell] 1000 it, gain 0.000522, 0.2s; nodes 4, crowd 224
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.18308   0.00931   4.1628   0.0206  0.000872   -0.19150   0.00842
+       1   -0.28948   0.00924   4.1339   0.0187  0.000866   -0.29363   0.00415
+    sigma 4.1339-4.1628 ICM chips; eps at max sigma 0.8718 mICM/hand, at min sigma 0.8658; sim 6.4s
+big-bubble-n2-30bb-left226     [grid cell] 800 it, gain 0.000486, 0.2s; nodes 4, crowd 224
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.19287   0.01050   4.6941   0.0307  0.000983   -0.19892   0.00605
+       1   -0.25103   0.01150   5.1418   0.0325  0.001077   -0.25035  -0.00068
+    sigma 4.6941-5.1418 ICM chips; eps at max sigma 1.0769 mICM/hand, at min sigma 0.9831; sim 5.4s
+big-bubble-n3-8bb-left226      [grid cell] 3200 it, gain 0.000573, 33.6s; nodes 14, crowd 223
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.09478   0.00466   2.0838   0.0074  0.000436    0.08103   0.01375
+       1   -0.19353   0.00564   2.5204   0.0080  0.000528   -0.19891   0.00539
+       2   -0.46516   0.00548   2.4511   0.0067  0.000513   -0.47015   0.00499
+    sigma 2.0838-2.5204 ICM chips; eps at max sigma 0.5278 mICM/hand, at min sigma 0.4364; sim 5.5s
+big-bubble-n3-12bb-left226     [grid cell] 1800 it, gain 0.000569, 18.9s; nodes 14, crowd 223
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.07596   0.00519   2.3221   0.0127  0.000486    0.06763   0.00833
+       1   -0.20554   0.00694   3.1058   0.0100  0.000650   -0.21038   0.00484
+       2   -0.41499   0.00674   3.0124   0.0115  0.000631   -0.42695   0.01196
+    sigma 2.3221-3.1058 ICM chips; eps at max sigma 0.6504 mICM/hand, at min sigma 0.4863; sim 3.6s
+big-bubble-n3-15bb-left226     [grid cell] 1400 it, gain 0.000585, 14.6s; nodes 14, crowd 223
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.06718   0.00542   2.4240   0.0157  0.000508    0.06266   0.00452
+       1   -0.20436   0.00776   3.4691   0.0154  0.000727   -0.21759   0.01323
+       2   -0.39784   0.00764   3.4157   0.0159  0.000715   -0.40530   0.00746
+    sigma 2.4240-3.4691 ICM chips; eps at max sigma 0.7265 mICM/hand, at min sigma 0.5077; sim 3.6s
+big-bubble-n3-20bb-left226     [grid cell] 1000 it, gain 0.000581, 10.5s; nodes 14, crowd 223
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.05753   0.00552   2.4695   0.0161  0.000517    0.05991  -0.00238
+       1   -0.22976   0.00826   3.6931   0.0213  0.000773   -0.22946  -0.00030
+       2   -0.30069   0.00870   3.8903   0.0221  0.000815   -0.32222   0.02153
+    sigma 2.4695-3.8903 ICM chips; eps at max sigma 0.8148 mICM/hand, at min sigma 0.5172; sim 4.7s
+big-bubble-n3-30bb-left226     [grid cell] 700 it, gain 0.000514, 7.4s; nodes 14, crowd 223
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.06861   0.00649   2.9032   0.0311  0.000608    0.07082  -0.00221
+       1   -0.21475   0.01007   4.5035   0.0313  0.000943   -0.22533   0.01058
+       2   -0.34786   0.01135   5.0745   0.0315  0.001063   -0.36716   0.01929
+    sigma 2.9032-5.0745 ICM chips; eps at max sigma 1.0628 mICM/hand, at min sigma 0.6080; sim 3.3s
+big-bubble-n6-8bb-left226      [grid cell] 4200 it, gain 0.000578, 390.3s; nodes 125, crowd 220
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.03437   0.00269   1.2020   0.0074  0.000252    0.03312   0.00125
+       1    0.05004   0.00314   1.4044   0.0065  0.000294    0.04200   0.00803
+       2    0.05843   0.00353   1.5776   0.0079  0.000330    0.05185   0.00658
+       3    0.06858   0.00395   1.7665   0.0086  0.000370    0.06544   0.00313
+       4   -0.24465   0.00465   2.0779   0.0081  0.000435   -0.24201  -0.00264
+       5   -0.54821   0.00470   2.1017   0.0074  0.000440   -0.54728  -0.00094
+    sigma 1.2020-2.1017 ICM chips; eps at max sigma 0.4402 mICM/hand, at min sigma 0.2517; sim 5.4s
+small-bubble-n2-8bb-left46     [grid cell] 500 it, gain 0.000496, 0.1s; nodes 4, crowd 44
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.12896   0.00631   2.8216   0.0089  0.000591   -0.12993   0.00097
+       1   -0.43331   0.00554   2.4777   0.0065  0.000519   -0.44748   0.01417
+    sigma 2.4777-2.8216 ICM chips; eps at max sigma 0.5909 mICM/hand, at min sigma 0.5189; sim 3.6s
+small-bubble-n2-12bb-left46    [grid cell] 800 it, gain 0.000475, 0.2s; nodes 4, crowd 44
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.14500   0.00767   3.4297   0.0110  0.000718   -0.14589   0.00089
+       1   -0.41319   0.00682   3.0490   0.0091  0.000639   -0.42762   0.01443
+    sigma 3.0490-3.4297 ICM chips; eps at max sigma 0.7183 mICM/hand, at min sigma 0.6385; sim 3.3s
+small-bubble-n2-15bb-left46    [grid cell] 900 it, gain 0.000532, 0.2s; nodes 4, crowd 44
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.14338   0.00843   3.7678   0.0159  0.000789   -0.15762   0.01424
+       1   -0.40435   0.00763   3.4143   0.0131  0.000715   -0.40663   0.00228
+    sigma 3.4143-3.7678 ICM chips; eps at max sigma 0.7891 mICM/hand, at min sigma 0.7151; sim 3.9s
+small-bubble-n2-20bb-left46    [grid cell] 1100 it, gain 0.000511, 0.2s; nodes 4, crowd 44
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.18552   0.00878   3.9255   0.0210  0.000822   -0.18586   0.00034
+       1   -0.27967   0.00835   3.7341   0.0197  0.000782   -0.29022   0.01055
+    sigma 3.7341-3.9255 ICM chips; eps at max sigma 0.8221 mICM/hand, at min sigma 0.7820; sim 5.0s
+small-bubble-n2-30bb-left46    [grid cell] 800 it, gain 0.000522, 0.2s; nodes 4, crowd 44
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.19277   0.00999   4.4680   0.0241  0.000936   -0.19758   0.00482
+       1   -0.25395   0.01057   4.7261   0.0207  0.000990   -0.26260   0.00864
+    sigma 4.4680-4.7261 ICM chips; eps at max sigma 0.9898 mICM/hand, at min sigma 0.9357; sim 3.4s
+small-bubble-n3-8bb-left46     [grid cell] 3500 it, gain 0.000591, 37.4s; nodes 14, crowd 43
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.09765   0.00456   2.0408   0.0063  0.000427    0.08256   0.01509
+       1   -0.18986   0.00550   2.4603   0.0071  0.000515   -0.19181   0.00195
+       2   -0.51009   0.00520   2.3245   0.0068  0.000487   -0.51349   0.00340
+    sigma 2.0408-2.4603 ICM chips; eps at max sigma 0.5153 mICM/hand, at min sigma 0.4274; sim 5.4s
+small-bubble-n3-12bb-left46    [grid cell] 2100 it, gain 0.000552, 22.2s; nodes 14, crowd 43
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.07986   0.00501   2.2407   0.0118  0.000469    0.07174   0.00812
+       1   -0.19535   0.00679   3.0386   0.0123  0.000636   -0.20051   0.00516
+       2   -0.46558   0.00645   2.8867   0.0119  0.000605   -0.47547   0.00990
+    sigma 2.2407-3.0386 ICM chips; eps at max sigma 0.6364 mICM/hand, at min sigma 0.4693; sim 4.4s
+small-bubble-n3-15bb-left46    [grid cell] 1700 it, gain 0.000537, 18.4s; nodes 14, crowd 43
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.07945   0.00536   2.3977   0.0157  0.000502    0.06741   0.01203
+       1   -0.20664   0.00747   3.3385   0.0145  0.000699   -0.20672   0.00008
+       2   -0.43636   0.00724   3.2387   0.0135  0.000678   -0.45192   0.01556
+    sigma 2.3977-3.3385 ICM chips; eps at max sigma 0.6992 mICM/hand, at min sigma 0.5022; sim 4.2s
+small-bubble-n3-20bb-left46    [grid cell] 1300 it, gain 0.000584, 14.0s; nodes 14, crowd 43
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.05956   0.00543   2.4276   0.0171  0.000508    0.06023  -0.00068
+       1   -0.21263   0.00831   3.7148   0.0218  0.000778   -0.21910   0.00647
+       2   -0.36378   0.00832   3.7186   0.0140  0.000779   -0.38505   0.02127
+    sigma 2.4276-3.7186 ICM chips; eps at max sigma 0.7788 mICM/hand, at min sigma 0.5084; sim 3.7s
+small-bubble-n3-30bb-left46    [grid cell] 1000 it, gain 0.000598, 10.8s; nodes 14, crowd 43
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.05151   0.00590   2.6392   0.0291  0.000553    0.06515  -0.01364
+       1   -0.20433   0.00923   4.1290   0.0312  0.000865   -0.22585   0.02152
+       2   -0.31521   0.01037   4.6389   0.0320  0.000972   -0.33794   0.02273
+    sigma 2.6392-4.6389 ICM chips; eps at max sigma 0.9715 mICM/hand, at min sigma 0.5527; sim 4.0s
+small-bubble-n6-8bb-left46     [grid cell] 5000 it, gain 0.000597, 466.0s; nodes 125, crowd 40
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.04372   0.00271   1.2125   0.0073  0.000254    0.04048   0.00324
+       1    0.05389   0.00301   1.3465   0.0063  0.000282    0.04731   0.00658
+       2    0.06070   0.00348   1.5578   0.0079  0.000326    0.05657   0.00413
+       3    0.06623   0.00373   1.6672   0.0089  0.000349    0.06523   0.00100
+       4   -0.23878   0.00428   1.9129   0.0088  0.000401   -0.23220  -0.00658
+       5   -0.54831   0.00435   1.9461   0.0063  0.000408   -0.55229   0.00398
+    sigma 1.2125-1.9461 ICM chips; eps at max sigma 0.4076 mICM/hand, at min sigma 0.2539; sim 6.2s
+small-bubble-n6-12bb-left46    [grid cell] 3800 it, gain 0.000553, 350.1s; nodes 125, crowd 40
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.03936   0.00244   1.0926   0.0114  0.000229    0.03689   0.00246
+       1    0.04358   0.00301   1.3454   0.0133  0.000282    0.04148   0.00210
+       2    0.05678   0.00371   1.6599   0.0109  0.000348    0.04973   0.00705
+       3    0.06913   0.00448   2.0027   0.0102  0.000419    0.06266   0.00647
+       4   -0.23371   0.00571   2.5544   0.0126  0.000535   -0.22890  -0.00481
+       5   -0.51340   0.00567   2.5374   0.0131  0.000531   -0.52403   0.01063
+    sigma 1.0926-2.5544 ICM chips; eps at max sigma 0.5350 mICM/hand, at min sigma 0.2288; sim 4.9s
+small-bubble-n6-15bb-left46    [grid cell] 2800 it, gain 0.000583, 258.2s; nodes 125, crowd 40
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.04069   0.00276   1.2335   0.0157  0.000258    0.03765   0.00304
+       1    0.04392   0.00303   1.3555   0.0133  0.000284    0.04152   0.00240
+       2    0.05809   0.00378   1.6920   0.0132  0.000354    0.04688   0.01121
+       3    0.07096   0.00490   2.1892   0.0134  0.000458    0.06003   0.01093
+       4   -0.24364   0.00647   2.8931   0.0156  0.000606   -0.23155  -0.01210
+       5   -0.49815   0.00650   2.9047   0.0139  0.000608   -0.50787   0.00972
+    sigma 1.2335-2.9047 ICM chips; eps at max sigma 0.6083 mICM/hand, at min sigma 0.2583; sim 5.1s
+small-bubble-n6-20bb-left46    [grid cell] 2200 it, gain 0.000546, 202.8s; nodes 125, crowd 40
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.03491   0.00308   1.3793   0.0189  0.000289    0.03873  -0.00382
+       1    0.03629   0.00344   1.5403   0.0127  0.000323    0.04187  -0.00558
+       2    0.04816   0.00410   1.8343   0.0178  0.000384    0.04721   0.00096
+       3    0.06761   0.00525   2.3472   0.0182  0.000492    0.05537   0.01224
+       4   -0.24094   0.00734   3.2820   0.0172  0.000687   -0.23862  -0.00232
+       5   -0.44842   0.00755   3.3748   0.0211  0.000707   -0.47030   0.02189
+    sigma 1.3793-3.3748 ICM chips; eps at max sigma 0.7068 mICM/hand, at min sigma 0.2889; sim 4.7s
+small-bubble-n6-30bb-left46    [grid cell] 1600 it, gain 0.000483, 147.6s; nodes 125, crowd 40
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.04059   0.00417   1.8640   0.0233  0.000390    0.04493  -0.00434
+       1    0.04217   0.00453   2.0257   0.0279  0.000424    0.04677  -0.00459
+       2    0.05421   0.00517   2.3105   0.0271  0.000484    0.05050   0.00371
+       3    0.06896   0.00586   2.6213   0.0328  0.000549    0.05612   0.01284
+       4   -0.24018   0.00820   3.6687   0.0265  0.000768   -0.24555   0.00536
+       5   -0.44460   0.00925   4.1372   0.0315  0.000866   -0.46034   0.01574
+    sigma 1.8640-4.1372 ICM chips; eps at max sigma 0.8665 mICM/hand, at min sigma 0.3904; sim 3.5s
+small-past-n2-8bb-left90       [grid cell] 500 it, gain 0.000583, 0.1s; nodes 4, crowd 88
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.15028   0.00698   3.1222   0.0081  0.000654   -0.16019   0.00991
+       1   -0.17059   0.00690   3.0879   0.0077  0.000647   -0.17456   0.00397
+    sigma 3.0879-3.1222 ICM chips; eps at max sigma 0.6539 mICM/hand, at min sigma 0.6467; sim 3.4s
+small-past-n2-12bb-left90      [grid cell] 600 it, gain 0.000523, 0.1s; nodes 4, crowd 88
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.16735   0.00856   3.8262   0.0135  0.000801   -0.17803   0.01069
+       1   -0.15926   0.00861   3.8514   0.0116  0.000807   -0.16313   0.00387
+    sigma 3.8262-3.8514 ICM chips; eps at max sigma 0.8066 mICM/hand, at min sigma 0.8013; sim 2.4s
+small-past-n2-15bb-left90      [grid cell] 600 it, gain 0.000576, 0.1s; nodes 4, crowd 88
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.17183   0.00988   4.4189   0.0149  0.000925   -0.17862   0.00679
+       1   -0.17865   0.01001   4.4751   0.0146  0.000937   -0.18190   0.00325
+    sigma 4.4189-4.4751 ICM chips; eps at max sigma 0.9372 mICM/hand, at min sigma 0.9255; sim 2.2s
+small-past-n2-20bb-left90      [grid cell] 600 it, gain 0.000555, 0.1s; nodes 4, crowd 88
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.15912   0.01204   5.3840   0.0216  0.001128   -0.17452   0.01540
+       1   -0.23656   0.01236   5.5293   0.0204  0.001158   -0.22933  -0.00722
+    sigma 5.3840-5.5293 ICM chips; eps at max sigma 1.1580 mICM/hand, at min sigma 1.1276; sim 2.3s
+small-past-n2-30bb-left90      [grid cell] 600 it, gain 0.000582, 0.1s; nodes 4, crowd 88
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0   -0.11474   0.01515   6.7774   0.0284  0.001419   -0.12944   0.01471
+       1   -0.31031   0.01583   7.0774   0.0257  0.001482   -0.30662  -0.00370
+    sigma 6.7774-7.0774 ICM chips; eps at max sigma 1.4822 mICM/hand, at min sigma 1.4194; sim 2.3s
+small-past-n3-8bb-left90       [grid cell] 1700 it, gain 0.000560, 17.8s; nodes 14, crowd 87
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.14323   0.00531   2.3750   0.0069  0.000497    0.13171   0.01152
+       1   -0.19304   0.00670   2.9948   0.0060  0.000627   -0.20393   0.01089
+       2   -0.34910   0.00686   3.0701   0.0067  0.000643   -0.34747  -0.00164
+    sigma 2.3750-3.0701 ICM chips; eps at max sigma 0.6430 mICM/hand, at min sigma 0.4974; sim 3.6s
+small-past-n3-12bb-left90      [grid cell] 900 it, gain 0.000503, 9.5s; nodes 14, crowd 87
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.11403   0.00580   2.5958   0.0118  0.000544    0.11856  -0.00453
+       1   -0.19733   0.00840   3.7551   0.0116  0.000786   -0.21058   0.01325
+       2   -0.31196   0.00868   3.8812   0.0112  0.000813   -0.32046   0.00850
+    sigma 2.5958-3.8812 ICM chips; eps at max sigma 0.8128 mICM/hand, at min sigma 0.5436; sim 2.7s
+small-past-n3-15bb-left90      [grid cell] 800 it, gain 0.000592, 8.4s; nodes 14, crowd 87
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.11048   0.00648   2.8968   0.0142  0.000607    0.12085  -0.01037
+       1   -0.20864   0.00959   4.2874   0.0139  0.000898   -0.21311   0.00447
+       2   -0.31166   0.00996   4.4531   0.0138  0.000933   -0.33825   0.02660
+    sigma 2.8968-4.4531 ICM chips; eps at max sigma 0.9326 mICM/hand, at min sigma 0.6067; sim 2.5s
+small-past-n3-20bb-left90      [grid cell] 800 it, gain 0.000472, 8.4s; nodes 14, crowd 87
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.12233   0.00756   3.3822   0.0187  0.000708    0.12986  -0.00753
+       1   -0.20182   0.01109   4.9612   0.0211  0.001039   -0.20863   0.00681
+       2   -0.33859   0.01171   5.2355   0.0208  0.001096   -0.36506   0.02647
+    sigma 3.3822-5.2355 ICM chips; eps at max sigma 1.0965 mICM/hand, at min sigma 0.7083; sim 2.5s
+small-past-n3-30bb-left90      [grid cell] 600 it, gain 0.000471, 6.3s; nodes 14, crowd 87
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.14251   0.00996   4.4523   0.0273  0.000932    0.15802  -0.01551
+       1   -0.19076   0.01398   6.2522   0.0268  0.001309   -0.19151   0.00075
+       2   -0.41280   0.01520   6.7964   0.0250  0.001423   -0.45882   0.04602
+    sigma 4.4523-6.7964 ICM chips; eps at max sigma 1.4234 mICM/hand, at min sigma 0.9324; sim 2.6s
+small-past-n6-8bb-left90       [grid cell] 2200 it, gain 0.000598, 203.2s; nodes 125, crowd 84
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.06958   0.00303   1.3548   0.0076  0.000284    0.06144   0.00815
+       1    0.07389   0.00357   1.5959   0.0081  0.000334    0.07414  -0.00024
+       2    0.10100   0.00421   1.8847   0.0091  0.000395    0.09273   0.00826
+       3    0.12121   0.00493   2.2026   0.0071  0.000461    0.11678   0.00443
+       4   -0.26228   0.00583   2.6088   0.0078  0.000546   -0.26082  -0.00146
+       5   -0.54183   0.00610   2.7288   0.0070  0.000572   -0.54202   0.00019
+    sigma 1.3548-2.7288 ICM chips; eps at max sigma 0.5715 mICM/hand, at min sigma 0.2837; sim 3.9s
+small-past-n6-12bb-left90      [grid cell] 2200 it, gain 0.000529, 203.3s; nodes 125, crowd 84
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.06252   0.00359   1.6037   0.0123  0.000336    0.06090   0.00162
+       1    0.07543   0.00409   1.8301   0.0095  0.000383    0.07157   0.00387
+       2    0.09232   0.00478   2.1379   0.0105  0.000448    0.08645   0.00587
+       3    0.11371   0.00562   2.5121   0.0118  0.000526    0.11011   0.00360
+       4   -0.25172   0.00736   3.2931   0.0136  0.000690   -0.26032   0.00860
+       5   -0.51564   0.00770   3.4424   0.0126  0.000721   -0.51249  -0.00315
+    sigma 1.6037-3.4424 ICM chips; eps at max sigma 0.7209 mICM/hand, at min sigma 0.3359; sim 3.7s
+small-past-n6-15bb-left90      [grid cell] 2000 it, gain 0.000509, 185.0s; nodes 125, crowd 84
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.06179   0.00412   1.8443   0.0176  0.000386    0.06461  -0.00282
+       1    0.07978   0.00452   2.0200   0.0162  0.000423    0.07386   0.00592
+       2    0.09642   0.00528   2.3601   0.0123  0.000494    0.08738   0.00904
+       3    0.11147   0.00626   2.7974   0.0134  0.000586    0.10938   0.00209
+       4   -0.25398   0.00839   3.7534   0.0145  0.000786   -0.26450   0.01053
+       5   -0.52791   0.00884   3.9512   0.0148  0.000828   -0.52524  -0.00267
+    sigma 1.8443-3.9512 ICM chips; eps at max sigma 0.8275 mICM/hand, at min sigma 0.3863; sim 3.7s
+small-past-n6-20bb-left90      [grid cell] 1400 it, gain 0.000588, 129.2s; nodes 125, crowd 84
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.06573   0.00513   2.2928   0.0243  0.000480    0.07226  -0.00653
+       1    0.08493   0.00551   2.4619   0.0243  0.000516    0.07991   0.00503
+       2    0.10774   0.00635   2.8416   0.0220  0.000595    0.09156   0.01618
+       3    0.11168   0.00725   3.2404   0.0233  0.000679    0.11148   0.00021
+       4   -0.27136   0.00961   4.2962   0.0171  0.000900   -0.26690  -0.00446
+       5   -0.54260   0.01026   4.5884   0.0156  0.000961   -0.55630   0.01370
+    sigma 2.2928-4.5884 ICM chips; eps at max sigma 0.9610 mICM/hand, at min sigma 0.4802; sim 3.4s
+small-past-n6-30bb-left90      [grid cell] 1200 it, gain 0.000434, 110.9s; nodes 125, crowd 84
+    seat       mean  se(mean)    sigma  se(sig)       eps   audit EV   mean-EV
+       0    0.07171   0.00712   3.1822   0.0303  0.000666    0.08934  -0.01763
+       1    0.09263   0.00755   3.3772   0.0307  0.000707    0.09259   0.00004
+       2    0.11004   0.00782   3.4957   0.0280  0.000732    0.10023   0.00980
+       3    0.13293   0.00892   3.9877   0.0244  0.000835    0.11520   0.01772
+       4   -0.25686   0.01142   5.1093   0.0288  0.001070   -0.27209   0.01523
+       5   -0.61255   0.01282   5.7350   0.0272  0.001201   -0.62295   0.01040
+    sigma 3.1822-5.7350 ICM chips; eps at max sigma 1.2011 mICM/hand, at min sigma 0.6665; sim 3.3s
+
+wrote deepstack-swarm/workspace/davis/grid_sigma_existing.json

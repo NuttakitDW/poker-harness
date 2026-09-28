@@ -5,6 +5,8 @@
 .git/
 .venv/
 .venv-voice/
+.venv-swarm/
+deepstack-swarm/
 __pycache__/
 *.pyc
 .DS_Store

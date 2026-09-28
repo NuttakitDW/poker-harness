@@ -174,7 +174,7 @@ def read(prompt: str) -> preflop.Request:
         before = list(dict.fromkeys(name for start, _, name in mentions if start < facing.start()))
         after = list(dict.fromkeys(name for start, _, name in mentions
                                    if start > facing.start() and name not in before))
-        if len(after) > 1 and len(before) <= 1:
+        if len(after) > 1 and len(before) <= 1 and request.pushfold:
             # เจอหลายคนพร้อมกันคือเจอคนยัดกับคนที่ call ตาม ผู้ถามคือคนที่พูดก่อนคำว่าเจอ หรือยืมจากตาก่อน
             return dataclasses.replace(request, hero=before[0] if before else None,
                                        villain=after[0], shovers=tuple(after), scenario="All-In")
@@ -212,7 +212,10 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            hero=new.hero or base.hero, villain=new.villain or base.villain,
                            scenario=new.scenario or base.scenario,
                            players=new.players or base.players,
-                           pushfold=new.pushfold or base.pushfold,
+                           pushfold=(new.pushfold if new.scenario is not None else
+                                     new.pushfold or base.pushfold),
+                           explicit_pushfold=(new.explicit_pushfold if new.scenario is not None else
+                                              new.explicit_pushfold or base.explicit_pushfold),
                            # ante 0 คือบอกว่าไม่มี ante ต้องไม่ถูกแทนด้วยค่าของตาก่อน
                            # เปลี่ยนคนจ่าย ante โดยไม่บอกจำนวน ใช้ค่าเริ่มของแบบใหม่ ไม่ยืมจำนวนเดิม
                            ante=new.ante if new.ante is not None
@@ -237,6 +240,11 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            field_avg=new.field_avg or base.field_avg,
                            buy_in=new.buy_in or base.buy_in,
                            prize_pool=new.prize_pool or base.prize_pool,
+                           seat_stacks=(new.seat_stacks if new.seat_stacks else
+                                        () if new.stack is not None else base.seat_stacks),
+                           open_size=new.open_size or base.open_size,
+                           threebet_size=new.threebet_size or base.threebet_size,
+                           unsupported_history=new.unsupported_history,
                            # คู่มือใหม่คนเดียวแทนคนยัดหมดชุดเดิมทั้งหมด
                            shovers=new.shovers or (() if new.villain else base.shovers))
 

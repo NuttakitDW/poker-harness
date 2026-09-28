@@ -5,7 +5,7 @@
 พิมพ์ในเทอร์มินัลแล้วกด Enter จะส่งไปห้องล่าสุดที่มีคนพิมพ์มา หรือห้อง DISCORD_CHANNEL_ID
 ในห้อง Discord พิมพ์ ping บอทตอบ pong
 
-ถามชาร์ต push/fold จาก Discord ได้ ตอบเป็นรูปชาร์ตแบบเดียวกับ make chart
+ถามชาร์ต preflop จาก Discord ได้ ตอบเป็นรูปชาร์ตแบบเดียวกับ make chart
     @TamKwai BTN shove 10bb     หรือ   !chart BTN shove 10bb
     ใน DM พิมพ์คำถามตรง ๆ ได้เลย
     ข้อความเสียง (กดไมค์ค้างในแอปมือถือ) ถอดเป็นข้อความด้วย Soniox แล้วตอบเป็นชาร์ต
@@ -60,37 +60,39 @@ CONTACT_COMMANDS = ("!contact", "/contact")
 PRIVACY_COMMANDS = ("!privacy", "/privacy")
 DISCORD_HELP = {
     "th": """ตามควาย · วิธีใช้ใน Discord
-ถามตำแหน่งกับสแตก ได้รูปชาร์ต push/fold ที่ solver แก้สด
+ชาร์ต chip EV push/fold, AoF, PLO และ ICM preflop สแตกเท่ากัน: open/3-bet/jam ถึง 30bb
 
 Commands
   @TamKwai <คำถาม>    ถามในห้อง
-  !chart <คำถาม>       ถามในห้องโดยไม่ต้อง mention
-  DM                  ส่งคำถามมาตรง ๆ ได้เลย ไม่ต้องมีคำนำหน้า
-  ข้อความเสียง          กดไมค์ค้างในแอปมือถือแล้วพูดคำถาม
-  รูปหน้าจอ            แนบรูปโต๊ะ บอทอ่านตำแหน่ง สแตก ไพ่ให้
-  !new                ลืม spot เดิม (จำแยกตามคนและห้อง)
-  !ai-off / !ai-on    ปิด/เปิด AI (เปิดอยู่: คุยภาษาคนได้)
+  !chart <คำถาม>       ถามโดยไม่ mention
+  DM                  ถามได้เลย ไม่ต้องมีคำนำหน้า
+  ข้อความเสียง          กดไมค์แล้วถาม
+  รูปหน้าจอ            แนบรูปโต๊ะให้บอทอ่าน
+  !new                ลืม spot เดิม
+  !ai-off / !ai-on    ปิด/เปิด AI
   !help [th|en]       วิธีใช้นี้
   !contact · ping     อีเมลผู้พัฒนา · บอทออนไลน์ไหม
   !privacy            บอทเก็บข้อมูลอะไรบ้าง
 
-ตัวอย่างข้างล่าง ใส่หลัง @TamKwai หรือ !chart""",
+ตัวอย่าง: 3 คน BTN เปิด 15bb ICM 50/30/20 ไม่มี ante
+ใช้หลัง @TamKwai หรือ !chart""",
     "en": """ตามควาย · How to use in Discord
-Name a seat and a stack, get a solved push/fold chart
+Chip-EV push/fold, AoF and PLO; equal-stack ICM open/3-bet/jam to 30bb
 
 Commands
-  @TamKwai <question>  ask in a channel
-  !chart <question>    ask in a channel without a mention
-  DM                   ask with no prefix
-  voice message        hold the mic in the app and ask
-  screenshot           attach a picture of the table
+  @TamKwai <question>  ask
+  !chart <question>    ask without a mention
+  DM                   no prefix needed
+  voice message        hold the mic and ask
+  screenshot           attach the table
   !new                 forget the spot
-  !ai-off / !ai-on     AI off/on (on: just talk)
+  !ai-off / !ai-on     AI off/on
   !help [th|en]        this help
   !contact · ping      developer email · is the bot up
   !privacy             what the bot keeps
 
-Examples go after @TamKwai or !chart""",
+Example: 3 handed BTN open 15bb ICM 50/30/20 no ante
+Use after @TamKwai or !chart""",
 }
 PRIVACY = {
     "th": f"""ตามควาย · ความเป็นส่วนตัว

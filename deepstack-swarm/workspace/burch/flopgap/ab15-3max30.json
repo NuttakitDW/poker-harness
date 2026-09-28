@@ -1,0 +1,60 @@
+{
+ "spot": "3max30",
+ "stacks": [
+  30.0,
+  30.0,
+  30.0
+ ],
+ "tier15": {
+  "nodes": 24,
+  "terminals": 30,
+  "counts": {
+   "allfold": 1,
+   "uncontested": 14,
+   "showdown": 15,
+   "flop": 0
+  },
+  "converged": false,
+  "iters": 20000,
+  "gain": 0.0019739389230975114,
+  "seconds": 294.7
+ },
+ "tier1": {
+  "nodes": 14,
+  "terminals": 17,
+  "counts": {
+   "allfold": 1,
+   "uncontested": 7,
+   "showdown": 9,
+   "flop": 0
+  },
+  "converged": true,
+  "iters": 275,
+  "gain": 0.0009062528926453998,
+  "seconds": 3.1
+ },
+ "threebet_freq_by_seat": {
+  "1": 0.2248,
+  "2": 0.3694
+ },
+ "threebet_freq_overall": 0.3212,
+ "threebet_value": {
+  "nodes_touched": 3,
+  "all_seats_max": 0.01186,
+  "per_seat": {
+   "0": 0.0,
+   "1": 0.00739,
+   "2": 0.00202
+  }
+ },
+ "tier1_in_tier15": {
+  "matched_nodes": 14,
+  "of": 24,
+  "max_seat_cost": 0.04106,
+  "per_seat": [
+   -0.02831,
+   -0.01276,
+   0.04106
+  ]
+ }
+}

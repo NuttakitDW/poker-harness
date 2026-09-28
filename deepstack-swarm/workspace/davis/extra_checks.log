@@ -1,0 +1,13 @@
+(a) 6h-10bb-ante1.0-bb-bubble46: 2,000,000 hands vs the auditor's model
+    seat   sim mean       se   model EV      diff  diff/se
+       0    0.23967  0.00212    0.21393   0.02573    12.16
+       1    0.23326  0.00214    0.22380   0.00946     4.42
+       2    0.21467  0.00207    0.21732  -0.00266    -1.29
+       3    0.20113  0.00198    0.21746  -0.01632    -8.23
+       4   -0.17898  0.00187   -0.16729  -0.01169    -6.25
+       5   -1.47796  0.00200   -1.48313   0.00517     2.59
+    sigma_max 3.0249 (se 0.00430), eps 0.000634
+
+(b) fee 0.2bb at showdown, 6h-10bb-ante1.0-bb chip EV
+    fee 0.0: iters 75 exploit 0.00075 sigma_max 5.4075 eps 0.001132 dTV vs no-fee 0.00%
+    fee 0.2: iters 75 exploit 0.00069 sigma_max 5.1644 eps 0.001082 dTV vs no-fee 4.48%

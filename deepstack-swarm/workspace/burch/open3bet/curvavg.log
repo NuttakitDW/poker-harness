@@ -1,0 +1,6 @@
+case          iters    avg gain    cur gain  cur better?
+t1 3max 15      375    0.000994    0.003580           no
+t1 6max 15     1025    0.000954    0.000409          YES
+t1 3max 30      275    0.000906    0.002787           no
+t15 3max 15     425    0.000951    0.000455          YES
+t15 3max 30   30000    0.001511    0.096801           no

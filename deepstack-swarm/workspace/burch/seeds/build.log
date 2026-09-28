@@ -1,0 +1,36 @@
+818,480 class triples x 2,000 deals on 13 cores
+  51,200 triples  24s
+  102,400 triples  47s
+  153,600 triples  71s
+  204,800 triples  97s
+  256,000 triples  146s
+  307,200 triples  195s
+  358,400 triples  244s
+  409,600 triples  294s
+  460,800 triples  343s
+  512,000 triples  392s
+  563,200 triples  453s
+  614,400 triples  512s
+  665,600 triples  573s
+  716,800 triples  627s
+  768,000 triples  678s
+done in 733s
+wrote deepstack-swarm/workspace/burch/seeds/e3-seedB.npz in 739s
+818,480 class triples x 2,000 deals on 13 cores
+  51,200 triples  56s
+  102,400 triples  116s
+  153,600 triples  179s
+  204,800 triples  229s
+  256,000 triples  261s
+  307,200 triples  291s
+  358,400 triples  325s
+  409,600 triples  354s
+  460,800 triples  384s
+  512,000 triples  419s
+  563,200 triples  461s
+  614,400 triples  498s
+  665,600 triples  533s
+  716,800 triples  565s
+  768,000 triples  600s
+done in 633s
+wrote deepstack-swarm/workspace/burch/seeds/e3-seedC.npz in 641s

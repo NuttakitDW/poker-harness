@@ -1,0 +1,7 @@
+sigma_hand 3.0285  eps_hand 0.000634  (mICM/hand, bubble spot)
+right = bb-ante 1.0, wrong = no ante; dTV at a=1 is 21.93%
+
+     a     dTV   loss max      se   sig_D     eps_D  sigD/sigH  loss/eps_D
+  0.10   2.19%   0.008217 0.006600  3.8325  0.000803     1.2655       10.2x
+  0.50  10.96%   0.037765 0.005846  3.3015  0.000691     1.0902       54.6x
+  1.00  21.93%   0.070884 0.006193  3.3920  0.000710     1.1200       99.8x

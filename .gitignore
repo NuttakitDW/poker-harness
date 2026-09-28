@@ -10,3 +10,5 @@ bots
 *_Preflop_Guide_LT.pdf
 
 .vercel
+.venv-swarm/
+deepstack-swarm/runs/

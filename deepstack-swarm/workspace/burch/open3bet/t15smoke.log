@@ -1,0 +1,8 @@
+D. Tier 1.5 chip-EV solves, equal stacks, target 0.001, cfr+
+  n=3: nodes=24 terms=30 {'allfold': 1, 'uncontested': 14, 'showdown': 15, 'flop': 0}
+     converged=True iters=425 gain=0.000951 9.5s (22.4 ms/iter)
+  n=6: nodes=286 terms=307 {'allfold': 1, 'uncontested': 75, 'showdown': 231, 'flop': 0}
+     converged=True iters=1225 gain=0.000978 190.7s (155.6 ms/iter)
+E. Tier 1.5 ICM solve, equal stacks 15bb, target 0.0006
+  converged=True iters=1750 gain=0.000594 564.7s
+DONE

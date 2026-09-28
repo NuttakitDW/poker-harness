@@ -1,0 +1,104 @@
+{
+ "cell": "big-bubble-n3-20bb-left226",
+ "setting": "big",
+ "stage": "bubble",
+ "n": 3,
+ "stack": 20.0,
+ "left": 226,
+ "target": 0.0055,
+ "lifetime_eps": 0.0006,
+ "check_every": 25,
+ "method": "cfr+",
+ "commit": "b75e315",
+ "unit": "ICM chips/hand",
+ "auditor": "fasticm3.FastAuditor",
+ "code_fingerprint": "c371df3b",
+ "code": {
+  "floor3.py": "d78bbc3c9e2d",
+  "pricer3.py": "ab3e7511cc15",
+  "icm_pricer3.py": "550b3ef215f2",
+  "seqbr3.py": "760f67d7bb3e",
+  "fasticm3.py": "6b6d8dde3333",
+  "coach3.py": "631218729ebb",
+  "solve3.py": "6651e736ebe4",
+  "scenarios.py": "5db854a9ffd5",
+  "icm.py": "67d086e83f55",
+  "hands.py": "f2d95326f5d4",
+  "spot.py": "011bd5ef9af7",
+  "cashier.py": "cf7e8d37db34",
+  "oddsmaker.py": "7ac757df0617"
+ },
+ "build": {
+  "tier1": true
+ },
+ "stacks": [
+  20.0,
+  20.0,
+  20.0
+ ],
+ "cap": 3,
+ "crowd": 223,
+ "prizes_paid": 225,
+ "nodes": 14,
+ "terminals": 17,
+ "counts": {
+  "allfold": 1,
+  "uncontested": 7,
+  "showdown": 9,
+  "flop": 0
+ },
+ "converged": true,
+ "iters": 300,
+ "seconds": 3.0,
+ "final_gain": 0.005165648449206374,
+ "history": [
+  [
+   25,
+   0.07663758918730793
+  ],
+  [
+   50,
+   0.051633072576184685
+  ],
+  [
+   75,
+   0.041737707495359974
+  ],
+  [
+   100,
+   0.028499951670705813
+  ],
+  [
+   125,
+   0.019700712732619703
+  ],
+  [
+   150,
+   0.0158575181562291
+  ],
+  [
+   175,
+   0.01256611628683043
+  ],
+  [
+   200,
+   0.010699353176477081
+  ],
+  [
+   225,
+   0.0086108472918221
+  ],
+  [
+   250,
+   0.007209227121382801
+  ],
+  [
+   275,
+   0.005819756405048273
+  ],
+  [
+   300,
+   0.005165648449206374
+  ]
+ ]
+}

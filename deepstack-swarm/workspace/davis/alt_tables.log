@@ -1,0 +1,19 @@
+SEED=1000003 samples=2000
+818,480 class triples x 2,000 deals on 13 cores
+  51,200 triples  56s
+  102,400 triples  104s
+  153,600 triples  153s
+  204,800 triples  203s
+  256,000 triples  251s
+  307,200 triples  301s
+  358,400 triples  362s
+  409,600 triples  419s
+  460,800 triples  479s
+  512,000 triples  532s
+  563,200 triples  582s
+  614,400 triples  634s
+  665,600 triples  674s
+  716,800 triples  726s
+  768,000 triples  794s
+done in 862s
+wrote deepstack-swarm/workspace/davis/e3-alt.npz

@@ -20,7 +20,7 @@ CHART_DIR = ROOT / "harnesses" / "charts"
 RANKS = "AKQJT98765432"
 STRENGTH = {rank: index for index, rank in enumerate(RANKS)}
 ACTION_NAMES = {"raise": "raise", "call": "call", "fold": "fold"}
-CODE_ACTIONS = {"R": "raise", "C": "call", "F": "fold", "-": "none"}
+CODE_ACTIONS = {"R": "raise", "J": "allin", "C": "call", "F": "fold", "-": "none"}
 
 POSITIONS = ("UTG+1", "UTG", "LJ", "HJ", "CO", "BTN", "SB", "BB")
 POSITION_WORDS = {
@@ -64,11 +64,17 @@ RAISE_MEANS = {"RFI": "3-bet", "Limp": "iso-raise", "3-Bet": "4-bet", "4-Bet": "
 _OPENS = re.compile(r"\s*(?:เปิด|โอเพ่น|โอเพน|open|raise\s*first|rfi)")
 _THREE_BETS = re.compile(r"\s*(?:3\s*-?\s*bet|three\s*bet|ทรีเบ็ท|สามเบ็ท)")
 # "โดน 3-bet" หรือ "โดน BB 3-bet" แปลว่าคนถามคือคนเปิดที่ถูก 3-bet กลับ
-_FACING_THREE_BET = re.compile(r"(?:โดน|เจอ).{0,15}?(?:3bet|threebet|ทรีเบ็ท|สามเบ็ท)")
+_FACING_THREE_BET = re.compile(r"(?:โดน|เจอ|facing|vs).{0,15}?(?:3bet|threebet|ทรีเบ็ท|สามเบ็ท)")
 
 # ตัวถอดเสียงเขียนบิ๊กบลายด์ได้หลายแบบ เช่น บิ๊กบาย บิกบลาย จึงจับแค่ต้นคำ
 _STACK = re.compile(r"(?<![\d.])(\d{1,3}(?:\.\d+)?)\s*(?:bb|big\s*blind|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)",
                     re.IGNORECASE)
+_OPEN_SIZE = re.compile(r"(?i)(?:open|raise|เปิด)\s*(?:(to|เป็น|ถึง)\s*)?(\d+(?:\.\d+)?)\s*bb")
+_OPEN_SIZE_BEFORE = re.compile(r"(?i)()(\d+(?:\.\d+)?)\s*bb\s*(?:open|raise|เปิด)")
+_THREEBET_SIZE = re.compile(r"(?i)(?:3\s*-?\s*bet|three\s*bet|ทรีเบ็ท|สามเบ็ท)\s*"
+                            r"(?:(to|เป็น|ถึง)\s*)?(\d+(?:\.\d+)?)\s*bb")
+_POSTFLOP = re.compile(r"(?i)(?<![a-z])(?:postflop|flop|turn|river|board)(?![a-z])|ฟล็อป|เทิร์น|ริเวอร์")
+_FLAT = re.compile(r"(?i)(?:flat|cold\s*call|call|ลิมพ์|ลิมป์|คอล|โคล)")
 
 # ขนาดโต๊ะ heads-up คือสองคน ตัวถอดเสียงเขียนเป็นไทยได้หลายแบบ ส่วน 6-max 3 handed โต๊ะ 9 คน บอกเลขตรง ๆ
 _HEADS_UP = re.compile(r"(?<![a-z])(?:heads?\s*-?\s*up|hu)(?![a-z])|เฮด(?:ส์)?อัพ|ฮัดอัพ|ตัวต่อตัว")
@@ -77,6 +83,7 @@ _TABLE_SIZE = re.compile(r"(?<!\d)([2-9])\s*-?\s*(?:max|han(?:d?e)d|คน)")
 # ขอ push/fold ตรง ๆ หรือพูดถึงการยัดหมด ใช้ solver แม้สแตกเกิน 15bb
 _PUSH_FOLD = re.compile(r"push\s*[-/]?\s*fold|(?<![a-z])(?:jam\w*|shov\w*|push\w*|all\s*-?\s*in)(?![a-z])"
                         r"|ออลอิน|แจม|ยัดหมด|ลงหมด")
+_EXPLICIT_PUSH_FOLD = re.compile(r"push\s*[-/]\s*fold|push\s+fold|ชาร์ต\s*(?:พุช|push)\s*(?:โฟลด์|fold)")
 
 # ใครเป็นคนยัดหมด "UTG jam" คำตามหลังตำแหน่ง หรือ "คน jam เป็น UTG" คำนำหน้าตำแหน่ง
 _JAM_WORD = r"(?:jam\w*|shov\w*|push\w*|all\s*-?\s*in|ออลอิน|แจม|ยัดหมด|ลงหมด)"
@@ -193,6 +200,7 @@ class Request:
     players: int | None = None
     shovers: tuple[str, ...] = ()  # ทุกตำแหน่งที่ยัดหมดมาก่อนคนถาม เรียงตามที่พูด
     pushfold: bool = False
+    explicit_pushfold: bool = False  # explicitly requested the two-action model, not merely a shove event
     ante: float | None = None  # ante ต่อคนที่จ่ายเป็น bb, 0 คือไม่มี ante, None คือไม่ได้บอก
     ante_mode: str | None = None  # "each" ทุกคนจ่าย, "bb" BB จ่ายแทนทั้งโต๊ะ, None คือไม่ได้บอก
     payouts: tuple[float, ...] | None = None  # รางวัลอันดับ 1, 2, ... () คือ chip EV, None คือไม่ได้บอก
@@ -206,6 +214,13 @@ class Request:
     prize_pool: float | None = None    # เงินรางวัลรวม เป็นบาท
     stage_word: str | None = None      # "bubble" หรือ "final" ช่วงของทัวร์ที่เรียกชื่อ ไม่บอกจำนวนคน
     aof: bool = False                  # GGPoker All-in or Fold ใช้โต๊ะและค่าธรรมเนียมของเกมนั้น
+    seat_stacks: tuple[tuple[str, float], ...] = ()
+    open_size: float | None = None
+    threebet_size: float | None = None
+    unsupported_history: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "seat_stacks", tuple(tuple(item) for item in self.seat_stacks))
 
     @property
     def usable(self) -> bool:
@@ -377,7 +392,18 @@ def parse(question: str) -> Request:
     icm = payouts is None and bool(_ICM_WORD.search(lowered))
     stage_word = ("final" if _FINAL_TABLE.search(lowered)
                   else "bubble" if _BUBBLE.search(lowered) else None)
-    stack = _STACK.search(lowered)
+    size_matches = []
+    open_pattern = _OPEN_SIZE_BEFORE if _OPEN_SIZE_BEFORE.search(lowered) else _OPEN_SIZE
+    for kind, pattern in (("open", open_pattern), ("3bet", _THREEBET_SIZE)):
+        made = pattern.search(lowered)
+        other_stack = (made and any(stack_made.end() <= made.start() or stack_made.start() >= made.end()
+                                    for stack_made in _STACK.finditer(lowered)))
+        if made and (made.group(1) or other_stack):
+            size_matches.append((kind, made, _stack_value(made.group(2))))
+    stack_text = lowered
+    for _, made, _ in size_matches:
+        stack_text = stack_text[:made.start()] + " " * (made.end() - made.start()) + stack_text[made.end():]
+    stack = _STACK.search(stack_text)
 
     game = None
     if any(word in lowered for word in TOURNAMENT_WORDS):
@@ -399,6 +425,11 @@ def parse(question: str) -> Request:
     mentions = _mentions(seats)
     jammers = _jammers(seats, mentions) if len(found) > 1 and scenario in (None, "RFI") else []
     marked = _marked_hero(seats, mentions)
+    if marked:
+        opener = _seat_doing(seats, mentions, _OPENS)
+        raiser = _seat_doing(seats, mentions, _THREE_BETS)
+        if opener == marked and raiser and raiser != marked:
+            hero, villain, scenario = marked, raiser, "3-Bet"
     if not jammers and marked and _PUSH_FOLD.search(seats):
         # "มีคน all-in มาก่อน 1 คน จากตำแหน่ง UTG เราอยู่ hijack" บอกคนถามชัด แต่ไม่ได้วางคำ jam
         # ติดตำแหน่ง ที่นั่งอื่นที่เล่นก่อนคนถามจึงเป็นคนแจม ที่นั่งหลังคนถามยังไม่ได้เล่น
@@ -421,10 +452,23 @@ def parse(question: str) -> Request:
         scenario = scenario or "RFI"
     size = _TABLE_SIZE.search(lowered)
     players = 2 if _HEADS_UP.search(lowered) else int(size.group(1)) if size else None
+    seat_stacks = []
+    for _, end, name in _mentions(_spaced_blinds(lowered)):
+        made = _STACK.match(lowered, re.match(r"\s*", lowered[end:]).end() + end)
+        if made:
+            seat_stacks.append((name, _stack_value(made.group(1))))
+    sizes = {kind: value for kind, _, value in size_matches}
+    unsupported = ("postflop streets" if _POSTFLOP.search(lowered) else
+                   "limps or flat calls" if _FLAT.search(lowered) and not _PUSH_FOLD.search(lowered)
+                   else None)
     return Request(game=game, stack=_stack_value(stack.group(1)) if stack else None,
                    hero=hero, villain=villain, scenario=scenario, players=players, shovers=shovers,
                    pushfold=bool(_PUSH_FOLD.search(lowered)), ante=ante, ante_mode=ante_mode,
-                   payouts=payouts, icm=icm, stage_word=stage_word, aof=aof, **stage)
+                   explicit_pushfold=bool(_EXPLICIT_PUSH_FOLD.search(lowered)),
+                   payouts=payouts, icm=icm, stage_word=stage_word, aof=aof,
+                   seat_stacks=(tuple(dict(seat_stacks).items()) if len(dict(seat_stacks)) >= 2 else ()),
+                   open_size=sizes.get("open"),
+                   threebet_size=sizes.get("3bet"), unsupported_history=unsupported, **stage)
 
 
 def carry(question: str, earlier: list[str]) -> str:

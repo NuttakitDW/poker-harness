@@ -1,0 +1,8 @@
+protocol: CFR+ target 0.001, 200,000 hands, seed 20260927, fee 0
+HU-10bb                    n=2 iters=  50 exploit=0.00064 sigma_max=4.5905 (se 0.0099) eps=0.000961 (0.961 mbb/hand)
+HU-20bb                    n=2 iters=  50 exploit=0.00099 sigma_max=5.6433 (se 0.0217) eps=0.001182 (1.182 mbb/hand)
+HU-30bb                    n=2 iters=  75 exploit=0.00073 sigma_max=6.3137 (se 0.0344) eps=0.001322 (1.322 mbb/hand)
+6h-10bb-ante1.0-bb         n=6 iters=  75 exploit=0.00075 sigma_max=5.4075 (se 0.0168) eps=0.001132 (1.132 mbb/hand)
+6h-20bb-ante1.0-bb         n=6 iters= 125 exploit=0.00075 sigma_max=7.5825 (se 0.0252) eps=0.001588 (1.588 mbb/hand)
+6h-10bb-ante1.0-bubble46   n=6 iters= 100 exploit=0.00088 sigma_max=3.0090 (se 0.0133) eps=0.000630 (0.630 mICM chips/hand)
+6h-20bb-ante1.0-bubble46   n=6 iters= 125 exploit=0.00083 sigma_max=3.9386 (se 0.0214) eps=0.000825 (0.825 mICM chips/hand)

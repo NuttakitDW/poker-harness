@@ -1,0 +1,483 @@
+{
+ "spot": "6max",
+ "stacks": [
+  4.0,
+  8.0,
+  15.0,
+  20.0,
+  30.0,
+  15.0
+ ],
+ "mode": "icm",
+ "target": 0.0006,
+ "arms": {
+  "asis": {
+   "nodes": 125,
+   "terminals": 131,
+   "counts": {
+    "allfold": 1,
+    "uncontested": 25,
+    "showdown": 80,
+    "flop": 25
+   },
+   "converged": true,
+   "iters": 6400,
+   "final_gain": 0.0005984679424348913,
+   "seconds": 844.15,
+   "kind_reach": {
+    "allfold": 0.0,
+    "uncontested": 0.856271,
+    "showdown": 0.143484,
+    "flop": 0.000244
+   },
+   "reach_sum": 1.0,
+   "flop_terminal_reach": [
+    [
+     37,
+     1.454e-05
+    ],
+    [
+     62,
+     5.1e-07
+    ],
+    [
+     66,
+     5.497e-05
+    ],
+    [
+     68,
+     3.648e-05
+    ],
+    [
+     69,
+     4.29e-05
+    ],
+    [
+     71,
+     2.77e-05
+    ],
+    [
+     72,
+     2.836e-05
+    ],
+    [
+     73,
+     2.848e-05
+    ],
+    [
+     98,
+     1.27e-06
+    ],
+    [
+     105,
+     2.06e-06
+    ],
+    [
+     108,
+     1.41e-06
+    ],
+    [
+     109,
+     1.59e-06
+    ],
+    [
+     112,
+     1.04e-06
+    ],
+    [
+     113,
+     1.17e-06
+    ],
+    [
+     114,
+     1.23e-06
+    ],
+    [
+     118,
+     8e-08
+    ],
+    [
+     120,
+     4e-08
+    ],
+    [
+     121,
+     3e-08
+    ],
+    [
+     123,
+     4e-08
+    ],
+    [
+     124,
+     3e-08
+    ],
+    [
+     125,
+     3e-08
+    ],
+    [
+     127,
+     2e-08
+    ],
+    [
+     128,
+     2e-08
+    ],
+    [
+     129,
+     2e-08
+    ],
+    [
+     130,
+     2e-08
+    ]
+   ],
+   "flop_reach_total": 0.00024407,
+   "history": [
+    [
+     6275,
+     0.0006172670171217302
+    ],
+    [
+     6300,
+     0.0006083655755023353
+    ],
+    [
+     6325,
+     0.0006071917941233931
+    ],
+    [
+     6350,
+     0.0006087402344206005
+    ],
+    [
+     6375,
+     0.0006005891421244523
+    ],
+    [
+     6400,
+     0.0005984679424348913
+    ]
+   ],
+   "short_firstin": {
+    "P(fold)": 0.8587,
+    "P(raise)": 0.1413,
+    "P(allin)": 0.0,
+    "range_fold": 0.8597,
+    "range_raise": 0.1403,
+    "range_allin": 0.0
+   },
+   "conditional_on_short_firstin": {
+    "fold": {
+     "P": 0.858664,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.89219,
+      "showdown": 0.107537,
+      "flop": 0.000272
+     }
+    },
+    "raise": {
+     "P": 0.141325,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.638056,
+      "showdown": 0.361875,
+      "flop": 6.9e-05
+     }
+    },
+    "allin": {
+     "P": 1.1e-05,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.628538,
+      "showdown": 0.342367,
+      "flop": 0.029094
+     }
+    }
+   }
+  },
+  "leafree": {
+   "nodes": 100,
+   "terminals": 106,
+   "counts": {
+    "allfold": 1,
+    "uncontested": 25,
+    "showdown": 80,
+    "flop": 0
+   },
+   "converged": true,
+   "iters": 6300,
+   "final_gain": 0.0005954670471127635,
+   "seconds": 743.52,
+   "kind_reach": {
+    "allfold": 0.0,
+    "uncontested": 0.859225,
+    "showdown": 0.140775
+   },
+   "reach_sum": 1.0,
+   "flop_terminal_reach": [],
+   "flop_reach_total": 0,
+   "history": [
+    [
+     6175,
+     0.0006136369618314715
+    ],
+    [
+     6200,
+     0.0006135756102773965
+    ],
+    [
+     6225,
+     0.0006039822056720804
+    ],
+    [
+     6250,
+     0.0006056320291452969
+    ],
+    [
+     6275,
+     0.0006037780517701916
+    ],
+    [
+     6300,
+     0.0005954670471127635
+    ]
+   ],
+   "short_firstin": {
+    "P(fold)": 0.8789,
+    "P(raise)": 0.0006,
+    "P(allin)": 0.1206,
+    "range_fold": 0.8808,
+    "range_raise": 0.0,
+    "range_allin": 0.1192
+   },
+   "conditional_on_short_firstin": {
+    "fold": {
+     "P": 0.878869,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.892315,
+      "showdown": 0.107685
+     }
+    },
+    "raise": {
+     "P": 0.000575,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.610171,
+      "showdown": 0.389829
+     }
+    },
+    "allin": {
+     "P": 0.120555,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.619182,
+      "showdown": 0.380818
+     }
+    }
+   }
+  },
+  "stackoff": {
+   "nodes": 125,
+   "terminals": 131,
+   "counts": {
+    "allfold": 1,
+    "uncontested": 25,
+    "showdown": 80,
+    "flop": 25
+   },
+   "converged": true,
+   "iters": 6675,
+   "final_gain": 0.0005983386221599981,
+   "seconds": 1031.7,
+   "kind_reach": {
+    "allfold": 0.0,
+    "uncontested": 0.856116,
+    "showdown": 0.143702,
+    "flop": 0.000183
+   },
+   "reach_sum": 1.0,
+   "flop_terminal_reach": [
+    [
+     37,
+     1.104e-05
+    ],
+    [
+     62,
+     4.2e-07
+    ],
+    [
+     66,
+     4.24e-05
+    ],
+    [
+     68,
+     2.355e-05
+    ],
+    [
+     69,
+     2.45e-05
+    ],
+    [
+     71,
+     2.147e-05
+    ],
+    [
+     72,
+     2.916e-05
+    ],
+    [
+     73,
+     2.22e-05
+    ],
+    [
+     98,
+     1.26e-06
+    ],
+    [
+     105,
+     1.38e-06
+    ],
+    [
+     108,
+     9.8e-07
+    ],
+    [
+     109,
+     1e-06
+    ],
+    [
+     112,
+     9.9e-07
+    ],
+    [
+     113,
+     1.03e-06
+    ],
+    [
+     114,
+     1.06e-06
+    ],
+    [
+     118,
+     1e-08
+    ],
+    [
+     120,
+     1e-08
+    ],
+    [
+     121,
+     1e-08
+    ],
+    [
+     123,
+     0.0
+    ],
+    [
+     124,
+     1e-08
+    ],
+    [
+     125,
+     1e-08
+    ],
+    [
+     127,
+     1e-08
+    ],
+    [
+     128,
+     1e-08
+    ],
+    [
+     129,
+     1e-08
+    ],
+    [
+     130,
+     1e-08
+    ]
+   ],
+   "flop_reach_total": 0.00018251,
+   "history": [
+    [
+     6550,
+     0.0006104719773268408
+    ],
+    [
+     6575,
+     0.0006122476778632469
+    ],
+    [
+     6600,
+     0.0006060393528579162
+    ],
+    [
+     6625,
+     0.0006019047525476407
+    ],
+    [
+     6650,
+     0.0006037274123625437
+    ],
+    [
+     6675,
+     0.0005983386221599981
+    ]
+   ],
+   "short_firstin": {
+    "P(fold)": 0.8587,
+    "P(raise)": 0.1413,
+    "P(allin)": 0.0,
+    "range_fold": 0.8597,
+    "range_raise": 0.1403,
+    "range_allin": 0.0
+   },
+   "conditional_on_short_firstin": {
+    "fold": {
+     "P": 0.858667,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.892,
+      "showdown": 0.107796,
+      "flop": 0.000203
+     }
+    },
+    "raise": {
+     "P": 0.141328,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.638101,
+      "showdown": 0.361844,
+      "flop": 5.4e-05
+     }
+    },
+    "allin": {
+     "P": 6e-06,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.625798,
+      "showdown": 0.361166,
+      "flop": 0.013036
+     }
+    }
+   }
+  }
+ },
+ "chart_diff": {
+  "leafree": {
+   "matched_nodes": 92,
+   "mean_abs_dsigma_prior": 0.011617077550779113,
+   "max_abs_dsigma": 0.9999311547381451
+  },
+  "stackoff": {
+   "matched_nodes": 125,
+   "mean_abs_dsigma_prior": 0.0067298270139500935,
+   "max_abs_dsigma": 0.9999969415890336
+  }
+ }
+}

@@ -92,22 +92,28 @@ def _draw_legend(draw: ImageDraw.ImageDraw, chart: dict, lang: str, y: int,
 
 def _answer_lines(book: dict, chart: dict, asked: tuple[str, ...]) -> list[tuple[str, list]]:
     names = chart.get("names", {})
-    return [(hand, [(chart_grid.ACTION_CODES.get(name, "F"),
+    return [(hand, [(chart_grid.ACTION_CODES[name],
                      f"{names.get(name, name)} {round(share * 100)}%")
                     for name, share in preflop.hand_shares(book, chart, hand)])
             for hand in asked]
 
 
 def _wrap(text: str, font: ImageFont.FreeTypeFont, width: int) -> list[str]:
-    """ตัดบรรทัดยาวตรงจุลภาค ให้ไม่เกินความกว้างของรูป"""
+    """Wrap notes at words and punctuation so solver metadata cannot be clipped."""
     lines, current = [], ""
-    for part in text.split(", "):
-        candidate = f"{current}, {part}" if current else part
+    for token in text.split():
+        candidate = f"{current} {token}" if current else token
         if current and font.getlength(candidate) > width:
-            lines.append(current + ",")
-            current = part
+            lines.append(current)
+            current = token
         else:
             current = candidate
+        while current and font.getlength(current) > width:
+            cut = max(1, int(len(current) * width / font.getlength(current)))
+            while cut > 1 and font.getlength(current[:cut]) > width:
+                cut -= 1
+            lines.append(current[:cut])
+            current = current[cut:]
     return lines + [current] if current else lines
 
 

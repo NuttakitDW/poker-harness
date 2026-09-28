@@ -1,0 +1,288 @@
+{
+ "spot": "3max",
+ "stacks": [
+  5.0,
+  15.0,
+  30.0
+ ],
+ "mode": "chip",
+ "target": 0.001,
+ "arms": {
+  "asis": {
+   "nodes": 14,
+   "terminals": 17,
+   "counts": {
+    "allfold": 1,
+    "uncontested": 7,
+    "showdown": 8,
+    "flop": 1
+   },
+   "converged": true,
+   "iters": 200,
+   "final_gain": 0.0009894430343041518,
+   "seconds": 3.43,
+   "kind_reach": {
+    "allfold": 0.162707,
+    "uncontested": 0.482547,
+    "showdown": 0.346632,
+    "flop": 0.008114
+   },
+   "reach_sum": 1.0,
+   "flop_terminal_reach": [
+    [
+     16,
+     0.00811403
+    ]
+   ],
+   "flop_reach_total": 0.00811403,
+   "history": [
+    [
+     75,
+     0.005360978117141577
+    ],
+    [
+     100,
+     0.0032786661763081373
+    ],
+    [
+     125,
+     0.0021594345813124314
+    ],
+    [
+     150,
+     0.0016004562780336591
+    ],
+    [
+     175,
+     0.001221474924923164
+    ],
+    [
+     200,
+     0.0009894430343041518
+    ]
+   ],
+   "short_firstin": {
+    "P(fold)": 0.5754,
+    "P(raise)": 0.3056,
+    "P(allin)": 0.119,
+    "range_fold": 0.5701,
+    "range_raise": 0.3454,
+    "range_allin": 0.0845
+   },
+   "conditional_on_short_firstin": {
+    "fold": {
+     "P": 0.575432,
+     "kind_reach": {
+      "allfold": 0.282756,
+      "uncontested": 0.548644,
+      "showdown": 0.168601,
+      "flop": 0.0
+     }
+    },
+    "raise": {
+     "P": 0.305582,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.390493,
+      "showdown": 0.609507,
+      "flop": 0.0
+     }
+    },
+    "allin": {
+     "P": 0.118986,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.399307,
+      "showdown": 0.5325,
+      "flop": 0.068193
+     }
+    }
+   }
+  },
+  "leafree": {
+   "nodes": 13,
+   "terminals": 16,
+   "counts": {
+    "allfold": 1,
+    "uncontested": 7,
+    "showdown": 8,
+    "flop": 0
+   },
+   "converged": true,
+   "iters": 200,
+   "final_gain": 0.0009083228925011194,
+   "seconds": 2.45,
+   "kind_reach": {
+    "allfold": 0.167469,
+    "uncontested": 0.477288,
+    "showdown": 0.355243
+   },
+   "reach_sum": 1.0,
+   "flop_terminal_reach": [],
+   "flop_reach_total": 0,
+   "history": [
+    [
+     75,
+     0.005075295075346312
+    ],
+    [
+     100,
+     0.003114275282917624
+    ],
+    [
+     125,
+     0.0020482549074396935
+    ],
+    [
+     150,
+     0.001510726469050181
+    ],
+    [
+     175,
+     0.0011377181428907205
+    ],
+    [
+     200,
+     0.0009083228925011194
+    ]
+   ],
+   "short_firstin": {
+    "P(fold)": 0.5914,
+    "P(raise)": 0.0413,
+    "P(allin)": 0.3672,
+    "range_fold": 0.5943,
+    "range_raise": 0.0302,
+    "range_allin": 0.3756
+   },
+   "conditional_on_short_firstin": {
+    "fold": {
+     "P": 0.591446,
+     "kind_reach": {
+      "allfold": 0.283152,
+      "uncontested": 0.548276,
+      "showdown": 0.168572
+     }
+    },
+    "raise": {
+     "P": 0.041312,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.385164,
+      "showdown": 0.614836
+     }
+    },
+    "allin": {
+     "P": 0.367242,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.373325,
+      "showdown": 0.626675
+     }
+    }
+   }
+  },
+  "stackoff": {
+   "nodes": 14,
+   "terminals": 17,
+   "counts": {
+    "allfold": 1,
+    "uncontested": 7,
+    "showdown": 8,
+    "flop": 1
+   },
+   "converged": true,
+   "iters": 200,
+   "final_gain": 0.0008610633897934137,
+   "seconds": 3.33,
+   "kind_reach": {
+    "allfold": 0.160494,
+    "uncontested": 0.483292,
+    "showdown": 0.349526,
+    "flop": 0.006688
+   },
+   "reach_sum": 1.0,
+   "flop_terminal_reach": [
+    [
+     16,
+     0.00668846
+    ]
+   ],
+   "flop_reach_total": 0.00668846,
+   "history": [
+    [
+     75,
+     0.005000767872011085
+    ],
+    [
+     100,
+     0.003024229075681355
+    ],
+    [
+     125,
+     0.0019593301866057036
+    ],
+    [
+     150,
+     0.0014415321467466308
+    ],
+    [
+     175,
+     0.0010854033564368548
+    ],
+    [
+     200,
+     0.0008610633897934137
+    ]
+   ],
+   "short_firstin": {
+    "P(fold)": 0.5669,
+    "P(raise)": 0.2308,
+    "P(allin)": 0.2023,
+    "range_fold": 0.5671,
+    "range_raise": 0.2971,
+    "range_allin": 0.1267
+   },
+   "conditional_on_short_firstin": {
+    "fold": {
+     "P": 0.566862,
+     "kind_reach": {
+      "allfold": 0.283127,
+      "uncontested": 0.548308,
+      "showdown": 0.168565,
+      "flop": 0.0
+     }
+    },
+    "raise": {
+     "P": 0.230804,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.398444,
+      "showdown": 0.601556,
+      "flop": 0.0
+     }
+    },
+    "allin": {
+     "P": 0.202334,
+     "kind_reach": {
+      "allfold": 0.0,
+      "uncontested": 0.397929,
+      "showdown": 0.569015,
+      "flop": 0.033056
+     }
+    }
+   }
+  }
+ },
+ "chart_diff": {
+  "leafree": {
+   "matched_nodes": 13,
+   "mean_abs_dsigma_prior": 0.052577073920239206,
+   "max_abs_dsigma": 0.9966815629654242
+  },
+  "stackoff": {
+   "matched_nodes": 14,
+   "mean_abs_dsigma_prior": 0.026254516508501625,
+   "max_abs_dsigma": 0.9999502487562189
+  }
+ }
+}

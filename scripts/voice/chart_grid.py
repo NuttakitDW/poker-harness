@@ -22,21 +22,23 @@ POINTED = "\033[1;4m"
 # แดงคือ raise เขียวคือ call หรือ check น้ำเงินคือ fold ช่องเทาจาง ๆ คือมือที่ไม่อยู่ในเรนจ์เลย
 STYLES = {
     "R": "\033[48;5;124;38;5;231;1m",
+    "J": "\033[48;5;130;38;5;231;1m",
     "C": "\033[48;5;28;38;5;231;1m",
     "F": "\033[48;5;25;38;5;231m",
     "-": "\033[38;5;240m",
 }
-ACTION_CODES = {"raise": "R", "call": "C", "fold": "F"}
+ACTION_CODES = {"raise": "R", "allin": "J", "call": "C", "fold": "F"}
 # เฉดของช่องผสม (ความถี่ขั้นต่ำ, พื้นหลัง) ยิ่งเล่นน้อยยิ่งอ่อน สีอ่อนใช้ตัวอักษรดำให้อ่านออก
 SHADES = {
     "R": ((0.95, 124), (0.85, 167), (0.7, 174), (0.0, 217)),
+    "J": ((0.95, 130), (0.85, 172), (0.7, 179), (0.0, 223)),
     "C": ((0.95, 28), (0.85, 71), (0.7, 108), (0.0, 151)),
     "F": ((0.95, 25), (0.85, 68), (0.7, 110), (0.0, 153)),
 }
 DARK_TEXT_FROM = 0.85  # ต่ำกว่านี้พื้นอ่อนแล้ว ใช้ตัวอักษรดำ
 # ไม่มีสี เช่นส่งออกไปไฟล์ ใช้ตัวอักษรแทน ตัวเล็กคือเล่นผสม
-PLAIN = {"R": "R", "C": "C", "F": ".", "-": "-"}
-LEGEND = (("R", "raise"), ("C", "call/check"), ("F", "fold"))
+PLAIN = {"R": "R", "J": "J", "C": "C", "F": ".", "-": "-"}
+LEGEND = (("R", "raise"), ("J", "all-in"), ("C", "call/check"), ("F", "fold"))
 LEGEND_WORDS = {
     "TH": {"none": "ไม่อยู่ในเรนจ์", "mixed": "สีอ่อน = เล่นผสม ยิ่งอ่อนยิ่งเล่นน้อย",
            "lower": "ตัวเล็ก = เล่นผสม"},
@@ -57,7 +59,7 @@ def tone(code: str, shares: dict | None) -> tuple[str, int | None, bool]:
     """
     if shares:
         action, share = max(shares.items(), key=lambda item: item[1])
-        code = ACTION_CODES.get(action, "F")
+        code = ACTION_CODES[action]
     elif code in SHADES:
         share = 1.0
     else:
@@ -108,7 +110,9 @@ def legend_entries(chart: dict | None = None, lang: str = "TH") -> tuple[tuple[s
     """
     if chart is None:
         return (*LEGEND, ("-", LEGEND_WORDS[lang]["none"]))
-    used = set(chart["actions"]) | {tone("F", shares)[0] for shares in chart.get("mixed", {}).values()}
+    used = set(chart["actions"])
+    used.update(ACTION_CODES[action] for shares in chart.get("mixed", {}).values()
+                for action in shares if action in ACTION_CODES)
     names = chart.get("names", {})
     actions = {code: action for action, code in ACTION_CODES.items()}
     entries = tuple((code, names.get(actions[code], name)) for code, name in LEGEND if code in used)
@@ -173,7 +177,7 @@ def _answer(book: dict, chart: dict, hand: str, lang: str) -> str:
     if not shares:
         return f"   {BOLD}{hand}{RESET}  {STYLES['-']}{preflop.WORDS[lang]['none']}{RESET}"
     names = chart.get("names", {})
-    badges = " ".join(f"{STYLES[ACTION_CODES.get(name, 'F')]} {names.get(name, name)} "
+    badges = " ".join(f"{STYLES[ACTION_CODES[name]]} {names.get(name, name)} "
                       f"{round(share * 100)}% {RESET}" for name, share in shares)
     return f"   {BOLD}{hand}{RESET}  {badges}"
 

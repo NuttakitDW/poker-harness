@@ -30,14 +30,18 @@ import argparse
 import dataclasses
 import pathlib
 import queue
+import re
 import sys
 import threading
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
 import assistant  # noqa: E402
+import icm_chart  # noqa: E402
 import chart_grid  # noqa: E402
 import mario  # noqa: E402
+import plo_type  # noqa: E402
+import preflop  # noqa: E402
 import pushfold_chart  # noqa: E402
 import spot  # noqa: E402
 from engines import usable_text  # noqa: E402
@@ -85,6 +89,10 @@ BAD_PAYOUTS = {
     "EN": "Can't price ICM: {why}. Try another table size, payouts or players left, "
           "e.g. 4 handed icm 50/30/20",
 }
+ICM_UNSUPPORTED = {
+    "TH": "ยังแก้ ICM spot นี้ไม่ได้: {why}",
+    "EN": "This ICM spot is not supported: {why}",
+}
 ALL_IN_BY_POSTING = {
     "TH": "ตำแหน่งนี้จ่าย blind กับ ante แล้วหมดตัวพอดี ไม่มีอะไรต้องตัดสินใจ รอดูไพ่ได้เลย",
     "EN": "That seat is all-in from posting the blind and ante; there is no decision to make",
@@ -99,55 +107,57 @@ HELP = "/v voice  /t text  /n new  /ai-on /ai-off  /q quit  /h help (/help en En
 HELP_COMMANDS = ("/help", "/h", "/?")
 # ตัวอย่าง ข้อจำกัด และสี ใช้ร่วมกับวิธีใช้ใน Discord (scripts/discord_bot/bot.py) จะได้ไม่เขียนสองที่
 HELP_GUIDE = {
-    "th": """Examples  ตอนนี้มีแค่ push/fold ทัวร์นาเมนต์ chip EV หรือ ICM
+    "th": """Examples  ชาร์ตทัวร์นาเมนต์ push/fold และ preflop ICM
+  ICM เปิด 2.2bb       3 handed BTN open 15bb icm 50/30/20 no ante
+  ICM เจอ open         3 handed BB vs BTN open 15bb icm 50/30/20 no ante
   shove เป็นคนแรก     BTN ออลอิน 10bb
   เจอคน shove         BB เจอ BTN ออลอิน 8bb
   เจอหลายคน           UTG all-in แล้ว BTN call เราอยู่ SB 5bb
   ขนาดโต๊ะ            heads-up, 6-max, 3 handed  (ไม่บอก = โต๊ะ 8 คน)
   ICM                 icm 50/30/20, รางวัล 50/30/20  (icm เฉย ๆ = bubble เกม live, chip ev = กลับ)
-  ช่วงของทัวร์ MTT     เหลือ 50%, เหลือ 120 คน, bubble, final table  เปลี่ยนได้: field 500, paid 12%, avg 25bb
+  ช่วง MTT             เหลือ 120 คน, bubble, final table, field 500, paid 12%, avg 25bb
   ถามมือ              ถือ K5s  ได้ % ของทุก action
   ถามต่อ              ขอ 12bb, เจอ CO แทน  (ใช้ตำแหน่งจากตาก่อน)
   GG All-in or Fold   aof BB เจอ CO
 
 Limits
+  ICM: สแตกเท่ากัน 3-30bb, ไม่มี limp/flat/postflop, rake 0
   สแตกมากกว่า 0 ถึง 15bb ทศนิยมได้ เช่น 5.5bb  หรือพูดว่า push/fold  เกิน 15bb เป็นค่าประมาณ
   สแตกที่บอกคือที่เหลือหลังจ่าย ante  ทุกคนสแตกเท่ากัน
   บอกรางวัลเอง ICM นับว่าผู้เล่นที่เหลือทั้งหมดอยู่โต๊ะนี้
-  ช่วงของทัวร์: live คนลง 20 ซื้อเข้า 500 บาท เปลี่ยนได้: field 30, buy-in 1000, pool 15000
-  bubble = เหลือมากกว่าคนได้เงิน 3%  final table = ทุกคนที่เหลืออยู่โต๊ะนี้
+  live: 20 คน buy-in 500 บาท; เปลี่ยนได้: field 30, buy-in 1000, pool 15000
   ทุกคนจ่าย ante 10% ของ BB  เปลี่ยนได้: ante 12.5%, ante 0.2bb, ไม่มี ante
-  BB จ่าย ante แทนทั้งโต๊ะ: bb ante หรือ live (ค่าเริ่ม 1bb, bb ante 1.5 ก็ได้)
 
 Colours
-  แดง shove  เขียว call  น้ำเงิน fold  ยิ่งอ่อนยิ่งเล่นน้อย (เล่นผสม)""",
-    "en": """Examples  push/fold tournament charts only, chip EV or ICM
+  แดง raise  ส้ม all-in  เขียว call  น้ำเงิน fold  ยิ่งอ่อนยิ่งเล่นน้อย (เล่นผสม)""",
+    "en": """Examples  tournament push/fold and preflop ICM charts
+  ICM open            3 handed BTN open 15bb icm 50/30/20 no ante
+  ICM facing open     3 handed BB vs BTN open 15bb icm 50/30/20 no ante
   first to shove      BTN shove 10bb
   facing a shove      BB vs BTN shove 8bb
   facing several      UTG all-in, BTN call, I'm in the SB 5bb
   table size          heads-up, 6-max, 3 handed  (unstated = 8-handed)
   ICM                 icm 50/30/20, payout 50 30 20  (icm alone = live bubble, chip ev = back)
-  MTT stage           50% left, 120 left, bubble, final table  change: field 500, paid 12%, avg 25bb
+  MTT stage           120 left, bubble, final table, field 500, paid 12%, avg 25bb
   ask about a hand    hold K5s  gives every action's %
   follow up           12bb, vs CO instead  (keeps the seats from before)
   GG AoF              aof BB vs CO
 
 Limits
+  ICM: equal 3-30bb stacks, no limps/flats/postflop, zero rake
   stacks up to 15bb, decimals ok (5.5bb), or say push/fold; above 15bb is approximate
   the stack is what is left after the ante; everyone has the same stack
   ICM with your payouts: this table is everyone left, unless a stage is given
-  stage: 20 entries, 500 THB buy-in; change: field 30, buy-in 1000, pool 15000
+  live: 20 entries, 500 THB; change: field 30, buy-in 1000, pool 15000
   other tables share one stack (this table's unless avg)
-  bubble = 3% more players left than places paid; final table = everyone left is at this table
   everyone antes 10% of the BB; change it: ante 12.5%, ante 0.2bb, no ante
-  big blind ante for the table: bb ante or live (1bb by default, or bb ante 1.5)
 
 Colours
-  red shove  green call  blue fold  lighter = mixed, played less often""",
+  red raise  orange all-in  green call  blue fold  lighter = mixed, played less often""",
 }
 HELP_TEXT = {
     "th": """spot chart · ตามควาย.com
-ถามตำแหน่งกับสแตก ได้ชาร์ต push/fold ที่ solver แก้สด
+ถามตำแหน่งกับสแตก ได้ชาร์ต preflop ที่ solver แก้สด
 
 Usage
   make chart
@@ -163,9 +173,11 @@ Commands
   /contact            อีเมลติดต่อผู้พัฒนา
   /q, /quit           ออก  (exit, quit, ออก ก็ได้)
 
+PLO  ชนิดมือตาม Jeff Hwang: plo A234 ss A2, plo As Ks Qd Jd  (ss เฉย ๆ ไม่เดาว่า A มีดอกคู่)
+
 """ + HELP_GUIDE["th"] + f"\n\n{COPYRIGHT}",
     "en": """spot chart · tamkwai
-Name a seat and a stack, get a push/fold chart solved on the spot
+Name a seat and a stack, get a preflop chart solved on the spot
 
 Usage
   make chart
@@ -181,6 +193,8 @@ Commands
   /contact            the developer's email
   /q, /quit           quit  (exit, quit also work)
 
+PLO  hand type by Jeff Hwang: plo A234 ss A2, plo As Ks Qd Jd  (plain ss does not assume the Ace)
+
 """ + HELP_GUIDE["en"] + f"\n\n{COPYRIGHT}",
 }
 
@@ -195,7 +209,9 @@ class Reply:
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
     # ชนิดคำตอบ ใช้ในบันทึกคำถามเพื่อหาประโยคที่ตัวอ่านยังอ่านไม่ออก
     # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | bad_payouts | mario
+    # | plo_type
     kind: str = "chart"
+    plo: "plo_type.Asked | None" = None  # terminal uses a larger layout; message stays ANSI-free
 
 
 def reply(prompt: str, memory=None, lang: str | None = None) -> Reply:
@@ -205,7 +221,32 @@ def reply(prompt: str, memory=None, lang: str | None = None) -> Reply:
     """
     if mario.asked(prompt):
         return Reply(None, kind="mario")
+    # มือ PLO สี่ใบไม่มีชาร์ต 13x13 ตอบเป็นกลุ่มมือตาม Jeff Hwang แทน ไม่แตะความจำ spot
+    plo = plo_type.lookup(prompt)
+    if plo is not None:
+        return Reply(None, plo_type.answer(plo, lang or spot.language_of(prompt)), kind="plo_type",
+                     plo=plo)
     found = spot.lookup(prompt, memory=memory)
+    said = spot.read(prompt)
+    parsed = spot.merge(said, memory)
+    active_spot = said != preflop.Request() or spot._looks_like_spot(prompt, said)
+    if active_spot and icm_chart.applies(parsed):
+        lang = lang or spot.language_of(prompt)
+        if parsed.hero is None:
+            return Reply(found, MISSING[lang], kind="not_found")
+        seat = pushfold_chart.seat_problem(parsed)
+        if seat:
+            neutral = found or spot.Spot({}, {}, tuple(preflop.hands_in(prompt)), 1.0, (), lang, parsed)
+            return Reply(neutral, seat_message(seat, lang), kind="seat_not_at_table")
+        try:
+            made = icm_chart.solved(parsed)
+        except icm_chart.IcmChartError as error:
+            neutral = found or spot.Spot({}, {}, tuple(preflop.hands_in(prompt)), 1.0, (), lang, parsed)
+            return Reply(neutral, ICM_UNSUPPORTED[lang].format(why=error), kind="icm_unsupported")
+        neutral = found or spot.Spot(made.book, made.chart, tuple(preflop.hands_in(prompt)),
+                                     1.0, (), lang, parsed)
+        return Reply(dataclasses.replace(neutral, book=made.book, chart=made.chart,
+                                         request=parsed), note=made.note)
     if found is None:
         return Reply(None, MISSING[lang or spot.language_of(prompt)], kind="not_found")
     lang = lang or found.lang
@@ -260,6 +301,9 @@ def ai_answer(prompt: str, color: bool, history: tuple = (),
 def render(made: Reply, color: bool) -> tuple[str, "spot.Spot | None"]:
     if made.kind == "mario":
         return mario.render(color), None
+    if made.kind == "plo_type" and made.plo and made.plo.hand:
+        lang = "TH" if re.search(r"[฀-๿]", made.message or "") else "EN"
+        return plo_type.terminal(made.plo.hand, lang, color=color), None
     if made.message is not None:
         return made.message, made.found
     found = made.found

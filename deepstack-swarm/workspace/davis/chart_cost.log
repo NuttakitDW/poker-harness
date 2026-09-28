@@ -1,0 +1,50 @@
+no ante         iters  125 exploit 0.00067 sigma_max 2.5762 eps 0.000540
+bb-ante 1.0     iters  100 exploit 0.00088 sigma_max 3.0090 eps 0.000630
+each-ante 1/6   iters  125 exploit 0.00074 sigma_max 3.0318 eps 0.000635
+
+--- axis: ante size at the bubble: bb-ante 1.0 (right) vs no ante (wrong)
+    dTV max 21.93% at BTN|fff; epsilon = 0.000630 (units/hand)
+    exploitability of the right chart 0.00088, of the wrong chart in this spot 0.49089
+     mix a     dTV max seat loss  mean loss   x eps   exploit
+      0.00   0.00%      0.000000   0.000000     0.0   0.00088
+      0.02   0.44%      0.001688  -0.000907     2.7   0.00145
+      0.05   1.10%      0.004211  -0.002269     6.7   0.00347
+      0.10   2.19%      0.008388  -0.004544    13.3   0.00914
+      0.25   5.48%      0.020674  -0.011406    32.8   0.04643
+      0.50  10.96%      0.040051  -0.022924    63.6   0.17666
+      1.00  21.93%      0.072093  -0.045901   114.4   0.49089
+    local slope: -206.7251 m-units/hand per point of dTV -> a value change of eps is -0.305 points of dTV
+    paired: mean loss 0.081187/hand, sd of the per-hand difference 3.2081 (vs 3.0090 for the right chart alone)
+    paired epsilon 0.000672 -> a lifetime of play separates the two charts by 120.8x
+
+--- axis: ante size the other way: no ante (right) vs bb-ante 1.0 (wrong)
+    dTV max 21.93% at BTN|fff; epsilon = 0.000540 (units/hand)
+    exploitability of the right chart 0.00067, of the wrong chart in this spot 0.16920
+     mix a     dTV max seat loss  mean loss   x eps   exploit
+      0.00   0.00%      0.000000   0.000000     0.0   0.00067
+      0.02   0.44%      0.001476   0.000940     2.7   0.00106
+      0.05   1.10%      0.003718   0.002352     6.9   0.00224
+      0.10   2.19%      0.007522   0.004712    13.9   0.00593
+      0.25   5.48%      0.019878   0.011828    36.8   0.02398
+      0.50  10.96%      0.047168   0.023742    87.4   0.06430
+      1.00  21.93%      0.125738   0.047367   233.1   0.16920
+    local slope: 214.2689 m-units/hand per point of dTV -> a value change of eps is 0.252 points of dTV
+    paired: mean loss 0.054133/hand, sd of the per-hand difference 3.2894 (vs 2.5762 for the right chart alone)
+    paired epsilon 0.000689 -> a lifetime of play separates the two charts by 78.6x
+
+--- axis: ante mode at matched total: bb-ante 1.0 (right) vs each-ante 1/6 (wrong)
+    dTV max 4.59% at HJ|f; epsilon = 0.000630 (units/hand)
+    exploitability of the right chart 0.00088, of the wrong chart in this spot 0.00916
+     mix a     dTV max seat loss  mean loss   x eps   exploit
+      0.00   0.00%      0.000000   0.000000     0.0   0.00088
+      0.02   0.09%      0.000137  -0.000103     0.2   0.00088
+      0.05   0.23%      0.000342  -0.000258     0.5   0.00090
+      0.10   0.46%      0.000684  -0.000518     1.1   0.00096
+      0.25   1.15%      0.001710  -0.001303     2.7   0.00138
+      0.50   2.30%      0.003418  -0.002635     5.4   0.00291
+      1.00   4.59%      0.006822  -0.005389    10.8   0.00916
+    local slope: -112.3713 m-units/hand per point of dTV -> a value change of eps is -0.561 points of dTV
+    paired: mean loss 0.015489/hand, sd of the per-hand difference 3.3470 (vs 3.0090 for the right chart alone)
+    paired epsilon 0.000701 -> a lifetime of play separates the two charts by 22.1x
+
+wrote deepstack-swarm/workspace/davis/chart_cost.json

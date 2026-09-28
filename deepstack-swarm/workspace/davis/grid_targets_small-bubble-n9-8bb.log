@@ -1,0 +1,7 @@
+small-bubble-n9-8bb-left46: 494 nodes, crowd 37, ladder [200, 500, 1000, 2000, 4000], 200000 hands
+  it    200  gain 0.032410  sigma 1.0027-2.0107 eps_max 0.4211 mICM/hand  per-seat [1.0027, 1.0273, 1.0865, 1.1658, 1.3426, 1.5272, 1.7095, 1.9667, 2.0107]  125s
+  it    500  gain 0.014520  sigma 0.8963-1.9417 eps_max 0.4066 mICM/hand  per-seat [0.8963, 0.9326, 0.9864, 1.0308, 1.2591, 1.4626, 1.5989, 1.8742, 1.9417]  285s
+  it   1000  gain 0.007546  sigma 0.8366-1.8912 eps_max 0.3961 mICM/hand  per-seat [0.8366, 0.8883, 0.9550, 1.0529, 1.2251, 1.4314, 1.5661, 1.8305, 1.8912]  593s
+  it   2000  gain 0.004432  sigma 0.8072-1.8302 eps_max 0.3833 mICM/hand  per-seat [0.8072, 0.8702, 0.9332, 1.0780, 1.2489, 1.4058, 1.5582, 1.7943, 1.8302]  1262s
+  it   4000  gain 0.002005  sigma 0.7790-1.7629 eps_max 0.3692 mICM/hand  per-seat [0.7790, 0.8717, 0.9655, 1.1531, 1.2545, 1.4168, 1.5312, 1.7338, 1.7629]  2389s
+wrote /Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/davis/grid_targets_small-bubble-n9-8bb.json

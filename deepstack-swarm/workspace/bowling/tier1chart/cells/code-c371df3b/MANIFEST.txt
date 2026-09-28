@@ -1,0 +1,14 @@
+module  sha256[:12]
+cashier.py  cf7e8d37db34
+coach3.py  631218729ebb
+fasticm3.py  6b6d8dde3333
+floor3.py  d78bbc3c9e2d
+hands.py  f2d95326f5d4
+icm.py  67d086e83f55
+icm_pricer3.py  550b3ef215f2
+oddsmaker.py  7ac757df0617
+pricer3.py  ab3e7511cc15
+scenarios.py  5db854a9ffd5
+seqbr3.py  760f67d7bb3e
+solve3.py  6651e736ebe4
+spot.py  011bd5ef9af7

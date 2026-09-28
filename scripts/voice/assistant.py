@@ -40,7 +40,8 @@ QUERY_LINE = "query: {query}"
 # ข้อความเมื่อโมเดลไม่เขียนคำถาม แต่ตัวอ่านพื้นฐานตอบจากข้อความเดิมได้เลย
 ANSWERED_DIRECTLY = {"TH": "ข้อมูลพอแล้ว ดูให้เลยครับ", "EN": "That's enough to go on, here it is"}
 # คำตอบของ solver ที่มีประโยชน์กว่าให้โมเดลถามต่อ not_found กับ push_fold_only คือยังขาดของจำเป็น
-DIRECT_KINDS = ("chart", "seat_not_at_table", "bad_payouts", "all_in_by_posting")
+DIRECT_KINDS = ("chart", "seat_not_at_table", "bad_payouts", "all_in_by_posting",
+                "icm_unsupported", "plo_type")
 # คำตอบของโมเดลคือข้อความที่คนนอกบังคับได้ผ่าน prompt injection ตัดลิงก์กับ mention ออกก่อนแสดงเสมอ
 # บอทชาร์ตไม่มีเหตุผลต้องส่งลิงก์ ส่วน Discord กัน mention ซ้ำอีกชั้นด้วย allowed_mentions ใน bot.py
 _MARKDOWN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
@@ -53,9 +54,10 @@ _SPACES = re.compile(r"[ \t]{2,}")
 _MISSPELLED = re.compile(r"ชู้?ฟ")
 # โมเดลชอบทับศัพท์ solver เป็นภาษาไทย ซึ่งคนเล่นไม่ใช้ ให้คงเป็นอังกฤษ เติมช่องว่างรอบคำอังกฤษในประโยคไทย
 _TRANSLITERATED = re.compile(r"\s*(?:โซ|ซอ)ล์?เว่?อร์\s*")
+_PLO_QUERY = re.compile(r"(?i)(?<![a-z])(?:plo|omaha)(?![a-z])|โอมาฮ่า")
 
 SYSTEM = """You are TamKwai (ตามควาย), a friendly poker assistant in a chat that draws
-push/fold charts. The chart solver is separate; your job is to understand the player and
+preflop charts. The chart solver is separate; your job is to understand the player and
 write ONE query for it. Never invent chart results or percentages yourself.
 
 Reply with ONLY a JSON object: {"say": str, "query": str | null}
@@ -66,11 +68,15 @@ Reply with ONLY a JSON object: {"say": str, "query": str | null}
 
 What the solver can do (anything else: say so kindly and set query to null):
 - tournament push/fold, stacks above 0 up to 15bb (or say "push/fold"), chip EV or ICM
+- live preflop ICM with fold, open, 3-bet and all-in choices, equal 3-30bb stacks, custom payouts
 - GGPoker All-in or Fold cash game ("aof")
+- PLO (Omaha) starting-hand type and tier from Jeff Hwang's book, for one four-card hand
 
 Query grammar (English words, space separated, only what the user gave or clearly meant):
   seat            UTG UTG1 UTG2 LJ HJ CO BTN SB BB     e.g. "BTN shove 10bb"
   facing a shove  "BB vs BTN shove 8bb"; several: "SB vs UTG and BTN 5bb"
+  facing an open  "BB vs BTN open 15bb icm 50/30/20 no ante"
+  facing a 3-bet  "BTN open facing BB 3bet 20bb icm 50/30/20"
   table size      "heads-up", "6-max", "3 handed" (unstated = 8-handed)
   hand            "hold K5s", "hold AJo", "hold 77"
   ICM             "icm" alone = live-game bubble (defaults below);
@@ -85,6 +91,8 @@ entries, entries = pool / buy-in. Defaults: 20 entries, 500 THB buy-in. So when 
 entries, buy-in or a prize pool, put them in the query ("field 30 buy-in 1000 icm") and redraw.
   ante            "ante 0.2bb", "no ante", "bb ante", "live"
   AoF             "aof BB vs CO", "aof 3 handed BTN"
+  PLO hand        "plo AAKK ds", "plo A234 ss A2", "plo 9753 rainbow", exact suits "plo As Ks Qd Jd";
+                  plain "ss" does not identify which pair shares a suit; "plo" alone lists every type.
 Rules:
 - Only a seat and a stack are vital. Everything else is optional and has a default: the hand
   (unstated = whole chart), buy-in, prize pool, payouts, ante, table size. Never ask for them;
@@ -167,8 +175,10 @@ def method_facts(path: pathlib.Path) -> str:
         stacks, widest = m["stacks"], m["widest"]
         lines = [
             "Method facts (from this site's Method page, วิธีคำนวณ; use these numbers exactly):",
-            "- Every chart is solved live by our own push/fold Nash solver (CFR+) for the question asked,"
+            "- Every push/fold chart is solved live by our own Nash solver (CFR+) for the question asked,"
             " then checked with a best-response audit; the exploitability is printed under each chart.",
+            "- Non-push/fold ICM charts use a restricted preflop action model; multiway hand-strength"
+            " pricing is approximate and each chart prints its separate convergence tolerance.",
             f"- Compared hand by hand with {m['reference']} on the same spot ({m['spot']}):"
             f" {m['matched']} of {m['total']} hands match ({100 * m['matched'] / m['total']:.1f}%);"
             f" shove range {m['ours_percent']}% (ours) vs {m['theirs_percent']}% (theirs);"
@@ -183,7 +193,7 @@ def method_facts(path: pathlib.Path) -> str:
         lines += [
             f"- UTG from {stacks['from']:g} to {stacks['to']:g}bb with the same settings:"
             f" {stacks['matched_min']}-{stacks['matched_max']} of {m['total']} hands match at every stack.",
-            "- These charts are chip EV; near the bubble or at a final table the player should ask for ICM.",
+            "- This comparison covers chip-EV push/fold charts; near the bubble or final table ask for ICM.",
             "- Why Jonathan Little: he is a well-known professional poker player, coach and author of many"
             " poker strategy books, and the founder and owner of PokerCoaching, a training site many players"
             " study with; his published push/fold charts are a widely used reference, so matching them shows"
@@ -283,7 +293,8 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
         # ตัวอ่านพื้นฐานตอบได้ก็ตอบเลย ถ้าขาดของจำเป็นจริง เช่นสแตก ตัวอ่านจะตอบไม่ได้ คำถามของโมเดลจึงยังอยู่
         # ข้อความต้องเป็น spot ได้ด้วยตัวเอง ไม่งั้นทุกคำถามทั่วไปหลังเคยถามชาร์ต (เช่นชาร์ตน่าเชื่อถือไหม)
         # จะกลายเป็นชาร์ตเดิมซ้ำ เพราะ spot ที่จำไว้ครบอยู่แล้ว
-        if solve(text, memory=None, lang=lang).kind in DIRECT_KINDS:
+        standalone = spot.read(text)
+        if standalone.hero or standalone.stack is not None or _PLO_QUERY.search(text):
             direct = solve(text, memory=memory, lang=lang)
             if direct.kind in DIRECT_KINDS:
                 crafted, made = Crafted(ANSWERED_DIRECTLY[lang], text), direct

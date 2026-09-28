@@ -1,0 +1,61 @@
+[asis] {"nodes": 14, "terminals": 17, "counts": {"allfold": 1, "uncontested": 7, "showdown": 8, "flop": 1}, "converged": true, "iters": 200, "final_gain": 0.0009894430343041518, "seconds": 2.26, "kind_reach": {"allfold": 0.162707, "uncontested": 0.482547, "showdown": 0.346632, "flop": 0.008114}, "reach_sum": 1.0, "flop_terminal_reach": [[16, 0.00811403]], "flop_reach_total": 0.00811403, "short_firstin": {"P(fold)": 0.5754, "P(raise)": 0.3056, "P(allin)": 0.119, "range_fold": 0.5701, "range_raise": 0.3454, "range_allin": 0.0845}, "conditional_on_short_firstin": {"fold": {"P": 0.575432, "kind_reach": {"allfold": 0.282756, "uncontested": 0.548644, "showdown": 0.168601, "flop": 0.0}}, "raise": {"P": 0.305582, "kind_reach": {"allfold": 0.0, "uncontested": 0.390493, "showdown": 0.609507, "flop": 0.0}}, "allin": {"P": 0.118986, "kind_reach": {"allfold": 0.0, "uncontested": 0.399307, "showdown": 0.5325, "flop": 0.068193}}}}
+[leafree] {"nodes": 13, "terminals": 16, "counts": {"allfold": 1, "uncontested": 7, "showdown": 8, "flop": 0}, "converged": true, "iters": 200, "final_gain": 0.0009083228925011194, "seconds": 1.25, "kind_reach": {"allfold": 0.167469, "uncontested": 0.477288, "showdown": 0.355243}, "reach_sum": 1.0, "flop_terminal_reach": [], "flop_reach_total": 0, "short_firstin": {"P(fold)": 0.5914, "P(raise)": 0.0413, "P(allin)": 0.3672, "range_fold": 0.5943, "range_raise": 0.0302, "range_allin": 0.3756}, "conditional_on_short_firstin": {"fold": {"P": 0.591446, "kind_reach": {"allfold": 0.283152, "uncontested": 0.548276, "showdown": 0.168572}}, "raise": {"P": 0.041312, "kind_reach": {"allfold": 0.0, "uncontested": 0.385164, "showdown": 0.614836}}, "allin": {"P": 0.367242, "kind_reach": {"allfold": 0.0, "uncontested": 0.373325, "showdown": 0.626675}}}}
+Traceback (most recent call last):
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 192, in <module>
+    main()
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 138, in main
+    r = solve_arm(stacks, kw, mode, target, max_iters, dial=dial)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 80, in solve_arm
+    tree = stackoff(tree, dial)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 71, in stackoff
+    out.append(dataclasses.replace(z, invested=tuple(a + b for a, b in
+               ^^^^^^^^^^^
+NameError: name 'dataclasses' is not defined. Did you forget to import 'dataclasses'?
+[asis] {"nodes": 125, "terminals": 131, "counts": {"allfold": 1, "uncontested": 25, "showdown": 80, "flop": 25}, "converged": true, "iters": 575, "final_gain": 0.0009236294033831651, "seconds": 32.48, "kind_reach": {"allfold": 0.079633, "uncontested": 0.563129, "showdown": 0.301486, "flop": 0.055752}, "reach_sum": 1.0, "flop_terminal_reach": [[37, 9.2e-07], [62, 1.907e-05], [66, 0.00023405], [68, 0.00017747], [69, 0.00013907], [71, 0.00014269], [72, 0.0001274], [73, 0.00012498], [98, 1.3e-07], [105, 9e-08], [108, 7e-08], [109, 2.1e-07], [112, 7e-08], [113, 2.1e-07], [114, 5.5e-07], [118, 0.01233627], [120, 0.00859139], [121, 0.00451176], [123, 0.00729274], [124, 0.0042458], [125, 0.00259107], [127, 0.00647588], [128, 0.00361462], [129, 0.00244333], [130, 0.00268252]], "flop_reach_total": 0.05575238, "short_firstin": {"P(fold)": 0.7503, "P(raise)": 0.0, "P(allin)": 0.2497, "range_fold": 0.7511, "range_raise": 0.0, "range_allin": 0.2489}, "conditional_on_short_firstin": {"fold": {"P": 0.750327, "kind_reach": {"allfold": 0.106131, "uncontested": 0.657368, "showdown": 0.235214, "flop": 0.001287}}, "raise": {"P": 2e-06, "kind_reach": {"allfold": 0.0, "uncontested": 0.029356, "showdown": 0.309674, "flop": 0.66097}}, "allin": {"P": 0.249671, "kind_reach": {"allfold": 0.0, "uncontested": 0.279921, "showdown": 0.500649, "flop": 0.21943}}}}
+[leafree] {"nodes": 100, "terminals": 106, "counts": {"allfold": 1, "uncontested": 25, "showdown": 80, "flop": 0}, "converged": true, "iters": 575, "final_gain": 0.0009240511378415884, "seconds": 29.23, "kind_reach": {"allfold": 0.080769, "uncontested": 0.539726, "showdown": 0.379504}, "reach_sum": 1.0, "flop_terminal_reach": [], "flop_reach_total": 0, "short_firstin": {"P(fold)": 0.7409, "P(raise)": 0.0004, "P(allin)": 0.2587, "range_fold": 0.7391, "range_raise": 0.0, "range_allin": 0.2609}, "conditional_on_short_firstin": {"fold": {"P": 0.740873, "kind_reach": {"allfold": 0.109019, "uncontested": 0.653466, "showdown": 0.237515}}, "raise": {"P": 0.00041, "kind_reach": {"allfold": 0.0, "uncontested": 0.262417, "showdown": 0.737583}}, "allin": {"P": 0.258717, "kind_reach": {"allfold": 0.0, "uncontested": 0.214456, "showdown": 0.785544}}}}
+Traceback (most recent call last):
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 192, in <module>
+    main()
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 138, in main
+    r = solve_arm(stacks, kw, mode, target, max_iters, dial=dial)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 80, in solve_arm
+    tree = stackoff(tree, dial)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 71, in stackoff
+    out.append(dataclasses.replace(z, invested=tuple(a + b for a, b in
+               ^^^^^^^^^^^
+NameError: name 'dataclasses' is not defined. Did you forget to import 'dataclasses'?
+[asis] {"nodes": 85, "terminals": 90, "counts": {"allfold": 1, "uncontested": 19, "showdown": 60, "flop": 10}, "converged": true, "iters": 675, "final_gain": 0.0009679584282182618, "seconds": 23.04, "kind_reach": {"allfold": 0.069369, "uncontested": 0.433124, "showdown": 0.163364, "flop": 0.334143}, "reach_sum": 1.0, "flop_terminal_reach": [[77, 0.07106294], [79, 0.01079022], [80, 0.04633079], [82, 0.010732], [83, 0.04415029], [84, 0.02686958], [86, 0.01045282], [87, 0.04463675], [88, 0.02762421], [89, 0.04149372]], "flop_reach_total": 0.33414333, "short_firstin": {"P(fold)": 0.6271, "P(allin)": 0.3729, "range_fold": 0.6275, "range_allin": 0.3725}, "conditional_on_short_firstin": {"fold": {"P": 0.627129, "kind_reach": {"allfold": 0.110613, "uncontested": 0.690646, "showdown": 0.198741, "flop": 0.0}}, "allin": {"P": 0.372871, "kind_reach": {"allfold": 0.0, "uncontested": 0.0, "showdown": 0.103863, "flop": 0.896136}}}}
+[leafree] {"nodes": 75, "terminals": 80, "counts": {"allfold": 1, "uncontested": 19, "showdown": 60, "flop": 0}, "converged": true, "iters": 350, "final_gain": 0.0008995189882543456, "seconds": 9.61, "kind_reach": {"allfold": 0.019365, "uncontested": 0.122628, "showdown": 0.858007}, "reach_sum": 1.0, "flop_terminal_reach": [], "flop_reach_total": 0, "short_firstin": {"P(fold)": 0.1779, "P(allin)": 0.8221, "range_fold": 0.178, "range_allin": 0.822}, "conditional_on_short_firstin": {"fold": {"P": 0.177899, "kind_reach": {"allfold": 0.108856, "uncontested": 0.689313, "showdown": 0.201831}}, "allin": {"P": 0.822101, "kind_reach": {"allfold": 0.0, "uncontested": 0.0, "showdown": 1.0}}}}
+Traceback (most recent call last):
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 192, in <module>
+    main()
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 138, in main
+    r = solve_arm(stacks, kw, mode, target, max_iters, dial=dial)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 80, in solve_arm
+    tree = stackoff(tree, dial)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 71, in stackoff
+    out.append(dataclasses.replace(z, invested=tuple(a + b for a, b in
+               ^^^^^^^^^^^
+NameError: name 'dataclasses' is not defined. Did you forget to import 'dataclasses'?
+[asis] {"nodes": 14, "terminals": 17, "counts": {"allfold": 1, "uncontested": 7, "showdown": 8, "flop": 1}, "converged": true, "iters": 2225, "final_gain": 0.0005919781645065075, "seconds": 42.54, "kind_reach": {"allfold": 0.513546, "uncontested": 0.376076, "showdown": 0.110376, "flop": 3e-06}, "reach_sum": 1.0, "flop_terminal_reach": [[16, 2.98e-06]], "flop_reach_total": 2.98e-06, "short_firstin": {"P(fold)": 0.7523, "P(raise)": 0.2476, "P(allin)": 0.0002, "range_fold": 0.7511, "range_raise": 0.2489, "range_allin": 0.0}, "conditional_on_short_firstin": {"fold": {"P": 0.752258, "kind_reach": {"allfold": 0.682672, "uncontested": 0.276753, "showdown": 0.040575, "flop": 0.0}}, "raise": {"P": 0.24757, "kind_reach": {"allfold": 0.0, "uncontested": 0.677687, "showdown": 0.322313, "flop": 0.0}}, "allin": {"P": 0.000172, "kind_reach": {"allfold": 0.0, "uncontested": 0.645556, "showdown": 0.337075, "flop": 0.017369}}}}
+[leafree] {"nodes": 13, "terminals": 16, "counts": {"allfold": 1, "uncontested": 7, "showdown": 8, "flop": 0}, "converged": true, "iters": 2275, "final_gain": 0.0005952958888872307, "seconds": 31.48, "kind_reach": {"allfold": 0.521353, "uncontested": 0.369974, "showdown": 0.108673}, "reach_sum": 1.0, "flop_terminal_reach": [], "flop_reach_total": 0, "short_firstin": {"P(fold)": 0.7636, "P(raise)": 0.1028, "P(allin)": 0.1336, "range_fold": 0.7662, "range_raise": 0.095, "range_allin": 0.1357}, "conditional_on_short_firstin": {"fold": {"P": 0.763618, "kind_reach": {"allfold": 0.68274, "uncontested": 0.276696, "showdown": 0.040564}}, "raise": {"P": 0.102753, "kind_reach": {"allfold": 0.0, "uncontested": 0.69824, "showdown": 0.30176}}, "allin": {"P": 0.133629, "kind_reach": {"allfold": 0.0, "uncontested": 0.650592, "showdown": 0.349408}}}}
+Traceback (most recent call last):
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 192, in <module>
+    if __name__ == "__main__":
+        ^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 138, in main
+    kw, dial = all_arms[arm]
+        ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 80, in solve_arm
+    if dial is not None:
+               ^^^^^^^^^^
+  File "/Users/nuttakit/project/poker-harness/deepstack-swarm/workspace/burch/flopgap/ab.py", line 71, in stackoff
+    if s in z.live else 0.0 for s in range(spot.n)]
+      ^^^^^^^^^^^
+NameError: name 'dataclasses' is not defined. Did you forget to import 'dataclasses'?

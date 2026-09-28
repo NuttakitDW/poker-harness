@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ตามควาย Push/Fold</title>
-<meta name="description" content="บอกตำแหน่งกับสแตก ได้ชาร์ต push/fold ที่ solver แก้สดตรง spot ของคุณ">
+<title>ตามควาย · Poker Solver Charts</title>
+<meta name="description" content="ชาร์ต preflop จาก solver สำหรับ chip EV push/fold, AoF, PLO และ ICM แบบ open/3-bet/jam">
 <meta name="theme-color" content="#171512">
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -321,9 +321,9 @@
               <span class="screen-mini"><img src="/static/tamkwai-logo.png" alt="" width="68" height="68"></span>
               <div><b>ตามควาย</b><small>a friend at the table</small></div>
             </div>
-            <p class="eyebrow-dark rise d1">Push/fold · chip EV · ICM</p>
+            <p class="eyebrow-dark rise d1">Push/fold · AoF · PLO · ICM</p>
             <h1 class="headline rise d2"><span class="hoof" aria-hidden="true"></span>เล่นแบบมีคนคอยเตือน<br>ก่อนที่จะ &ldquo;ตามควาย&rdquo;</h1>
-            <p class="lede rise d3">บอกตำแหน่งกับสแตก ได้ชาร์ตที่ solver แก้สดตรง spot ของคุณ ถึง <span class="mono">15bb</span> ไม่ใช่ครูสอน ไม่จับผิด</p>
+            <p class="lede rise d3">ชาร์ต chip EV push/fold, AoF และ PLO ยังอยู่ครบ เพิ่ม ICM preflop แบบสแตกเท่ากัน เลือก open, 3-bet และ jam ได้ถึง <span class="mono">30bb</span></p>
             <div class="cta-row rise d4">
               <button class="cta" type="button" id="start">เริ่มดูชาร์ตฟรี</button>
               <a class="discord-btn" href="https://discord.com/oauth2/authorize?client_id=1552877762950332417&amp;scope=bot&amp;permissions=117760" target="_blank" rel="noopener"><svg class="discord-logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>เพิ่มบอทเข้า Discord</a>
@@ -339,7 +339,7 @@
 
     <main>
       <div class="column">
-        <p class="section-tag" id="ask">ถามตามควาย · push/fold chat</p>
+        <p class="section-tag" id="ask">ถามตามควาย · solver chart chat</p>
         <div class="thread" id="thread" aria-live="polite">
           <div class="empty" id="empty">
             <h3>ถาม spot ไหนดี</h3>
@@ -430,7 +430,7 @@
   "use strict";
   const EXAMPLES = [
     "BTN shove 10bb", "BB vs BTN shove 8bb", "SB vs BTN 6bb hold K5s",
-    "heads-up SB 12bb", "icm 50/30/20 CO 7bb", "aof BB vs CO",
+    "heads-up SB 12bb", "3 คน BTN เปิด 15bb ICM 50/30/20 ไม่มี ante", "aof BB vs CO",
   ];
   const MAX_IMAGE = 10_000_000;
   const TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -507,7 +507,7 @@
     const figure = el("figure", "chart");
     const img = el("img");
     img.src = url;
-    img.alt = "ชาร์ต push/fold";
+    img.alt = "ชาร์ต preflop จาก solver";
     img.addEventListener("load", scrollDown);
     const caption = el("figcaption");
     const open = el("a", "", "เปิดเต็มจอ");

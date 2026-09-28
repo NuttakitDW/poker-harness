@@ -1,0 +1,70 @@
+
+=== HU-10bb  (bb/hand)  n=2 stacks=(10.0, 10.0) ante=0.0 each fee=0.0
+    solve: cfr+ target=0.0005 iters=75 exploit=0.00032 0.0s
+    seat      mean  se(mean)    sigma se(sigma)       eps  audit EV   mean-EV
+       0  -0.04600   0.01028   4.5977   0.01055  0.000963  -0.04543  -0.00057
+       1   0.04600   0.01028   4.5977   0.01055  0.000963   0.04543   0.00057
+    sigma range 4.5977-4.5977; eps at max sigma = 0.000963 bb/hand = 0.9629 mbb/hand
+
+=== HU-10bb-icm-ft  (ICM chips/hand)  n=2 stacks=(10.0, 10.0) ante=0.0 each fee=0.0
+    ICM, heads-up of the 300-runner field: 1st/2nd only, no field
+    solve: cfr+ target=0.0005 iters=25 exploit=0.00046 0.0s
+    seat      mean  se(mean)    sigma se(sigma)       eps  audit EV   mean-EV
+       0  -0.00929   0.00200   0.8939   0.00180  0.000187  -0.00892  -0.00037
+       1   0.00929   0.00200   0.8939   0.00180  0.000187   0.00892   0.00037
+    sigma range 0.8939-0.8939; eps at max sigma = 0.000187 ICM chips/hand = 0.1872 mICM/hand
+
+=== 3h-10bb  (bb/hand)  n=3 stacks=(10.0, 10.0, 10.0) ante=0.0 each fee=0.0
+    solve: cfr+ target=0.0005 iters=75 exploit=0.00043 1.0s
+    seat      mean  se(mean)    sigma se(sigma)       eps  audit EV   mean-EV
+       0   0.24522   0.00802   3.5878   0.01148  0.000751   0.22692   0.01830
+       1  -0.10521   0.01017   4.5500   0.01143  0.000953  -0.07938  -0.02583
+       2  -0.14002   0.01054   4.7130   0.01119  0.000987  -0.14754   0.00753
+    sigma range 3.5878-4.7130; eps at max sigma = 0.000987 bb/hand = 0.9871 mbb/hand
+
+=== 6h-10bb-ante0.25-each  (bb/hand)  n=6 stacks=(10.0, 10.0, 10.0, 10.0, 10.0, 10.0) ante=0.25 each fee=0.0
+    solve: cfr+ target=0.0005 iters=100 exploit=0.00045 3.2s
+    seat      mean  se(mean)    sigma se(sigma)       eps  audit EV   mean-EV
+       0   0.08360   0.01036   4.6321   0.01263  0.000970   0.06960   0.01401
+       1   0.12707   0.01105   4.9438   0.01411  0.001035   0.12158   0.00549
+       2   0.16961   0.01157   5.1748   0.01438  0.001084   0.17614  -0.00653
+       3   0.23360   0.01222   5.4644   0.01471  0.001144   0.22925   0.00435
+       4  -0.12703   0.01340   5.9938   0.01245  0.001255  -0.13027   0.00324
+       5  -0.48685   0.01396   6.2450   0.01377  0.001308  -0.46630  -0.02056
+    sigma range 4.6321-6.2450; eps at max sigma = 0.001308 bb/hand = 1.3079 mbb/hand
+
+=== 6h-10bb-ante0.5-bb  (bb/hand)  n=6 stacks=(10.0, 10.0, 10.0, 10.0, 10.0, 10.0) ante=0.5 bb fee=0.0
+    solve: cfr+ target=0.0005 iters=100 exploit=0.00049 6.8s
+    seat      mean  se(mean)    sigma se(sigma)       eps  audit EV   mean-EV
+       0   0.17418   0.00693   3.1002   0.01343  0.000649   0.16181   0.01237
+       1   0.19893   0.00764   3.4159   0.01331  0.000715   0.20122  -0.00229
+       2   0.24667   0.00861   3.8526   0.01392  0.000807   0.24888  -0.00222
+       3   0.31614   0.00926   4.1391   0.01391  0.000867   0.30902   0.00712
+       4  -0.07253   0.01071   4.7877   0.01113  0.001003  -0.06184  -0.01069
+       5  -0.86338   0.01102   4.9284   0.01116  0.001032  -0.85909  -0.00429
+    sigma range 3.1002-4.9284; eps at max sigma = 0.001032 bb/hand = 1.0322 mbb/hand
+
+=== 6h-10bb-ante1.0-bb  (bb/hand)  n=6 stacks=(10.0, 10.0, 10.0, 10.0, 10.0, 10.0) ante=1.0 bb fee=0.0
+    solve: cfr+ target=0.0005 iters=100 exploit=0.00043 4.5s
+    seat      mean  se(mean)    sigma se(sigma)       eps  audit EV   mean-EV
+       0   0.24780   0.00851   3.8070   0.01244  0.000797   0.23609   0.01171
+       1   0.28597   0.00946   4.2313   0.00983  0.000886   0.28298   0.00299
+       2   0.32366   0.01015   4.5407   0.01616  0.000951   0.33909  -0.01543
+       3   0.41108   0.01077   4.8143   0.01430  0.001008   0.39841   0.01267
+       4   0.03780   0.01207   5.3984   0.01227  0.001131   0.03974  -0.00194
+       5  -1.30633   0.01209   5.4057   0.01184  0.001132  -1.29632  -0.01001
+    sigma range 3.8070-5.4057; eps at max sigma = 0.001132 bb/hand = 1.1321 mbb/hand
+
+=== 6h-10bb-ante1.0-bb-bubble46  (ICM chips/hand)  n=6 stacks=(10.0, 10.0, 10.0, 10.0, 10.0, 10.0) ante=1.0 bb fee=0.0
+    ICM, 46 left of 300, 45 paid, field average 20bb -> crowd 40 x 21.5bb
+    solve: cfr+ target=0.0005 iters=175 exploit=0.00042 38.0s
+    seat      mean  se(mean)    sigma se(sigma)       eps  audit EV   mean-EV
+       0   0.24219   0.00675   3.0173   0.01115  0.000632   0.21484   0.02734
+       1   0.23330   0.00677   3.0272   0.01307  0.000634   0.22360   0.00969
+       2   0.21259   0.00650   2.9086   0.01210  0.000609   0.21793  -0.00533
+       3   0.20485   0.00626   2.8005   0.00982  0.000587   0.21697  -0.01212
+       4  -0.18631   0.00591   2.6440   0.01124  0.000554  -0.16766  -0.01865
+       5  -1.47527   0.00630   2.8184   0.00975  0.000590  -1.48374   0.00847
+    sigma range 2.6440-3.0272; eps at max sigma = 0.000634 ICM chips/hand = 0.6340 mICM/hand
+
+wrote deepstack-swarm/workspace/davis/eps-target0.0005.json
