@@ -21,6 +21,7 @@ import urllib.request
 
 import costs
 import keys
+import plo_type
 import spot
 
 URL = "https://api.deepseek.com/chat/completions"
@@ -94,6 +95,8 @@ entries, buy-in or a prize pool, put them in the query ("field 30 buy-in 1000 ic
   PLO hand        "plo AAKK ds", "plo A234 ss A2", "plo 9753 rainbow", exact suits "plo As Ks Qd Jd";
                   plain "ss" does not identify which pair shares a suit; "plo" alone lists every type.
 Rules:
+- A PLO hand tier does not require a seat, stack, or exact suits. Pass the PLO input to the
+  classifier as supplied and never deny this capability or ask for tournament spot details.
 - Only a seat and a stack are vital. Everything else is optional and has a default: the hand
   (unstated = whole chart), buy-in, prize pool, payouts, ante, table size. Never ask for them;
   when the seat and stack are known, write the query now with what you have. The user can add
@@ -272,12 +275,24 @@ def craft(text: str, history: tuple[Turn, ...], memory, key: str) -> Crafted:
     return parse(content)
 
 
+def _with_history(crafted: Crafted, made, history: tuple[Turn, ...], text: str) -> Answer:
+    said = json.dumps({"say": crafted.say, "query": crafted.query}, ensure_ascii=False)
+    turns = (*history, Turn(text, said))[-MAX_HISTORY_TURNS:]
+    return Answer(crafted.say, crafted.query, made, turns)
+
+
 def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
            key: str | None = None, crafter=None) -> Answer:
     """หนึ่งข้อความในโหมด AI โมเดลพังก็ยังได้คำตอบจากโหมดพื้นฐาน
 
     solve(query, memory=...) คือ spot_chart.reply
     """
+    lang = spot.language_of(text)
+    if plo_type.lookup(text) is not None:
+        direct = solve(text, memory=memory, lang=lang)
+        if direct.kind == "plo_type":
+            crafted = Crafted(ANSWERED_DIRECTLY[lang], text)
+            return _with_history(crafted, direct, history, text)
     key = key or api_key()
     try:
         if not key:
@@ -286,7 +301,6 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
     except AssistantError:
         return Answer(FELL_BACK, text, solve(text, memory=memory), history)
     # คำถามที่โมเดลเขียนเป็นอังกฤษ ข้อความแทนชาร์ตต้องเป็นภาษาที่ผู้ใช้พิมพ์มา
-    lang = spot.language_of(text)
     made = solve(crafted.query, memory=memory, lang=lang) if crafted.query else None
     if made is None:
         # โมเดลชอบถามข้อมูลที่ไม่จำเป็น เช่นไพ่ในมือหรือ buy-in ทั้งที่ข้อความพอให้ solver ตอบได้แล้ว
@@ -299,6 +313,4 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
             if direct.kind in DIRECT_KINDS:
                 crafted, made = Crafted(ANSWERED_DIRECTLY[lang], text), direct
     # เก็บคำตอบเป็น JSON แบบที่โมเดลตอบ ตาถัดไปโมเดลจะรู้ว่าเคยขอชาร์ตอะไรไปและตอบรูปแบบเดิม
-    said = json.dumps({"say": crafted.say, "query": crafted.query}, ensure_ascii=False)
-    turns = (*history, Turn(text, said))[-MAX_HISTORY_TURNS:]
-    return Answer(crafted.say, crafted.query, made, turns)
+    return _with_history(crafted, made, history, text)

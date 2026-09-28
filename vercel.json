@@ -4,7 +4,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
-      "excludeFiles": "{.venv/**,.venv-voice/**,.venv-swarm/**,deepstack-swarm/**,.git/**,.vercel/**,.ruff_cache/**,sources/**,tests/**,deploy/**,public/**,bots/**,harnesses/TH/**,harnesses/EN/sources/**,tmp/logs/**,tmp/tts/**,tmp/stt/**,tmp/aof/**,tmp/pdfs/**,tmp/*.zip,**/__pycache__/**,**/*.pdf,**/*.zip}"
+      "excludeFiles": "{.venv*/**,deepstack-swarm/**,.git/**,.vercel/**,.ruff_cache/**,sources/**,tests/**,deploy/**,public/**,bots/**,harnesses/TH/**,harnesses/EN/sources/**,tmp/logs/**,tmp/tts/**,tmp/stt/**,tmp/aof/**,tmp/pdfs/**,tmp/*.zip,**/__pycache__/**,**/*.pdf,**/*.zip}"
     }
   },
   "rewrites": [

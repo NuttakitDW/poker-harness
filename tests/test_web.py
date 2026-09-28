@@ -9,6 +9,7 @@ import sys
 import threading
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "web"))
@@ -17,6 +18,7 @@ import server  # noqa: E402
 import state  # noqa: E402
 import assistant  # noqa: E402
 import preflop  # noqa: E402
+import plo_type  # noqa: E402
 
 PNG = b"\x89PNG-chart"
 MARIO = b"\x89PNG-mario"
@@ -103,6 +105,35 @@ class AskTests(unittest.TestCase):
         result, _ = chat.ask("??", chat.Session(ai=False), fake.tools())
         self.assertEqual(result.lines, ("no chart",))
         self.assertIsNone(result.chart)
+
+    def test_actual_plo_question_returns_structured_sections_and_a_legacy_fallback(self):
+        tools = chat.Tools(log=lambda _line: None)
+        result, _ = chat.ask("plo A234 ss A2", chat.Session(ai=False), tools)
+        self.assertEqual((result.kind, result.chart), ("plo_type", None))
+        self.assertEqual(result.lines, (result.plo_fallback,))
+        self.assertIn("Tier", result.plo_fallback)
+        self.assertEqual([card["rank"] for card in result.plo["cards"]], list("A432"))
+        self.assertIn("A2 share a suit", result.plo["title"])
+        self.assertEqual(result.plo["tier"], "Trash")
+        self.assertIn("Usually fold", result.plo["play"])
+        self.assertIn("Suited Ace Hands", result.plo["type"])
+        self.assertIn("nut flush", result.plo["miracle"])
+
+    def test_no_structure_type_is_preserved_in_the_web_payload(self):
+        payload = plo_type.presentation(plo_type.read("plo QJ76 rainbow"), "EN")
+        self.assertEqual(payload["type"], "Everything else / no shared structure")
+
+    def test_ai_mode_cannot_refuse_a_recognized_plo_hand(self):
+        refusal = lambda *_args: assistant.Crafted("I only handle push/fold", None)
+        tools = chat.Tools(log=lambda _line: None)
+        with mock.patch.object(assistant, "craft", refusal), \
+                mock.patch.object(assistant, "api_key", return_value="k"):
+            for question, tier in (("plo AAKK ds", "Premium"), ("plo T885", "Trash")):
+                with self.subTest(question=question):
+                    result, _ = chat.ask(question, chat.Session(), tools)
+                    self.assertEqual(result.kind, "plo_type")
+                    self.assertTrue(result.plo["tier"].startswith(tier))
+                    self.assertNotIn("only handle push/fold", " ".join(result.lines))
 
     def test_the_easter_egg_draws_mario(self):
         result, _ = chat.ask("mario", chat.Session(ai=False), Recorder(reply=made(kind="mario")).tools())
@@ -376,6 +407,38 @@ class WsgiTests(unittest.TestCase):
         self.call("POST", "/api/ask", {"question": "12bb", "state": json.loads(body)["state"]})
         self.assertEqual(self.fake.calls[-2], ("solve", "12bb", REQUEST))
 
+    def test_plo_payload_survives_the_vercel_wsgi_api_with_a_legacy_fallback(self):
+        asked = plo_type.lookup("plo A234 ss23")
+        self.fake.reply = SimpleNamespace(kind="plo_type", message=plo_type.answer(asked, "EN"),
+                                          note="", found=None, plo=asked)
+        _, _, body = self.call("POST", "/api/ai", {"on": False})
+        status, _, body = self.call("POST", "/api/ask", {"question": "plo A234 ss23",
+                                                          "state": json.loads(body)["state"]})
+        data = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(data["kind"], "plo_type")
+        self.assertEqual(data["lines"], [data["plo_fallback"]])
+        self.assertIsNone(data["chart"])
+        self.assertEqual(data["plo"]["tier"], "Trash")
+        self.assertIn("Ace-high connected hand", data["plo"]["type"])
+        self.assertIn("rainbow", data["plo"]["miracle"])
+
+    def test_ai_on_wsgi_routes_plo_around_a_model_refusal(self):
+        tools = chat.Tools(log=lambda _line: None)
+        config = server.Config(tools=tools, limit=chat.RateLimit(per_window=5, window=60),
+                               site_limit=chat.RateLimit(per_window=50, window=60),
+                               codec=state.Codec(SECRET), trust_proxy=True)
+        self.app = server.wsgi(config)
+        refusal = lambda *_args: assistant.Crafted("I only handle push/fold", None)
+        with mock.patch.object(assistant, "craft", refusal), \
+                mock.patch.object(assistant, "api_key", return_value="k"):
+            status, _, body = self.call("POST", "/api/ask", {"question": "plo T885"})
+        data = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(data["kind"], "plo_type")
+        self.assertEqual(data["plo"]["tier"], "Trash")
+        self.assertNotIn("only handle push/fold", " ".join(data["lines"]))
+
     def test_the_help_reads_the_query_string(self):
         _, _, body = self.call("GET", "/api/help", query="lang=en")
         self.assertIn("Examples", json.loads(body)["text"])
@@ -407,6 +470,14 @@ class DiscordInviteTests(unittest.TestCase):
         page = (ROOT / "public" / "index.html").read_text(encoding="utf-8")
         self.assertIn(">ชาร์ตนี้แม่นแค่ไหน?</a>", page)
         self.assertNotIn("เทียบกับชาร์ต Jonathan Little", page)
+
+    def test_the_page_has_a_safe_structured_plo_renderer(self):
+        page = (ROOT / "public" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("function ploPanel(data)", page)
+        self.assertIn("data.plo", page)
+        self.assertIn("data.plo_fallback", page)
+        self.assertIn(".plo-tier", page)
+        self.assertNotIn("innerHTML", page)
 
     def test_every_page_links_the_bot_invite(self):
         sys.path.insert(0, str(ROOT / "scripts" / "discord_bot"))

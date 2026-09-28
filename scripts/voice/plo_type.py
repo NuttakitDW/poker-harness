@@ -450,6 +450,25 @@ def classify(hand: Hand) -> Cluster:
     return _unpaired(ranks, suiting)
 
 
+def _invariant_trash_without_suits(hand: Hand) -> Cluster | None:
+    """Return a stable non-A Trash form across every legal physical suit assignment."""
+    if hand.suiting is not None or ACE in hand.ranks:
+        return None
+    found: Cluster | None = None
+    for suits in itertools.product("shdc", repeat=4):
+        cards = tuple(zip(hand.ranks, suits))
+        if len(set(cards)) != 4:
+            continue
+        cluster = classify(_from_cards(" ".join(rank + suit for rank, suit in cards)))
+        if cluster.tier != TRASH:
+            return None
+        if found is None:
+            found = cluster
+        elif (cluster.group, cluster.form) != (found.group, found.form):
+            return None
+    return found
+
+
 LABELS = {
     "EN": {"type": "Type", "tier": "Tier", "play": "How to play", "why": "Why",
            "miracle": "Miracle flop (authored illustration)",
@@ -614,14 +633,21 @@ def _plain_lines(hand: Hand, lang: str) -> list[tuple[str, str]]:
         sample = from_shape(hand.ranks, "single-suited", ace_suited=True)
         cluster = classify(sample)
         kind, _ = _display(cluster, sample, lang)
-        if ACE in hand.ranks and cluster.group in ("suited_ace", "broadway_wrap"):
-            kind = "Ace-high connected hand" if lang == "EN" else "มือ A-high ที่เชื่อมกัน"
-        tier = words["suits_unknown"]
-        play = ("Give the exact suits before choosing a preflop plan."
-                if lang == "EN" else "บอกดอกที่แท้จริงก่อนเลือกแผน preflop")
-        why = ("The exact suits decide whether the hand has a nut-flush draw and can change its tier."
-               if lang == "EN" else
-               "ดอกที่แท้จริงจะตัดสินว่ามี nut-flush draw หรือไม่ และอาจเปลี่ยนระดับของมือ")
+        invariant = _invariant_trash_without_suits(hand)
+        if invariant is not None:
+            cluster = invariant
+            kind, why = _display(cluster, hand, lang)
+            tier = _tier_text(cluster, words)
+            play = _how_to_play(cluster.tier, lang)
+        else:
+            if ACE in hand.ranks and cluster.group in ("suited_ace", "broadway_wrap"):
+                kind = "Ace-high connected hand" if lang == "EN" else "มือ A-high ที่เชื่อมกัน"
+            tier = words["suits_unknown"]
+            play = ("Give the exact suits before choosing a preflop plan."
+                    if lang == "EN" else "บอกดอกที่แท้จริงก่อนเลือกแผน preflop")
+            why = ("The exact suits determine the hand's flush potential and can change its tier."
+                   if lang == "EN" else
+                   "ดอกที่แท้จริงกำหนดโอกาสติด flush และอาจเปลี่ยนระดับของมือ")
     elif hand.suiting.ace_suited is None and ACE in hand.ranks:
         yes, no = classify(_concrete(hand, True)), classify(_concrete(hand, False))
         yes_type, _ = _display(yes, _concrete(hand, True), lang)
@@ -665,6 +691,22 @@ def render(hand: Hand, lang: str) -> str:
         lines.append(f"{label:<{field}} {wrapped[0]}")
         lines.extend(f"{'':<{field}} {part}" for part in wrapped[1:])
     return "\n".join(lines)
+
+
+def presentation(hand: Hand, lang: str) -> dict:
+    """JSON-safe sections for clients that can present more than plain text."""
+    rows = _plain_lines(hand, lang)
+    values = dict(rows[1:])
+    words = LABELS.get(lang, LABELS["EN"])
+    if hand.cards:
+        cards = [{"rank": rank.upper().replace("10", "T"), "suit": suit}
+                 for rank, suit in _ONE_CARD.findall(hand.cards)]
+    else:
+        cards = [{"rank": rank, "suit": ""} for rank in hand.ranks]
+    keys = ("tier", "play", "type", "why", "miracle", "assumptions", "source")
+    return {"title": rows[0][1], "cards": cards,
+            "labels": {key: words[key] for key in keys},
+            **{key: values[words[key]] for key in keys}}
 
 
 def _tier_box(label: str, value: str, width: int, bold: str, reset: str) -> list[str]:

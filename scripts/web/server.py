@@ -101,7 +101,8 @@ class Config:
 
 def result_json(result: chat.Result) -> dict:
     chart = base64.b64encode(result.chart).decode() if result.chart else None
-    return {"lines": list(result.lines), "kind": result.kind, "chart": chart}
+    return {"lines": list(result.lines), "kind": result.kind, "chart": chart, "plo": result.plo,
+            "plo_fallback": result.plo_fallback}
 
 
 def decode_image(body: dict) -> tuple[bytes, str]:

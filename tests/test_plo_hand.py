@@ -56,6 +56,9 @@ class SpokenHandTests(unittest.TestCase):
         self.assertEqual(plo_hand.shape("ดับเบิลซูต"), "double-suited")
         self.assertEqual(plo_hand.shape("ซิงเกิ้ลสูท"), "single-suited")
         self.assertEqual(plo_hand.shape("rainbow"), "rainbow")
+        self.assertEqual(plo_hand.shape("rb"), "rainbow")
+        self.assertEqual(plo_hand.shape("RB"), "rainbow")
+        self.assertIsNone(plo_hand.shape("herbal remedy"))
         self.assertIsNone(plo_hand.shape("แจ็ค แจ็ค 6 3"))
 
 

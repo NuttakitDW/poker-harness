@@ -26,6 +26,7 @@ import assistant  # noqa: E402
 import chart_image  # noqa: E402
 import keys  # noqa: E402
 import mario  # noqa: E402
+import plo_type  # noqa: E402
 import question_log  # noqa: E402
 import spot_chart  # noqa: E402
 import table_image  # noqa: E402
@@ -63,6 +64,8 @@ class Result:
     lines: tuple[str, ...]
     kind: str
     chart: bytes | None = None
+    plo: dict | None = None
+    plo_fallback: str | None = None
 
 
 def _record(line: dict) -> None:
@@ -147,6 +150,12 @@ def ask(question: str, session: Session, tools: Tools, ai: bool = True,
             after = dataclasses.replace(after, memory=made.found.request)
         if made.kind == "mario":
             return Result(lines, made.kind, tools.mario()), after
+        if made.kind == "plo_type" and getattr(made, "plo", None) and made.plo.hand:
+            lang = "TH" if any("\u0e00" <= char <= "\u0e7f" for char in (made.message or "")) else "EN"
+            fallback = made.message or plo_type.render(made.plo.hand, lang)
+            return Result((*lines, fallback), made.kind,
+                          plo=plo_type.presentation(made.plo.hand, lang),
+                          plo_fallback=fallback), after
         if made.message is not None:
             return Result((*lines, made.message), made.kind), after
         found = made.found

@@ -49,7 +49,15 @@ class ReadTests(unittest.TestCase):
         self.assertTrue(plo_type.read("AAKK double-suited").suiting.double)
         self.assertTrue(plo_type.read("AAKK ดับเบิลซูต").suiting.double)
         self.assertFalse(plo_type.read("JT98 rainbow").suiting.suited)
+        self.assertFalse(plo_type.read("AK54 rb").suiting.suited)
+        self.assertFalse(plo_type.read("AK54 RB").suiting.suited)
         self.assertIsNone(plo_type.read("plo JT98").suiting)
+
+    def test_numeric_hand_with_rb_is_a_plo_lookup(self):
+        asked = plo_type.lookup("9753 rb")
+        self.assertIsNotNone(asked)
+        self.assertEqual(asked.hand.ranks, "9753")
+        self.assertFalse(asked.hand.suiting.suited)
 
     def test_plain_single_suited_does_not_assume_the_ace(self):
         suiting = plo_type.read("AKQ9 ss").suiting
@@ -91,6 +99,7 @@ class ReadTests(unittest.TestCase):
             "plo AAKK ss AA": "cannot be the same physical suit",
             "plo A234 ss KQ": "not in",
             "plo A234 ds rainbow": "contradict",
+            "plo AK54 rb ss": "contradict",
         }
         for text, phrase in cases.items():
             with self.subTest(text=text):
@@ -215,6 +224,57 @@ class RenderTests(unittest.TestCase):
         missing = plo_type.render(plo_type.read("A234"), "EN")
         self.assertIn("specify it like ss A2", " ".join(conditional.split()))
         self.assertIn("exact suits before choosing a preflop plan", " ".join(missing.split()))
+
+    def test_ak54_rb_is_the_same_direct_trash_answer_as_rainbow(self):
+        short = plo_type.read("plo AK54 rb")
+        written = plo_type.read("plo AK54 rainbow")
+        self.assertEqual(short, written)
+        for lang, fold in (("EN", "Usually fold"), ("TH", "ส่วนใหญ่ fold")):
+            with self.subTest(lang=lang):
+                for text in (plo_type.render(short, lang),
+                             plo_type.terminal(short, lang, color=False, width=60)):
+                    flat = " ".join(text.split())
+                    self.assertIn("Trash", flat)
+                    self.assertIn(fold, flat)
+                    self.assertNotIn("suits not given", flat)
+                    self.assertNotIn("ไม่ได้บอกดอก", flat)
+                    self.assertNotIn("exact suits", flat)
+                    self.assertNotIn("บอกดอกที่แท้จริง", flat)
+
+    def test_t885_is_trash_without_needing_suits(self):
+        for lang, fold in (("EN", "Usually fold"), ("TH", "ส่วนใหญ่ fold")):
+            with self.subTest(lang=lang):
+                hand = plo_type.read("plo T885")
+                for text in (plo_type.render(hand, lang),
+                             plo_type.terminal(hand, lang, color=False, width=60)):
+                    flat = " ".join(text.split())
+                    self.assertIn("Trash", flat)
+                    self.assertIn(fold, flat)
+                    self.assertNotIn("exact suits", flat)
+                    self.assertNotIn("nut-flush", flat)
+                    self.assertNotIn("nut flush draw", flat)
+
+    def test_t885_stays_trash_when_suits_are_known(self):
+        for description in ("T885 ss85", "T885 ds"):
+            with self.subTest(description=description):
+                text = plo_type.render(plo_type.read(description), "EN")
+                self.assertIn("Tier      Trash", text)
+                self.assertIn("Usually fold", " ".join(text.split()))
+
+    def test_other_structural_trash_hands_do_not_need_suits(self):
+        for ranks in ("QJ76", "K966"):
+            with self.subTest(ranks=ranks):
+                text = plo_type.render(plo_type.read(ranks), "EN")
+                self.assertIn("Tier      Trash", text)
+                self.assertNotIn("depends on the exact suits", text)
+                self.assertNotIn("Give the exact suits", text)
+
+    def test_suit_sensitive_or_ace_hands_still_request_suits(self):
+        for ranks in ("A234", "JT98"):
+            with self.subTest(ranks=ranks):
+                text = plo_type.render(plo_type.read(ranks), "EN")
+                self.assertIn("depends on the exact suits", text)
+                self.assertIn("Give the exact suits", " ".join(text.split()))
 
     def test_known_non_ace_pair_has_neutral_type_and_no_nut_flush_claim(self):
         text = plo_type.render(plo_type.read("plo A654 ss65"), "EN")

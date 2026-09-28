@@ -120,6 +120,33 @@ class MessagesTests(unittest.TestCase):
 
 
 class AnswerTests(unittest.TestCase):
+    def test_plo_queries_bypass_the_model_and_go_directly_to_the_classifier(self):
+        previous = assistant.Turn("plo AAKK ds", '{"say": "I only handle push/fold", "query": null}')
+        cases = {
+            "plo AAKK ds": "Premium",
+            "plo T885": "Trash",
+            "plo T885 ss85": "Trash",
+            "plo As Ks Qd Jd": "Premium",
+        }
+        for text, tier in cases.items():
+            with self.subTest(text=text):
+                made = assistant.answer(text, spot_chart.reply, history=(previous,), key="k",
+                                        crafter=broken)
+                self.assertEqual(made.made.kind, "plo_type")
+                self.assertIn(tier, made.made.message)
+                self.assertEqual((made.say, made.query),
+                                 (assistant.ANSWERED_DIRECTLY["EN"], text))
+                self.assertEqual(json.loads(made.history[-1].assistant)["query"], text)
+                self.assertEqual(len(made.history), 2)
+
+    def test_direct_plo_history_is_capped(self):
+        history = tuple(assistant.Turn(f"q{i}", "{}")
+                        for i in range(assistant.MAX_HISTORY_TURNS))
+        made = assistant.answer("plo T885", spot_chart.reply, history=history,
+                                key="k", crafter=broken)
+        self.assertEqual(len(made.history), assistant.MAX_HISTORY_TURNS)
+        self.assertEqual(made.history[-1].user, "plo T885")
+
     def test_the_crafted_query_is_solved(self):
         made = assistant.answer("ผมอยู่ BB มี 10bb SB ยัดมา ใกล้เข้าเงิน", spot_chart.reply, key="k",
                                 crafter=model_says("ดู BB เจอ SB บน bubble ให้นะ", "BB vs SB shove 10bb bubble"))
@@ -166,6 +193,7 @@ class AnswerTests(unittest.TestCase):
 
     def test_the_prompt_says_only_seat_and_stack_are_vital(self):
         self.assertIn("Only a seat and a stack are vital", assistant.SYSTEM)
+        self.assertIn("PLO hand tier does not require a seat, stack, or exact suits", assistant.SYSTEM)
 
     def test_no_query_is_just_talk(self):
         made = assistant.answer("สวัสดี", spot_chart.reply, key="k",
