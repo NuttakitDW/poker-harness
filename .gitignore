@@ -1,6 +1,8 @@
 *.zip
 sources/pdf/
 tmp/
+output/pdf/
+research/plo_icm_archetypes/generated/
 __pycache__/
 *.pyc
 .DS_Store

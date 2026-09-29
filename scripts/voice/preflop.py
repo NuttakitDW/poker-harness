@@ -218,6 +218,7 @@ class Request:
     open_size: float | None = None
     threebet_size: float | None = None
     unsupported_history: str | None = None
+    plo_hand: str | None = None       # normalized PLO4 hand context for exact-hand follow-ups
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "seat_stacks", tuple(tuple(item) for item in self.seat_stacks))

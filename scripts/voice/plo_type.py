@@ -43,8 +43,8 @@ _ANY_RANK_WORD = re.compile(r"(?<![A-Za-z0-9])[AKQJT2-9]+(?![A-Za-z0-9])", re.IG
 _DIGIT_WORD = re.compile(r"(?<![\w.])[2-9]{4}(?![\w.])")
 _PLO_WORD = re.compile(r"(?<![a-z])(plo|omaha)(?![a-z])|โอมาฮา|พีแอลโอ|เพียโล", re.IGNORECASE)
 _SAYS_ACE_SUITED = re.compile(r"(?<![A-Za-z])A\s*(suited|ซูต|สูท)|suited ace", re.IGNORECASE)
-_SS_PAIR = re.compile(r"(?i)(?:ss|single\s*-?\s*suited|ซิงเกิล(?:ซูต|สูท))\s*"
-                      r"([AKQJT2-9])\s*[-/]?\s*([AKQJT2-9])")
+_SS_PREFIX = re.compile(
+    r"(?i)(?<![a-z])(?:ss|single\s*-?\s*suited|ซิงเกิล(?:ซูต|สูท))(?![a-z])")
 
 GROUPS = {
     "big_cards": "Big Cards",
@@ -229,7 +229,8 @@ def from_shape(ranks: str, shape: str | None, ace_suited: bool | None = True,
     suiting = {
         "double-suited": Suiting(True, True, aces > 0, min(aces, 2)),
         "single-suited": Suiting(True, False, ace_suited if aces else False,
-                                  min(aces, 1) if ace_suited else 0, suited_ranks),
+                                  min(aces, 1) if ace_suited else 0, suited_ranks,
+                                  (suited_ranks,) if suited_ranks else ()),
         "rainbow": Suiting(False, False, False, 0),
     }.get(shape or "")
     return Hand(ranks, suiting)
@@ -286,19 +287,34 @@ def _shape(text: str) -> str | None:
     return next(iter(mentioned), None)
 
 
-def _suited_pair(text: str, ranks: str) -> tuple[str, str] | None:
-    made = _SS_PAIR.search(text)
+def _suited_group(text: str, ranks: str) -> tuple[str, ...] | None:
+    """Ranks explicitly named after ``ss`` as sharing one physical suit.
+
+    The suffix may contain two, three, or four ranks. It is parsed in full so ``ss AK7``
+    cannot silently become ``ss AK``.
+    """
+    prefix = _SS_PREFIX.search(text)
+    if prefix is None:
+        return None
+    made = re.match(r"\s*([AKQJT2-9](?:\s*[-/]?\s*[AKQJT2-9])*)", text[prefix.end():], re.IGNORECASE)
     if made is None:
         return None
-    pair = (made.group(1).upper(), made.group(2).upper())
-    if pair[0] == pair[1]:
+    end = prefix.end() + made.end()
+    if end < len(text) and text[end].isascii() and text[end].isalnum():
+        raise PloParseError("invalid rank in single-suited suffix")
+    group = tuple(re.findall(r"[AKQJT2-9]", made.group(1).upper()))
+    if len(group) < 2:
+        return None
+    if len(group) > 4:
+        raise PloParseError("single-suited suffix can name at most four cards")
+    if len(set(group)) != len(group):
         raise PloParseError("two copies of one rank cannot be the same physical suit")
     available = list(ranks)
-    for rank in pair:
+    for rank in group:
         if rank not in available:
             raise PloParseError(f"suited card {rank} is not in {ranks}")
         available.remove(rank)
-    return pair
+    return group
 
 
 def read(text: str) -> Hand | None:
@@ -320,11 +336,11 @@ def read(text: str) -> Hand | None:
         raise PloParseError("name one four-card hand at a time")
     shape = _shape(text)
     ranks = found[0]
-    pair = _suited_pair(text, ranks) if shape == "single-suited" else None
+    group = _suited_group(text, ranks) if shape == "single-suited" else None
     if shape == "single-suited":
         said = plo_hand.suited_ace(text) or bool(_SAYS_ACE_SUITED.search(text))
-        ace_suited = ((ACE in pair) if pair else True if said else None) if ACE in ranks else False
-        return from_shape(ranks, shape, ace_suited=ace_suited, suited_ranks=pair or ())
+        ace_suited = ((ACE in group) if group else True if said else None) if ACE in ranks else False
+        return from_shape(ranks, shape, ace_suited=ace_suited, suited_ranks=group or ())
     return from_shape(ranks, shape)
 
 

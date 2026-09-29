@@ -9,5 +9,8 @@ dependencies = [
     "pokerkit==0.7.6",
 ]
 
+[project.optional-dependencies]
+plo-equity = ["phevaluator==0.6.0"]
+
 [tool.vercel]
 entrypoint = "api.index:app"

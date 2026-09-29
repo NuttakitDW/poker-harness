@@ -21,6 +21,7 @@ import urllib.request
 
 import costs
 import keys
+import plo_advisor
 import plo_type
 import spot
 
@@ -42,7 +43,7 @@ QUERY_LINE = "query: {query}"
 ANSWERED_DIRECTLY = {"TH": "ข้อมูลพอแล้ว ดูให้เลยครับ", "EN": "That's enough to go on, here it is"}
 # คำตอบของ solver ที่มีประโยชน์กว่าให้โมเดลถามต่อ not_found กับ push_fold_only คือยังขาดของจำเป็น
 DIRECT_KINDS = ("chart", "seat_not_at_table", "bad_payouts", "all_in_by_posting",
-                "icm_unsupported", "plo_type")
+                "icm_unsupported", "plo_type", "plo_advice")
 # คำตอบของโมเดลคือข้อความที่คนนอกบังคับได้ผ่าน prompt injection ตัดลิงก์กับ mention ออกก่อนแสดงเสมอ
 # บอทชาร์ตไม่มีเหตุผลต้องส่งลิงก์ ส่วน Discord กัน mention ซ้ำอีกชั้นด้วย allowed_mentions ใน bot.py
 _MARKDOWN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
@@ -288,9 +289,14 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
     solve(query, memory=...) คือ spot_chart.reply
     """
     lang = spot.language_of(text)
+    if plo_advisor.routes(text, memory):
+        direct = solve(text, memory=memory, lang=lang)
+        if direct.kind == "plo_advice":
+            crafted = Crafted(ANSWERED_DIRECTLY[lang], text)
+            return _with_history(crafted, direct, history, text)
     if plo_type.lookup(text) is not None:
         direct = solve(text, memory=memory, lang=lang)
-        if direct.kind == "plo_type":
+        if direct.kind in ("plo_type", "plo_advice"):
             crafted = Crafted(ANSWERED_DIRECTLY[lang], text)
             return _with_history(crafted, direct, history, text)
     key = key or api_key()

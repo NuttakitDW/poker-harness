@@ -1,0 +1,266 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.78in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\title{First-in Decisions at Ten Big Blinds in PLO Tournaments:\\
+A Restricted-Action Pilot Across Four Hand Archetypes}
+\author{}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{generated/abstract_results.tex}
+\end{abstract}
+
+\section{Question and hypotheses}
+This pilot asks how position and tournament stage change a first-in decision with a ten-big-blind
+stack in six-handed pot-limit Omaha high. The decision is deliberately restricted to fold, limp to
+one big blind, or raise to two big blinds. A pot-sized opening raise is outside the model, while
+pot-sized three-bets, later preflop raises, and postflop pot bets remain available. The analysis is
+therefore about one-step action values inside a specified abstraction. It is not a claim about a
+complete PLO strategy or a Nash equilibrium.
+
+The primary prespecified user hypothesis is that Premium and Speculative examples may favor
+limping, while Marginal examples may favor folding; the Trash examples provide an additional
+weak-hand comparison. Position and the 76-versus-60-player snapshots are exploratory contrasts,
+without a directional prediction. In particular, SB is later in the preflop order but remains out
+of position after the flop, so a monotone seat effect is not assumed. These hypotheses are not
+encoded action rules. Eight selected hands cannot identify population-wide frequencies for an
+archetype.
+
+\section{Tournament and game assumptions}
+The tournament profile reproduces the Sunday Classic Mini example: 515 initial entries, 75 paid,
+and the user-supplied ordered prize schedule encoded in the configuration, totaling \$12,500. We
+study 76 and 60 players remaining as separate hypothetical snapshots, not sequential states of one
+simulated tournament. At 60 remaining, the encoded top-60 prizes sum to \$11,684.90; the \$815.10
+assigned to ranks 61--75 is no longer available. Absolute EV levels therefore should not be compared
+across snapshots as if the payout pools were identical; action contrasts within each snapshot are
+the primary quantities.
+All six players at the table and all players outside it start each modeled hand with 10 big blinds
+before forced posts. Every seated player posts a 0.1-big-blind ante, the small blind is 0.5, the big
+blind is 1, and rake is zero. The six seats are UTG, HJ, CO, BTN, SB, and BB; the focal first-in
+decisions cover UTG through SB.
+
+The first-in ``limp to one big blind'' is a total preflop street contribution: UTG through BTN add
+1 big blind, while SB adds 0.5 after its blind. A raise to 2 big blinds similarly makes SB add 1.5.
+Antes are separate sunk contributions, and fold values retain the effect of forced posts. BB is not
+an RFI study seat because the hand ends when every other live player folds to it.
+
+The engine plays all four streets. It enforces pot-limit sizing, short all-ins and reopening,
+side pots, ties, and Omaha's exactly-two-hole-card and exactly-three-board-card showdown rule.
+Antes are excluded from the preflop GGPoker pot-limit cap and included on later streets. In an
+unraised preflop pot the first raise abstraction is exactly two big blinds, clipped to the player's
+actual all-in amount. After a raise, the two-big-blind opening action disappears and pot-sized
+reraises remain. Postflop actions are check, call, fold, or pot where legal.
+
+\pagebreak[3]
+\section{Hand cohort}
+The cohort contains two exact physical hands in each of four locally defined drill tiers:
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Tier & Hand 1 & Hand 2 \\
+\midrule
+Premium & A\(\spadesuit\)A\(\heartsuit\)K\(\spadesuit\)K\(\heartsuit\) & J\(\spadesuit\)T\(\clubsuit\)9\(\spadesuit\)8\(\clubsuit\) \\
+Speculative & A\(\spadesuit\)A\(\clubsuit\)8\(\diamondsuit\)2\(\heartsuit\) & A\(\diamondsuit\)9\(\diamondsuit\)8\(\spadesuit\)6\(\spadesuit\) \\
+Marginal & J\(\diamondsuit\)J\(\clubsuit\)6\(\clubsuit\)3\(\spadesuit\) & K\(\diamondsuit\)J\(\heartsuit\)T\(\diamondsuit\)9\(\spadesuit\) \\
+Trash & 9\(\heartsuit\)7\(\diamondsuit\)5\(\clubsuit\)3\(\spadesuit\) & Q\(\spadesuit\)J\(\spadesuit\)7\(\clubsuit\)6\(\clubsuit\) \\
+\bottomrule
+\end{tabular}
+\end{center}
+The software reclassifies each exact hand before a run and aborts if its tier differs from the
+frozen cohort. AAKK is the user's classifier-derived anchor; the other seven labels are cached drill
+examples in \path{harnesses/EN/sources/web/plo-starting-hands-classify-*}. These tier names use
+Hwang-style starting-hand structure. They select varied examples and are not measured latent hand
+strength. Tier labels are used only to validate and report the cohort; they are never supplied to
+the solver as action rules or rewards.
+
+\section{Computation}
+\subsection{Abstract policy training}
+The trainer uses external-sampling Monte Carlo counterfactual regret minimization (MCCFR), following
+the sampling framework of Lanctot et al.~\cite{lanctot2009}. Six seats train in the full multiplayer
+tree. Private observations use finite structural buckets for rank multiplicity, aces, suit pattern,
+high-card count, coarse connectivity, pair band, the PokerKit made-hand category, board rank and suit
+multiplicities, and combined hole-plus-board suit counts. They do not explicitly encode wrap outs,
+nut-flush status, blockers, or exact kickers. Keys
+retain the complete public action history, public stacks, and the focal player's own sequence of
+observation buckets. Opponent keys never include the focal query flag or its private cards.
+
+Chance sampling mixes ordinary deals with the global-suit orbit of the queried cohort representative.
+Thus a run preserves the rank and suit-isomorphism class rather than always dealing the same named
+physical suits. Regret
+and average-strategy updates receive the associated importance weight once. Strategy averaging uses
+a separate full-support sampling pass. Each main cell uses a 15,000-node stopping threshold (actual
+counters are archived), one of three seeds (17, 29, 43), and a frozen source snapshot. No
+convergence claim follows from this finite
+budget or from MCCFR theory for the present multiplayer, abstracted game.
+
+\subsection{One-step action values}
+After training, policies are frozen. Evaluation deals the focal hand's suit-isomorphism class independently and samples
+the other private cards and future board without replacement. For positions after UTG, a deal is
+weighted by the product of learned average fold probabilities for preceding seats. Each legal focal
+action is then forced on a common deal and common random continuation. All remaining players and
+streets continue under the frozen average policies; folding the focal player does not terminate the
+hand prematurely. If a preceding or continuation information bucket was unvisited, its explicit
+uniform fallback policy contributes to both the fold weight and the rollout; the fallback fraction
+is reported. Specifically, it is the unweighted fraction of policy lookups using uniform fallback
+during prefix conditioning and completed paired continuation evaluation, including prefix lookups
+on attempts whose conditioning weight becomes zero. It is neither posterior-weighted nor a played
+strategy frequency.
+
+For action \(a\), the reported value is the weighted mean
+\[
+  \widehat V_a=\frac{\sum_j w_j U_{ja}}{\sum_j w_j}, \qquad
+  \mathrm{ESS}=\frac{(\sum_j w_j)^2}{\sum_j w_j^2}.
+\]
+Paired standard errors are computed from within-deal differences, preserving covariance between
+actions. We report raise-minus-limp and limp-minus-fold contrasts directly. The chosen action is the
+largest estimated mean in that cell. It is one-step selection under frozen continuation policies,
+not a full best response. Each main cell requests 256 evaluation attempts. An interrupted final
+pair is discarded and marks the cell truncated.
+
+\subsection{ICM conversion and reproducibility}
+Terminal chip stacks are converted to payout dollars through the independent chip model (ICM).
+The implementation uses the exact Harville recurrence and compresses identical outside-field
+stacks into a counted crowd. For simultaneous busts it orders tied players by their pre-hand
+stacks; equal pre-hand stacks split the corresponding prizes. Thus terminal ICM valuation adds no
+Monte Carlo noise.
+Gilbert formalizes risk effects within ICM~\cite{gilbert2009}; recent empirical work also documents
+systematic limits in how ICM represents tournament outcomes~\cite{kim2025}. We therefore treat ICM
+as the declared valuation model rather than ground truth. Poker hand settlement uses PokerKit's
+Omaha evaluator~\cite{kim2023pokerkit}.
+
+The main grid contains 8 hands \(\times\) 5 positions \(\times\) 2 stages \(\times\) 3 seeds,
+or 240 cells. Every cell stores its configuration, source hash, exact cards, training counters,
+three action values, all paired standard errors, effective sample size, fallback fraction, runtime,
+and completion status. Results from different seeds are summarized as a mean and range, while modal
+action agreement is shown as a count out of three. These are separate trained policies and are not
+pooled into a single confidence interval. Every cell retrains its own query-specific model; the
+position figures do not represent one shared, coherent opening policy.
+
+\section{Results}
+\input{generated/results_text.tex}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{generated/modal_actions_left76.pdf}
+\caption{Modal one-step action by exact hand and position with 76 players remaining. Parentheses
+show modal votes among completed cells and $n$ reports completed seeds out of three. Gray cells
+indicate missing results.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{generated/modal_actions_left60.pdf}
+\caption{The corresponding positional summary with 60 players remaining. Colors encode the modal
+action only; they are not mixed-strategy frequencies.}
+\end{figure}
+
+\input{generated/position_tables.tex}
+
+\section{Budget sensitivity}
+\input{generated/sensitivity_text.tex}
+
+\section{Limitations}
+\begin{enumerate}
+\item The opening action set excludes pot-sized opens by design. The study cannot show that a
+pot-sized open is inferior; it only compares fold, limp, and raise-to-two within this model. The
+continuation abstraction also omits smaller postflop bet and raise sizes, which can change preflop
+action values and rankings.
+\item The private and postflop information abstraction pools strategically different hands. Uniform
+fallback at unvisited decision points is explicit and is reported as a diagnostic, not learned play.
+\item Eight exact hands are selected examples. Two hands per named tier do not support estimates of
+the distribution of all PLO hands in that tier.
+\item Every hand--position--stage--seed cell retrains a focal-hand abstract policy. Within a cell,
+all three focal actions share one frozen continuation policy and common deals. Across cells, the
+trained opponent policies can differ. The grid is therefore a collection of local action-value
+experiments and cannot be assembled into one coherent equilibrium opening range.
+\item This is a six-player general-sum tournament setting with finite MCCFR work. The reported
+policies have no exploitability bound and no Nash or GTO guarantee.
+\item Sampling standard errors quantify rollout variation conditional on a frozen trained policy.
+They exclude abstraction error, ICM model error, training uncertainty, and selection bias from taking
+the largest estimated action value.
+\item Equal 10-big-blind stacks outside the table and the exact prize schedule materially determine
+ICM values. Different field stacks, payouts, rake, antes, or prior action define a different problem.
+The single-hand terminal valuation does not simulate busts at other tables, future blind increases,
+future hands, or skill differences. Equal outside stacks also remove micro-stack ``wait out the
+bubble'' pressure that can materially change a real decision.
+\end{enumerate}
+
+\pagebreak[3]
+\section{Conclusion}
+\input{generated/conclusion_text.tex}
+
+\appendix
+\section{Encoded payout schedule}
+\begin{center}
+\begin{tabular}{rrr}
+\toprule
+Finishing rank(s) & Places & Prize per place \\
+\midrule
+1 & 1 & \$2,087.06 \\
+2 & 1 & \$1,547.88 \\
+3 & 1 & \$1,148.27 \\
+4 & 1 & \$851.83 \\
+5 & 1 & \$631.92 \\
+6 & 1 & \$468.78 \\
+7 & 1 & \$347.75 \\
+8 & 1 & \$236.87 \\
+9--10 & 2 & \$191.94 \\
+11--12 & 2 & \$155.54 \\
+13--16 & 4 & \$126.04 \\
+17--22 & 6 & \$102.13 \\
+23--32 & 10 & \$82.76 \\
+33--48 & 16 & \$67.06 \\
+49--75 & 27 & \$54.34 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Reproduction}
+The frozen run records its source snapshot and manifest beside cell JSON. From the repository root:
+{\scriptsize
+\begin{verbatim}
+.venv/bin/python research/plo_icm_archetypes/run_study.py run \
+  --output tmp/plo_icm/study_main_v1 --max-nodes 15000 \
+  --eval-attempts 256 --timeout 60 --wall-limit 2700 --workers 2
+.venv/bin/python tmp/plo_icm/study_main_v1/source_snapshot/research/plo_icm_archetypes/run_study.py \
+  sensitivity --output tmp/plo_icm/study_sensitivity_v1 \
+  --max-nodes 60000 --eval-attempts 1024 --timeout 180 \
+  --wall-limit 720 --workers 2
+.venv/bin/python research/plo_icm_archetypes/analyze_results.py \
+  --main tmp/plo_icm/study_main_v1 \
+  --sensitivity tmp/plo_icm/study_sensitivity_v1 \
+  --output research/plo_icm_archetypes/generated
+\end{verbatim}
+}
+
+\clearpage
+\begin{thebibliography}{9}
+\bibitem{lanctot2009}
+M. Lanctot, K. Waugh, M. Zinkevich, and M. Bowling.
+Monte Carlo sampling for regret minimization in extensive games.
+\emph{Advances in Neural Information Processing Systems 22}, 2009.
+\url{https://papers.nips.cc/paper/3713-monte-carlo-sampling-for-regret-minimization-in-extensive-games}
+
+\bibitem{gilbert2009}
+G. T. Gilbert. The Independent Chip Model and Risk Aversion. arXiv:0911.3100, 2009.
+\url{https://arxiv.org/abs/0911.3100}
+
+\bibitem{kim2025}
+J. Kim. Empirical Validation of the Independent Chip Model. arXiv:2506.00180, 2025.
+\url{https://arxiv.org/abs/2506.00180}
+
+\bibitem{kim2023pokerkit}
+J. Kim. PokerKit: A Comprehensive Python Library for Fine-Grained Multi-Variant Poker Game
+Simulations. arXiv:2308.07327, 2023.
+\url{https://arxiv.org/abs/2308.07327}
+\end{thebibliography}
+\end{document}

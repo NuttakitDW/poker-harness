@@ -245,6 +245,7 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            open_size=new.open_size or base.open_size,
                            threebet_size=new.threebet_size or base.threebet_size,
                            unsupported_history=new.unsupported_history,
+                           plo_hand=new.plo_hand or base.plo_hand,
                            # คู่มือใหม่คนเดียวแทนคนยัดหมดชุดเดิมทั้งหมด
                            shovers=new.shovers or (() if new.villain else base.shovers))
 

@@ -75,6 +75,18 @@ class ReadTests(unittest.TestCase):
         self.assertEqual((with_ace.ace_suited, with_ace.suited_ranks), (True, ("A", "2")))
         self.assertEqual((without_ace.ace_suited, without_ace.suited_ranks), (False, ("2", "3")))
 
+    def test_single_suited_suffix_preserves_the_full_suit_group(self):
+        shorthand = plo_type.read("PLO AK74 ss AK7")
+        exact = plo_type.read("PLO As Ks 7s 4d")
+        self.assertEqual(shorthand.suiting.suited_ranks, ("A", "K", "7"))
+        self.assertEqual(shorthand.suiting.suit_groups, exact.suiting.suit_groups)
+        self.assertTrue(shorthand.suiting.ace_suited)
+
+    def test_bad_single_suited_suffix_is_not_silently_truncated(self):
+        for text in ("PLO AK74 ss AK77", "PLO AK74 ss AK7X", "PLO AK74 ss A5"):
+            with self.subTest(text=text), self.assertRaises(plo_type.PloParseError):
+                plo_type.read(text)
+
     def test_explicit_cards_are_authoritative_over_shape_words(self):
         hand = plo_type.read("plo As 2s 3d 4c rainbow")
         self.assertTrue(hand.suiting.suited)

@@ -40,6 +40,7 @@ import assistant  # noqa: E402
 import icm_chart  # noqa: E402
 import chart_grid  # noqa: E402
 import mario  # noqa: E402
+import plo_advisor  # noqa: E402
 import plo_type  # noqa: E402
 import preflop  # noqa: E402
 import pushfold_chart  # noqa: E402
@@ -221,11 +222,26 @@ def reply(prompt: str, memory=None, lang: str | None = None) -> Reply:
     """
     if mario.asked(prompt):
         return Reply(None, kind="mario")
-    # มือ PLO สี่ใบไม่มีชาร์ต 13x13 ตอบเป็นกลุ่มมือตาม Jeff Hwang แทน ไม่แตะความจำ spot
-    plo = plo_type.lookup(prompt)
+    if plo_advisor.explicit_other_variant(prompt):
+        memory = None
+    # A specific PLO tournament hand needs the PLO solver path before the general Hwang classifier.
+    advice = plo_advisor.advise(prompt, memory=memory, lang=lang or spot.language_of(prompt))
+    if advice is not None:
+        neutral = spot.Spot({}, {}, (), 1.0, (), lang or spot.language_of(prompt), advice.request)
+        return Reply(neutral, advice.message, kind="plo_advice")
+    # General PLO hand classification remains independent of a tournament spot.
+    plo = None if plo_advisor.explicit_other_variant(prompt) else plo_type.lookup(prompt)
     if plo is not None:
         return Reply(None, plo_type.answer(plo, lang or spot.language_of(prompt)), kind="plo_type",
                      plo=plo)
+    # Never pass the private PLO context marker into the NLH chart lookup.
+    if memory is not None and memory.game == "plo":
+        used_lang = lang or spot.language_of(prompt)
+        neutral = spot.Spot({}, {}, (), 1.0, (), used_lang, memory)
+        message = ("The saved PLO spot is still active. Give four exact cards or update the position, stack, or tournament assumptions."
+                   if used_lang == "EN" else
+                   "ยังจำ spot PLO อยู่ ส่งไพ่สี่ใบให้ครบ หรือเปลี่ยนตำแหน่ง สแตก หรือสมมติฐานทัวร์นาเมนต์ได้")
+        return Reply(neutral, message, kind="plo_advice")
     found = spot.lookup(prompt, memory=memory)
     said = spot.read(prompt)
     parsed = spot.merge(said, memory)
