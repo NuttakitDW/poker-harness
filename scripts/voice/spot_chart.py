@@ -41,6 +41,7 @@ import icm_chart  # noqa: E402
 import chart_grid  # noqa: E402
 import mario  # noqa: E402
 import plo_advisor  # noqa: E402
+import plo_solved  # noqa: E402
 import plo_type  # noqa: E402
 import preflop  # noqa: E402
 import pushfold_chart  # noqa: E402
@@ -224,6 +225,11 @@ def reply(prompt: str, memory=None, lang: str | None = None) -> Reply:
         return Reply(None, kind="mario")
     if plo_advisor.explicit_other_variant(prompt):
         memory = None
+    # Chip-EV PLO spots at a solved depth (20bb, 40bb MTT) read the precomputed CFR charts.
+    solved = plo_solved.answer(prompt, memory=memory, lang=lang or spot.language_of(prompt))
+    if solved is not None:
+        neutral = spot.Spot({}, {}, (), 1.0, (), lang or spot.language_of(prompt), solved.request)
+        return Reply(neutral, solved.message, kind="plo_advice")
     # A specific PLO tournament hand needs the PLO solver path before the general Hwang classifier.
     advice = plo_advisor.advise(prompt, memory=memory, lang=lang or spot.language_of(prompt))
     if advice is not None:
