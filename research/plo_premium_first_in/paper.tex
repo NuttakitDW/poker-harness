@@ -1,0 +1,295 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.78in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{array}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\input{generated/macros.tex}
+\title{Open, Limp or Fold at 20 Big Blinds:\\
+Testing Hwang's PLO Starting-Hand Tiers and Proposing Solver-Aligned Archetypes}
+\author{Nuttakit Kundum}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Jeff Hwang's Premium, Speculative, Marginal and Trash tiers are a common way to choose starting
+hands in pot-limit Omaha. We ask how well they describe what a solver does with the first voluntary
+action of a six-handed hand at 20 big blinds, when the pot is unopened and the player can fold,
+limp or make a pot-sized raise. We solve a game with pot-sized betting on every street and all-in
+bounded re-raising, using an abstraction that never places two Hwang tiers in one bucket, and we
+audit exact hands by comparing the value of folding, limping and raising. Three findings follow.
+First, the tiers order hands correctly but do not act as position-free rules: \PremFoldUTG\% of
+Premium combinations are proven folds under the gun, all of them low straight hands that are not
+double-suited. Second, the first action is driven mainly by the number of cards Ten or higher,
+then by whether a suited Ace is present, then by pair rank; straight connectivity, the centre of
+Hwang's scheme, has little independent effect at this depth. Third, \ArchCount\ archetypes built
+from those drivers reach $R^2 = \RsqArchUTG$ for the solver's under-the-gun fold rate, against
+$R^2 = \RsqTierUTG$ for Hwang's tiers, and cut the EV lost to wrong first-in decisions from
+\LossHwangUTG\ to \LossArchUTG\ big blinds per decision on held-out hands.
+\end{abstract}
+
+\section{Question}
+Hwang sorts playable four-card hands by structure: big cards and Ace-high Broadway wraps,
+straight hands, suited-Ace hands, pair-plus hands, Aces, and marginal hands \cite{hwang}. Each
+form is then graded Premium, Speculative, Marginal or Trash. The project's classifier implements
+that grading from ranks, gaps and suits. It labels 5.49\% of the 270{,}725 physical hands Premium,
+13.83\% Speculative, 19.91\% Marginal and 60.76\% Trash.
+
+We started from a narrow claim: a Premium hand should never be folded when the pot is unopened and
+the player is first to act. We widen it to three questions. Which hands does a solver open, limp or
+fold at each seat? Where does Hwang's grading disagree with it? Can a small set of new archetypes
+describe the solver better?
+
+Hwang's own advice is conditional. He writes that ``the premium-class hands can usually be played
+from any position and under most circumstances,'' that one should ``usually limp from up front,''
+and that Marginal hands are ``late-position, minimum bet only'' \cite{hwang}. His book targets deep,
+multi-way cash games. A 20-big-blind stack is a different setting, and part of the point is to see
+which of his ideas survive it.
+
+\section{Game and solver}
+Six players, 0.5/1 blinds, 20 big blinds each, no ante, no rake, chip-EV payoffs. Every raise is
+pot-sized and clipped to all-in. Preflop allows three raises (open, three-bet and a four-bet that is
+effectively a shove). The flop, turn and river each allow a pot-sized bet and two raises. Side pots,
+split pots and Omaha's two-plus-three showdown rule are exact. The public tree has 474{,}658 nodes
+and 232{,}258 decisions.
+
+\paragraph{Abstraction.} Preflop, 572 structural buckets are split by Hwang tier into 780 buckets,
+so a bucket never mixes tiers. On the flop and turn, hands are grouped by the share of two-card
+holdings that beat them on the current board (10 bins, with a separate nut bin), by flush draw
+(none, non-nut, nut) and by the number of ranks that complete a straight on the next card
+(0, 1, 2, 3+), giving 120 buckets per street; the river uses strength alone.
+
+\paragraph{Training.} External-sampling Monte Carlo CFR with linear discounting, run as lock-free
+parallel updates on a 14-core Apple M4 Pro. Two independent seeds were trained for 100 minutes
+each, \Deals\ million deals per seed with six traversals per deal. The two seeds' tier-level
+first-in frequencies agree to within 3.1 points at every seat except the small blind.
+
+\paragraph{Validation.} The Omaha evaluator agrees with \texttt{phevaluator}; buckets are checked to
+be tier-pure; chips are conserved at every terminal; closed-form cases (everyone folds to an open:
+$+1.5$ big blinds) are exact. For 150 random hands per seat, choosing a better first action gains
+at most 0.05 big blinds on average, so the first-in decisions are close to self-consistent. This is
+a lower bound on exploitability, not a certificate.
+
+\section{Two kinds of evidence}
+\paragraph{Solver frequencies.} For every one of the 16{,}432 suit-isomorphism classes we record the
+solved fold, limp and raise probabilities at each first-in seat, averaged over both seeds. These
+cover every hand exactly, but the solver chooses per bucket, so two hands in one bucket always get
+the same mix.
+
+\paragraph{Per-hand audit.} For an exact hand at its first-in node we estimate the value of folding,
+limping and raising when every player, the hand included, follows the solved strategy afterwards;
+deals are weighted by the probability that every earlier seat folded. A hand is \emph{enter
+proven} if limping or raising beats folding by at least three standard errors, \emph{fold proven}
+if both lose to folding by at least three standard errors, and \emph{too close} otherwise. All 922
+Premium classes and 400 uniformly drawn hands from each other tier were audited at all five seats:
+\AuditRows\ hand--seat rows over \AuditClasses\ classes, weighted to the full population. Across the
+two seeds, \SeedContra\ of \SeedPairs\ Premium hands under the gun received opposite proven verdicts.
+Because the audit is per hand, it can separate hands that share a bucket: KK32 single-suited gains
+$+0.30$ big blinds by limping under the gun while TT32 loses $0.93$, although the solver plays both
+the same way.
+
+\section{How often each tier folds}
+\begin{table}[H]
+\centering
+\caption{Solved first-in mix, fold/limp/raise (\%), mean of two seeds.}
+\label{tab:tiers}
+\small
+\input{generated/table_tiers.tex}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Per-hand audit: share of combinations proven to enter / too close / proven to fold (\%).}
+\label{tab:verdicts}
+\small
+\input{generated/table_verdicts.tex}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{generated/fig_verdicts.pdf}
+\caption{Per-hand verdicts by tier and seat.}
+\label{fig:verdicts}
+\end{figure}
+
+The tiers keep their order at every seat. Premium is folded least and Trash most, and all tiers are
+played more as the seat moves toward the button. Under the gun, \PremEnterUTG\% of Premium combinations
+must enter and \PremFoldUTG\% must fold; on the button the proven-fold share falls to \PremFoldBTN\%.
+Trash is a proven fold for \TrashFoldUTG\% of combinations under the gun. The small blind is
+different for every tier: facing only the big blind with half a big blind already posted, the
+solver limps a large share of all hands, including 45\% of Trash, and very few hands are proven folds.
+Most Marginal hands, and many Speculative ones, are too close to call: at 20 big blinds they are near
+break-even decisions rather than clear folds.
+
+\section{What decides open, limp or fold}
+Table~\ref{tab:drivers} splits all hands by one feature at a time. ``Play'' is the solver's
+probability of limping or raising; ``entry EV'' is the audited value of the better of limping and
+raising, minus folding, in big blinds.
+
+\begin{table}[H]
+\centering
+\caption{First-in play rate and entry value by single features.}
+\label{tab:drivers}
+\small
+\input{generated/table_drivers.tex}
+\end{table}
+
+\paragraph{Big cards come first.} Hands with zero or one card Ten or higher are almost never played
+from early position and lose close to a big blind when they are; with three big cards the solver
+enters 69\% under the gun and 96\% on the button; with four, nearly always. No other single feature
+separates hands as sharply.
+
+\paragraph{The Ace suit matters more than the second suit.} A suited Ace lifts under-the-gun entry
+value from $-0.45$ (best suit Ten to King) to $+0.24$. A second suit helps (double-suited $+0.12$
+against single-suited $-0.53$), and a hand whose best suit is headed by a Nine or lower plays almost
+like a rainbow hand.
+
+\paragraph{Pairs follow rank.} Aces are always played and are worth about three big blinds first in.
+Kings and Queens are profitable from every seat. Jacks and Tens are near break-even under the gun
+($-0.12$) and profitable only later. Small pairs are folds except in the small blind.
+
+\paragraph{Connectivity matters little on its own.} Four ranks inside a five-rank window raise the
+under-the-gun play rate only to 35\%, and entry value stays negative. Rundowns are valuable when they
+also carry big cards and suits, which is the interaction our archetypes use.
+
+\paragraph{Limp or raise.} Aces and hands with three or more big cards and a suited Ace or two
+suits are raised far more often than limped at every seat, and raising is worth more than limping
+by about 0.15--0.3 big blinds. Big pairs without a suited Ace are limped about 60\% of the time under
+the gun, although the audited values of limping and raising differ by only about 0.1 big blinds.
+Broadway rundowns are the one group where limping under the gun is clearly worth more
+($+0.22$ against $+0.12$), which fits Hwang's advice to keep drawing hands multi-way from early
+position. From the small blind, hands that enter are raised more often than limped, except the
+weakest groups.
+
+\section{Where Hwang disagrees with the solver}
+Table~\ref{tab:mismatch} lists the largest groups (Hwang tier, form and suit pattern) where Hwang's
+advice and the solver point in opposite directions under the gun. We read Hwang's advice as: raise
+Premium, limp Speculative, play Marginal only from the cutoff, button and small blind, and fold Trash.
+
+\begin{table}[H]
+\centering
+\caption{Largest disagreements under the gun. Entry EV is the audited mean where available.}
+\label{tab:mismatch}
+\small
+\input{generated/table_mismatch.tex}
+\end{table}
+
+Three patterns explain most of the disagreement.
+\begin{itemize}
+\item \textbf{Straight and pair-plus-connector hands are overrated.} Single-suited pair-plus-connector
+hands (for example 9-9-8-7) and gapped straight hands without big cards are Speculative or Premium in
+Hwang's scheme, but under the gun they lose about 0.35--0.7 big blinds against folding. These are the forms
+that rely on deep stacks and implied odds.
+\item \textbf{Big-card hands with a dangler are underrated.} Big pairs with danglers, three Broadway
+cards with a dangler, and weak suited-Ace hands that are double-suited are Marginal for Hwang, yet the
+solver enters most of them under the gun, and the double-suited ones are profitable
+($+0.17$ to $+0.66$). At 20 big blinds high-card strength is often realised by showdown or by a
+single flop commitment, so a dangler costs less than it does deep.
+\item \textbf{Suit quality is too coarse.} The classifier treats any two cards of a suit as
+``suited''. The solver separates a suited Ace, a suited King to Ten, and low suits sharply, and it
+plays three-flush hands almost as rarely as rainbow ones (9\% and 6\% under the gun, against 20\%
+for single-suited hands).
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.52\linewidth]{generated/fig_rundowns.pdf}
+\caption{Premium straight hands under the gun: best entry minus fold, in big blinds, by rank set and
+suit pattern (ds double-suited, ss single-suited, 3f three-flush, mono monotone).}
+\label{fig:rundowns}
+\end{figure}
+
+Figure~\ref{fig:rundowns} shows the Premium case in detail. Double-suited rundowns are near break-even
+or better, and rundowns headed by two big cards (J-T-9-8, Q-J-T-9, K-Q-J-9) are playable when suited.
+Single-suited, three-flush and monotone rundowns from 6-5-3-2 to 9-8-7-6 lose 0.4--1.3 big blinds
+against folding. These hands carry the Premium label because the classifier grades straight forms by
+their gaps and treats any suit as enough, while at this depth their equity when called is too low.
+
+\section{Solver-aligned archetypes}
+The drivers suggest grouping hands by big cards, Ace suit, second suit and pair rank, with
+connectivity used only in combination with big cards. Table~\ref{tab:rules} gives the rules, checked
+in order; Table~\ref{tab:archetypes} gives the recommended first action at each seat, taken from the
+audited mean values of limping and raising. A cell is ``mixed'' when the better entry is within 0.10
+big blinds of folding.
+
+\begin{table}[H]
+\centering
+\caption{Archetype rules. A big card is a Ten or higher; a big pair counts as two big cards; a
+rundown has all four ranks inside a five-rank window.}
+\label{tab:rules}
+\small
+\input{generated/table_archetype_rules.tex}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Archetypes: share of hands, Hwang tiers they contain (P, S, M, T in \%), and the recommended
+first action by seat.}
+\label{tab:archetypes}
+\small
+\input{generated/table_archetypes.tex}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{generated/fig_archetypes.pdf}
+\caption{Solved first-in mix of each archetype by seat.}
+\label{fig:archetypes}
+\end{figure}
+
+Nine of the eleven archetypes contain at least two Hwang tiers at 10\% or more. ``Nut big cards''
+is half Speculative and a third Marginal; ``Strong big pair'' is mostly Marginal; the low single-suited rundowns that Hwang calls
+Premium fall into Rest.
+
+\paragraph{Evaluation.} Table~\ref{tab:evaluation} compares the groupings in two ways. The first is the
+EV each rule loses against the best action for each audited hand, with every group's action chosen
+on one half of the hands and scored on the other half. The second is the share of variation in the
+solver's fold rate, across all hands, that each grouping explains. The archetypes lose about a third
+as much EV as Hwang's advice from under the gun to the cutoff and about half as much on the button,
+and they come within a few hundredths of a big blind of the solver's own 780-bucket strategy. All
+groupings do poorly in the small blind, where most hands are close to break-even.
+
+\begin{table}[H]
+\centering
+\caption{How well each grouping reproduces the solved first-in decision.}
+\label{tab:evaluation}
+\small
+\input{generated/table_evaluation.tex}
+\end{table}
+
+\section{Limitations}
+\begin{itemize}
+\item One stack depth (20 big blinds), pot-sized bets only, no rake, no antes. The archetypes are
+fitted to this game and should be re-derived for deeper stacks, where implied odds favour Hwang's
+straight hands.
+\item Postflop play is abstracted and imperfect-recall, and multiplayer CFR has no equilibrium
+guarantee. The only exploitability evidence is the small gain from changing the first action.
+\item The audit follows the solved strategy after the first action, so it measures one-step
+deviations, not full best responses.
+\item The archetypes were designed after looking at the same solve that evaluates them. The
+held-out split protects the choice of action per group but not the choice of rules; an independent
+solve at another depth would be the stronger test.
+\item Non-Premium tiers were audited on 400 hands each; many of those hands are too close to call at
+2{,}048 deals per hand.
+\end{itemize}
+
+\section{Conclusion}
+At 20 big blinds Hwang's tiers order hands correctly but misplace two families: low straight hands
+that are not double-suited, which his scheme calls Premium or Speculative, and big-card hands with
+a dangler, which it calls Marginal. The solver's first action is explained mainly by big cards, the
+Ace suit and pair rank. Eleven archetypes built on those features reproduce the solver's first-in
+choices far better than the four tiers, and nearly as well as the solver's own buckets, while
+remaining simple enough to apply at the table.
+
+\begin{thebibliography}{9}
+\bibitem{hwang} J.~Hwang. \emph{Pot-Limit Omaha Poker: The Big Play Strategy}. Lyle Stuart
+(Kensington), 2008, chapter 4.
+\end{thebibliography}
+
+\end{document}

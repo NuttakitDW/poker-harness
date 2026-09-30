@@ -1,0 +1,363 @@
+<title>Open, Limp or Fold at 20bb</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inclusive+Sans:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a research paper on parchment. Hero question + fanned finding cards,
+     then one reading column (~68ch) with figures allowed to widen to the container.
+     Single deliberate light theme (house style); every colour is set explicitly. */
+  :root {
+    --paper: #E8EBF2; --paper-2: #F1F3F8; --edge: #C2C9D8;
+    --ink: #080B12; --ash: #49556B; --ash-2: #5E6A80;
+    --signal: #16408F; --bronze: #7A5A26;
+    --fill-sapphire: #16408F; --fill-midnight: #0E1A33; --fill-mist: #C6D0E3; --fill-tan: #CDB892;
+    --chart-open: #2F6FDB; --chart-fold: #C08A3E; --chart-close: #C9CED8;
+    --font-display: "Inclusive Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --shadow-card: 0 20px 76px rgba(8,11,18,.15);
+    --ease-out: cubic-bezier(.16,1,.3,1);
+    --gutter: clamp(16px, 4vw, 40px); --container: 1180px; --measure: 68ch;
+    color-scheme: light;
+  }
+  html { background: var(--paper); }
+  body {
+    margin: 0; padding-inline: var(--gutter); padding-block: 0 2rem;
+    background: var(--paper); color: var(--ink);
+    font-family: var(--font-mono); font-size: 15px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .03 0 0 0 0 .05 0 0 0 0 .12 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  a { color: var(--signal); text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 4px; }
+  ::selection { background: var(--fill-mist); color: var(--ink); }
+
+  .page { position: relative; z-index: 1; max-width: var(--container); margin: 0 auto;
+          display: flex; flex-direction: column; gap: clamp(3rem, 7vw, 6rem); }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; color: var(--ink); }
+  h2 { font-size: clamp(1.6rem, 3vw, 2.3rem); line-height: 1.15; letter-spacing: -.04em; }
+  h3 { font-size: 1.15rem; letter-spacing: -.02em; }
+  p { margin: 0; }
+  .eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--bronze); }
+
+  .site-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+               min-height: 76px; flex-wrap: wrap; }
+  .brandmark { display: inline-flex; align-items: center; gap: .5rem; font-family: var(--font-display);
+               font-weight: 600; letter-spacing: -.03em; font-size: 1.05rem; color: var(--ink); text-decoration: none; }
+  .brandmark svg { width: 23px; height: 22px; }
+  .meta { font-size: .75rem; color: var(--ash); letter-spacing: .04em; }
+
+  .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+  .hero-h1 { font-size: clamp(3rem, 8.4vw, 6.4rem); line-height: .88; letter-spacing: -.06em; }
+  .hero-h1 .lead { display: block; }
+  .hero-sub { margin-top: 1.6rem; font-size: 1.05rem; line-height: 1.55; max-width: 44ch; color: var(--ink); }
+  .hero-sub b { font-weight: 500; color: var(--signal); }
+  .grain { position: relative; color: transparent; font-style: normal; }
+  .grain::before, .grain::after { content: attr(data-text); position: absolute; left: 0; top: 0;
+    white-space: nowrap; pointer-events: none; color: var(--signal); }
+  .grain::before { filter: url(#grain-back); }
+  .grain::after { top: 2px; filter: url(#grain-front); }
+
+  .fan { display: flex; justify-content: center; padding-block: 1rem; }
+  .card { position: relative; width: 196px; aspect-ratio: 377 / 560; border-radius: 28px; padding: 1.15rem;
+    box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: .5rem; margin-inline: -18px;
+    transform: rotate(var(--tilt)); transition: transform .3s var(--ease-out); }
+  .card:hover { transform: rotate(calc(var(--tilt) * .7)) translateY(-8px) scale(1.02); z-index: 2; }
+  .card .tag { align-self: flex-end; font-size: .62rem; text-transform: uppercase; letter-spacing: .08em;
+    padding: .2rem .55rem; border-radius: 40px; border: 1px solid currentColor; }
+  .card .name { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; line-height: 1.1; letter-spacing: -.03em; }
+  .card .claim { font-size: .74rem; line-height: 1.45; }
+  .card svg { margin-top: auto; width: 100%; height: auto; }
+  .c1 { background: var(--fill-sapphire); color: var(--paper-2); }
+  .c2 { background: var(--fill-tan); color: var(--ink); }
+  .c3 { background: var(--fill-mist); color: var(--ink); }
+  .c4 { background: var(--fill-midnight); color: var(--paper-2); }
+
+  .article { display: flex; flex-direction: column; gap: clamp(2.5rem, 5vw, 4rem); }
+  .section { display: flex; flex-direction: column; gap: 1rem; max-width: var(--measure); }
+  .section.wide { max-width: none; }
+  .section p { max-width: var(--measure); }
+  .section ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .35rem; max-width: var(--measure); }
+  .num { font-variant-numeric: tabular-nums; color: var(--signal); font-weight: 500; }
+  blockquote { margin: 0; padding: .2rem 0 .2rem 1rem; border-left: 2px solid var(--bronze); color: var(--ash); max-width: var(--measure); }
+
+  .games { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+  .panel { background: var(--paper-2); border-radius: 24px; padding: 1.4rem; display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+  .panel .spec { font-size: .8rem; color: var(--ash); }
+
+  .figure { display: flex; flex-direction: column; gap: .9rem; }
+  .figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(1rem, 3vw, 2.5rem); }
+  .fig { background: var(--paper-2); border-radius: 24px; padding: 1.2rem 1.2rem 1rem; min-width: 0; display: flex; flex-direction: column; gap: .5rem; }
+  .fig h3 { font-size: .95rem; }
+  .fig svg { width: 100%; height: auto; display: block; }
+  .fig svg .lbl { font-family: var(--font-mono); font-size: 10px; fill: var(--ash); }
+  .fig svg .lbl.strong { fill: var(--ink); font-weight: 500; }
+  .fig svg .val { font-family: var(--font-mono); font-size: 9.5px; fill: var(--ink); }
+  .stack-text { min-width: 0; display: flex; flex-direction: column; gap: .6rem; }
+  .stack-text ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: .6rem; }
+  .fig svg .cell { font-family: var(--font-mono); font-size: 9.5px; }
+  .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font-size: .75rem; color: var(--ash); }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .legend i { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+  .caption { font-size: .8rem; color: var(--ash); max-width: var(--measure); }
+
+  details { background: var(--paper-2); border-radius: 16px; padding: .8rem 1rem; }
+  summary { cursor: pointer; font-family: var(--font-display); font-weight: 600; letter-spacing: -.02em; }
+  .scroll { overflow-x: auto; margin-top: .8rem; }
+  table { border-collapse: collapse; font-size: .78rem; font-variant-numeric: tabular-nums; min-width: 100%; }
+  th, td { padding: .35rem .7rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--edge); }
+  th:first-child { text-align: left; }
+  thead th { color: var(--bronze); font-weight: 500; text-transform: uppercase; font-size: .68rem; letter-spacing: .06em; }
+  tr.group th { text-align: left; color: var(--signal); font-family: var(--font-display); font-size: .85rem; padding-top: .9rem; }
+  tbody th { font-weight: 400; color: var(--ink); }
+
+  .refs { font-size: .8rem; color: var(--ash); display: flex; flex-direction: column; gap: .4rem; max-width: var(--measure); }
+  .site-foot { border-top: 1px solid var(--edge); padding-top: 1.2rem; display: flex; flex-wrap: wrap;
+    justify-content: space-between; gap: .6rem; font-size: .72rem; color: var(--ash); }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .figs, .games { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .grain { color: var(--signal); }
+    .grain::before, .grain::after { display: none; }
+    .fan { flex-wrap: wrap; gap: .8rem; }
+    .card { --tilt: 0deg !important; margin-inline: 0; width: calc(50% - .4rem); aspect-ratio: auto; min-height: 210px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .6s var(--ease-out) both; }
+    .rise.d1 { animation-delay: .06s; } .rise.d2 { animation-delay: .16s; }
+    .fan .card { animation: deal .7s var(--ease-out) both; }
+    .fan .card:nth-child(2) { animation-delay: .06s; } .fan .card:nth-child(3) { animation-delay: .12s; }
+    .fan .card:nth-child(4) { animation-delay: .18s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+    @keyframes deal { from { transform: translateY(40px) rotate(0); } }
+  }
+
+  /* archetype cheat sheet */
+  .archs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .arch { background: var(--paper-2); border-radius: 24px; padding: 1.2rem; display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+  .arch header { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .arch h3 { font-size: 1.1rem; }
+  .arch .share { font-size: .72rem; color: var(--bronze); text-transform: uppercase; letter-spacing: .06em; }
+  .arch .rule { font-size: .8rem; line-height: 1.5; }
+  .arch .small { font-size: .74rem; color: var(--ash); line-height: 1.55; }
+  .arch .small b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .arch details { padding: .5rem .7rem; border-radius: 12px; background: var(--paper); }
+  .arch details summary { font-size: .8rem; }
+  .arch svg { width: 100%; height: auto; display: block; margin-top: .4rem; }
+  .arch svg .lbl { font-family: var(--font-mono); font-size: 10px; fill: var(--ash); }
+  .arch .chips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3rem; max-width: none; }
+  .archs .arch:last-child { grid-column: span 2; }
+  .chip { border-radius: 10px; padding: .3rem .2rem; text-align: center; font-size: .72rem; line-height: 1.25; }
+  .chip span { display: block; font-size: .62rem; letter-spacing: .06em; opacity: .85; }
+  .chip.open { background: var(--signal); color: var(--paper-2); }
+  .chip.limp { background: var(--fill-mist); color: var(--ink); }
+  .chip.mixed { background: var(--paper); color: var(--ash); border: 1px dashed var(--edge); }
+  .chip.fold { background: var(--fill-tan); color: var(--ink); }
+  .verdicts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+  table.drivers td.barcell { position: relative; min-width: 110px; text-align: left; }
+  table.drivers .bar { display: inline-block; height: 9px; border-radius: 2px; background: var(--chart-open); vertical-align: middle; max-width: 70%; }
+  table.drivers .v { margin-left: .4rem; }
+  td.l, th.l { text-align: left; }
+  @media (max-width: 1000px) { .archs { grid-template-columns: repeat(2, minmax(0, 1fr)); } .archs .arch:last-child { grid-column: 1 / -1; } .verdicts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 620px) { .archs, .verdicts { grid-template-columns: minmax(0, 1fr); } .archs .arch:last-child { grid-column: auto; } .arch .chips { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+</style>
+
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <filter id="grain-back" x="-30%" y="-80%" width="160%" height="260%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14" result="blur"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="5" seed="11" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.2 0 0 0 -0.25" result="noiseA"/>
+      <feComposite in="blur" in2="noiseA" operator="arithmetic" k2="0.62" k3="-1" result="diff"/>
+      <feComponentTransfer in="diff" result="stipple"><feFuncA type="linear" slope="7"/></feComponentTransfer>
+      <feFlood flood-color="#16408F" result="tone"/>
+      <feComposite in="tone" in2="stipple" operator="in"/>
+    </filter>
+    <filter id="grain-front" x="-30%" y="-80%" width="160%" height="260%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4.5" result="blur"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="5" seed="23" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.2 0 0 0 -0.25" result="noiseA"/>
+      <feComposite in="blur" in2="noiseA" operator="arithmetic" k2="1.05" k3="-1" result="diff"/>
+      <feComponentTransfer in="diff" result="stipple"><feFuncA type="linear" slope="15"/></feComponentTransfer>
+      <feFlood flood-color="#16408F" result="tone"/>
+      <feComposite in="tone" in2="stipple" operator="in"/>
+    </filter>
+    <filter id="grain-paper" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="41" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.2 0 0 0 -0.25" result="noiseA"/>
+      <feComposite in="blur" in2="noiseA" operator="arithmetic" k2="0.95" k3="-1" result="diff"/>
+      <feComponentTransfer in="diff" result="stipple"><feFuncA type="linear" slope="12"/></feComponentTransfer>
+      <feFlood flood-color="#F1F3F8" result="tone"/>
+      <feComposite in="tone" in2="stipple" operator="in"/>
+    </filter>
+    <filter id="grain-ink" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="37" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.2 0 0 0 -0.25" result="noiseA"/>
+      <feComposite in="blur" in2="noiseA" operator="arithmetic" k2="0.95" k3="-1" result="diff"/>
+      <feComponentTransfer in="diff" result="stipple"><feFuncA type="linear" slope="12"/></feComponentTransfer>
+      <feFlood flood-color="#080B12" result="tone"/>
+      <feComposite in="tone" in2="stipple" operator="in"/>
+    </filter>
+  </defs>
+</svg>
+
+<div class="page">
+  <header class="site-head rise">
+    <span class="brandmark">
+      <svg viewBox="0 0 23 22" aria-hidden="true"><rect x="1" y="1" width="21" height="20" rx="6" fill="#16408F"/><rect x="7" y="6" width="9" height="10" rx="2" fill="#F1F3F8" transform="rotate(-8 11.5 11)"/></svg>
+      Tamkwai Research
+    </span>
+    <span class="meta">PLO4 six-max &middot; 20bb &middot; chip EV &middot; September 2026</span>
+  </header>
+
+  <section class="hero">
+    <div class="rise d1">
+      <p class="eyebrow">Testing Jeff Hwang's starting-hand tiers with CFR</p>
+      <h1 class="hero-h1"><em class="grain lead" data-text="Open, limp">Open, limp</em> or fold at 20bb?</h1>
+      <p class="hero-sub">Big cards decide first, then a suited Ace, then pair rank. Straight connectivity barely matters on its own. {{ArchCount}} new archetypes built on that cut the EV lost to wrong first-in decisions from <b>{{LossHwangUTG}}bb</b> to <b>{{LossArchUTG}}bb</b> under the gun.</p>
+    </div>
+    <div class="fan" aria-label="Main findings">
+      <article class="card c1" style="--tilt:-4.8deg">
+        <span class="tag">T+ cards</span>
+        <span class="name">Big cards decide</span>
+        <span class="claim">3 big cards: played 69% UTG. 0&ndash;1: almost never.</span>
+        <svg viewBox="0 0 160 120" aria-hidden="true"><text x="80" y="104" text-anchor="middle" font-family="Inclusive Sans, sans-serif" font-weight="700" font-size="112" fill="#F1F3F8" filter="url(#grain-paper)">K</text></svg>
+      </article>
+      <article class="card c2" style="--tilt:2deg">
+        <span class="tag">6532ss</span>
+        <span class="name">Low rundowns fold</span>
+        <span class="claim">{{PremFoldUTG}}% of Premium combos are proven folds UTG.</span>
+        <svg viewBox="0 0 160 120" aria-hidden="true"><g filter="url(#grain-ink)"><rect x="18" y="40" width="30" height="62" rx="5" fill="#080B12" transform="rotate(-10 33 71)"/><rect x="50" y="34" width="30" height="68" rx="5" fill="#080B12" transform="rotate(-3 65 68)"/><rect x="82" y="30" width="30" height="72" rx="5" fill="#080B12" transform="rotate(4 97 66)"/><rect x="114" y="26" width="30" height="76" rx="5" fill="#080B12" transform="rotate(11 129 64)"/></g></svg>
+      </article>
+      <article class="card c3" style="--tilt:-2.6deg">
+        <span class="tag">KK72ss</span>
+        <span class="name">Danglers underrated</span>
+        <span class="claim">Big pairs and Broadway with a rag are Marginal to Hwang, played by the solver.</span>
+        <svg viewBox="0 0 160 120" aria-hidden="true"><g filter="url(#grain-ink)"><circle cx="62" cy="68" r="36" fill="#080B12"/></g><circle cx="98" cy="68" r="36" fill="none" stroke="#16408F" stroke-width="3"/></svg>
+      </article>
+      <article class="card c4" style="--tilt:3.2deg">
+        <span class="tag">R&sup2; {{RsqArchUTG}}</span>
+        <span class="name">{{ArchCount}} archetypes</span>
+        <span class="claim">Explain the solver's UTG folds twice as well as 4 tiers (R&sup2; {{RsqTierUTG}}).</span>
+        <svg viewBox="0 0 160 120" aria-hidden="true"><g filter="url(#grain-paper)"><rect x="24" y="64" width="22" height="38" rx="4" fill="#F1F3F8"/><rect x="54" y="48" width="22" height="54" rx="4" fill="#F1F3F8"/><rect x="84" y="30" width="22" height="72" rx="4" fill="#F1F3F8"/><rect x="114" y="18" width="22" height="84" rx="4" fill="#F1F3F8"/></g></svg>
+      </article>
+    </div>
+  </section>
+
+  <main class="article">
+    <section class="section">
+      <p class="eyebrow">The question</p>
+      <h2>Do Hwang's tiers match a solver at 20bb?</h2>
+      <p>Jeff Hwang sorts PLO starting hands into Premium, Speculative, Marginal and Trash. Our classifier implements those tiers from ranks, gaps and suits: <span class="num">5.49%</span> of the <span class="num">270,725</span> hands are Premium, <span class="num">13.83%</span> Speculative, <span class="num">19.91%</span> Marginal and <span class="num">60.76%</span> Trash.</p>
+      <p>We asked three things for the first voluntary action of a six-max hand at 20 big blinds: which hands the solver raises, limps or folds at each seat; where Hwang's grading disagrees; and whether a few new archetypes describe the solver better.</p>
+      <blockquote>&ldquo;The premium-class hands can usually be played from any position and under most circumstances.&rdquo; Hwang also says to usually limp up front, and to play Marginal hands only late for the minimum. His book targets deep, multi-way cash games.</blockquote>
+    </section>
+
+    <section class="section wide">
+      <p class="eyebrow">Method</p>
+      <h2>A full 20bb game, checked hand by hand</h2>
+      <div class="games">
+        <div class="panel">
+          <h3>The game</h3>
+          <p class="spec">Six-max, 20bb, 0.5/1 blinds, no ante, no rake. Pot-sized raises up to a four-bet shove; pot-sized bet plus two raises on flop, turn and river. <span class="num">232,258</span> decisions. Two independent seeds, <span class="num">{{Deals}}M</span> deals each on a 14-core M4 Pro.</p>
+        </div>
+        <div class="panel">
+          <h3>The check</h3>
+          <p class="spec">Preflop buckets never mix Hwang tiers. For <span class="num">{{AuditClasses}}</span> exact hand classes at every seat we compared fold, limp and raise with the solved strategy played afterwards. Three standard errors separate <em>enter</em>, <em>fold</em> and <em>too close</em>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wide figure">
+      <p class="eyebrow">Result 1</p>
+      <h2>The tiers keep their order, not their rules</h2>
+      <div class="legend" aria-hidden="true"><span><i style="background:var(--chart-open)"></i>Entering proven better</span><span><i style="background:var(--chart-close)"></i>Too close</span><span><i style="background:var(--chart-fold)"></i>Folding proven better</span></div>
+      <div class="verdicts">
+        <div class="fig"><h3>Premium</h3>{{VERDICT_PREMIUM}}</div>
+        <div class="fig"><h3>Speculative</h3>{{VERDICT_SPECULATIVE}}</div>
+        <div class="fig"><h3>Marginal</h3>{{VERDICT_MARGINAL}}</div>
+        <div class="fig"><h3>Trash</h3>{{VERDICT_TRASH}}</div>
+      </div>
+      <details><summary>Show the numbers</summary>{{VERDICT_TABLE}}</details>
+      <p>Premium is folded least and Trash most at every seat. Under the gun, <span class="num">{{PremEnterUTG}}%</span> of Premium combos must enter and <span class="num">{{PremFoldUTG}}%</span> must fold; on the button the fold share drops to <span class="num">{{PremFoldBTN}}%</span>. Most Marginal and many Speculative hands are too close to call: near break-even, not clear folds. In the small blind, facing only the big blind, the solver limps a large share of every tier.</p>
+    </section>
+
+    <section class="section wide figure">
+      <p class="eyebrow">Result 2</p>
+      <h2>What decides raise, limp or fold</h2>
+      <p class="caption">Play = the solver's chance of limping or raising. Entry EV = the better of limp and raise minus fold, in big blinds, from the per-hand audit.</p>
+      {{DRIVERS}}
+      <ul>
+        <li><b>Big cards first.</b> Zero or one card Ten or higher is almost never played early. Three big cards are played <span class="num">69%</span> under the gun and <span class="num">96%</span> on the button.</li>
+        <li><b>The Ace suit beats the second suit.</b> A suited Ace moves UTG entry value from <span class="num">&minus;0.45</span> to <span class="num">+0.24</span>. Low-suited hands play almost like rainbow ones.</li>
+        <li><b>Pairs follow rank.</b> KK and QQ are profitable everywhere, JJ and TT only from the cutoff on, small pairs only from the small blind.</li>
+        <li><b>Connectivity alone does little.</b> Rundowns are played only <span class="num">35%</span> UTG and lose on average. They pay when they also carry big cards and suits.</li>
+        <li><b>Limp or raise.</b> Aces and nut big cards are raised. Big pairs are limped about 60% UTG, though limp and raise differ by only 0.1bb. Broadway rundowns are the one group where limping UTG is clearly better.</li>
+      </ul>
+    </section>
+
+    <section class="section wide figure">
+      <p class="eyebrow">Result 3</p>
+      <h2>Where Hwang disagrees</h2>
+      {{MISMATCH}}
+      <div class="figs">
+        <div class="fig"><h3>Premium straight hands, UTG: entry minus fold (bb)</h3>{{HEAT}}</div>
+        <div class="stack-text">
+          <ul>
+            <li><b>Straight and pair-plus-connector hands are overrated.</b> Single-suited 9-9-8-7 types and gapped straights without big cards lose about 0.35&ndash;0.7bb against folding UTG. They need deep stacks.</li>
+            <li><b>Big-card hands with a dangler are underrated.</b> Big pairs and Broadway cards with a rag are Marginal to Hwang, yet the solver plays most of them UTG; the double-suited ones win <span class="num">+0.17</span> to <span class="num">+0.66bb</span>.</li>
+            <li><b>Suit quality is too coarse.</b> Any two cards of a suit count as suited. The solver separates a suited Ace, a suited King to Ten, and low suits, and plays three-flush hands almost as rarely as rainbow ones.</li>
+            <li><b>The Premium folds.</b> Single-suited, three-flush and monotone rundowns from 6532 to 9876 lose 0.4&ndash;1.3bb against folding UTG. Double-suited rundowns and ones headed by two big cards are fine.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="caption">Heat map: bronze means folding wins, blue means entering wins. ds double-suited, ss single-suited, 3f three-flush, mono monotone.</p>
+    </section>
+
+    <section class="section wide">
+      <p class="eyebrow">The proposal</p>
+      <h2>{{ArchCount}} archetypes for 20bb first-in play</h2>
+      <p>Check the rules in order; the first match wins. A big card is a Ten or higher and a big pair counts twice. Actions come from the audited values of limping and raising; &ldquo;mixed&rdquo; means the better entry is within 0.10bb of folding.</p>
+      <div class="archs">{{ARCHETYPES}}</div>
+    </section>
+
+    <section class="section wide figure">
+      <p class="eyebrow">Evaluation</p>
+      <h2>A third of the EV loss, with {{ArchCount}} rules</h2>
+      <p class="caption">EV lost per first-in decision against each hand's best action, on hands held out from choosing each group's action (bb).</p>
+      <div class="fig">{{EVALUATION}}</div>
+      <p>From under the gun to the cutoff, the archetypes lose about a third as much EV as Hwang's advice, and half as much on the button. They come within a few hundredths of a big blind of the solver's own 780-bucket strategy. Every grouping struggles in the small blind, where most hands are close to break-even. As R&sup2; of the solver's UTG fold rate: tiers <span class="num">{{RsqTierUTG}}</span>, archetypes <span class="num">{{RsqArchUTG}}</span>.</p>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Limits</p>
+      <h2>What this does not show</h2>
+      <ul>
+        <li>One depth (20bb), pot-sized bets only, no rake, no antes. Deeper stacks favour Hwang's straight hands; the archetypes should be re-derived there.</li>
+        <li>Postflop hands are grouped, not tracked exactly, and multiplayer CFR has no equilibrium guarantee. The exploitability evidence is only the small gain (at most about 0.05bb) from changing the first action.</li>
+        <li>The archetypes were designed on the same solve that evaluates them. The held-out split protects each group's action, not the rules themselves.</li>
+        <li>Non-Premium tiers were checked on 400 hands each, so many are too close to call.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Reference</p>
+      <div class="refs">
+        <p>J. Hwang. <em>Pot-Limit Omaha Poker: The Big Play Strategy</em>. Lyle Stuart (Kensington), 2008, chapter 4.</p>
+        <p>Code and data: <code>plo_premium_proof/</code> and <code>research/plo_premium_first_in/</code> in the poker-harness repository.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <span>Two seeds, 14-core Apple M4 Pro. Every number on this page is generated from the study data.</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </footer>
+</div>

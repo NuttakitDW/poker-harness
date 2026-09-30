@@ -14,3 +14,7 @@ bots
 .vercel
 .venv-swarm/
 deepstack-swarm/runs/
+# plo_premium_first_in: regenerated from tmp/ solver runs; PDFs are LaTeX build outputs
+research/plo_premium_first_in/generated/
+research/plo_premium_first_in/output/
+public/static/*.pdf

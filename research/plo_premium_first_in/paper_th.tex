@@ -1,0 +1,263 @@
+% Thai edition. Build with XeLaTeX (Thai line breaking needs ICU): xelatex paper_th.tex
+\documentclass[11pt]{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{fontspec}
+\setmainfont{Sarabun}[Path=fonts/, Extension=.ttf, UprightFont=*-Regular, BoldFont=*-Bold,
+  ItalicFont=*-Italic, BoldItalicFont=*-BoldItalic]
+\setmonofont{Menlo}[Scale=0.85]
+\XeTeXlinebreaklocale "th"
+\XeTeXlinebreakskip = 0pt plus 1pt
+\linespread{1.18}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{array}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\renewcommand{\abstractname}{บทคัดย่อ}
+\renewcommand{\refname}{เอกสารอ้างอิง}
+\renewcommand{\figurename}{รูปที่}
+\renewcommand{\tablename}{ตารางที่}
+\input{generated/macros.tex}
+\title{Raise, Limp หรือ Fold ที่ 20 Big Blinds:\\
+ทดสอบการจัดกลุ่มมือเริ่มต้น PLO ของ Jeff Hwang\\และเสนอกลุ่มมือใหม่ที่ตรงกับ Solver}
+\author{Nuttakit Kundum}
+\date{กันยายน 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+การแบ่งมือเริ่มต้นของ Jeff Hwang เป็น Premium, Speculative, Marginal และ Trash เป็นวิธีเลือกมือที่นิยมใน
+pot-limit Omaha งานนี้ถามว่าการแบ่งแบบนั้นอธิบายสิ่งที่ solver ทำกับการตัดสินใจแรกได้ดีแค่ไหน ในเกม 6 คนที่ stack
+20 big blinds เมื่อยังไม่มีใครเข้า pot และผู้เล่นเลือกได้ว่าจะ fold, limp หรือ raise ขนาด pot เราแก้เกมที่ bet
+ขนาด pot ได้ทุก street และ re-raise ได้จนถึง all-in โดยใช้การจัดกลุ่มมือที่ไม่เอามือต่าง tier ของ Hwang มาไว้กลุ่ม
+เดียวกัน แล้วตรวจมือจริงทีละมือโดยเทียบมูลค่าของการ fold, limp และ raise ผลมีสามข้อ ข้อแรก tier ของ Hwang
+เรียงความแข็งของมือได้ถูก แต่ใช้เป็นกฎที่ไม่ขึ้นกับตำแหน่งไม่ได้ มือ Premium \PremFoldUTG\% ของคอมโบทั้งหมด
+ควร fold ที่ UTG อย่างมีนัยสำคัญ และทั้งหมดเป็นมือสาย straight ไพ่ต่ำที่ไม่ใช่ double-suited ข้อสอง
+การตัดสินใจแรกขึ้นกับจำนวนไพ่ตั้งแต่ T ขึ้นไปมากที่สุด ตามด้วยการมี A ที่มีดอกคู่ และระดับของคู่ ส่วนความต่อเนื่อง
+ของไพ่สาย straight ซึ่งเป็นแกนของระบบ Hwang แทบไม่มีผลด้วยตัวเองที่ความลึกนี้ ข้อสาม archetype ใหม่
+\ArchCount\ กลุ่มที่สร้างจากปัจจัยเหล่านี้อธิบายอัตรา fold ที่ UTG ของ solver ได้ $R^2 = \RsqArchUTG$ เทียบกับ
+$R^2 = \RsqTierUTG$ ของ tier ของ Hwang และลด EV ที่เสียจากการตัดสินใจแรกผิดจาก \LossHwangUTG\ เหลือ
+\LossArchUTG\ big blinds ต่อครั้ง บนมือที่แยกไว้ทดสอบ
+\end{abstract}
+
+\section{คำถาม}
+Hwang แบ่งมือสี่ใบที่เล่นได้ตามโครงสร้าง ได้แก่ ไพ่ใหญ่และ Broadway wrap ที่นำด้วย A, มือสาย straight,
+มือ A มีดอก, มือคู่บวกไพ่อื่น, มือ AA และมือ marginal \cite{hwang} แล้วให้ระดับแต่ละรูปแบบเป็น Premium,
+Speculative, Marginal หรือ Trash ตัวจัดกลุ่มของโปรเจกต์นี้ทำตามระดับนั้นจากอันดับไพ่ ช่องว่าง และดอก โดยจัดมือ
+5.49\% จาก 270{,}725 มือเป็น Premium, 13.83\% เป็น Speculative, 19.91\% เป็น Marginal และ 60.76\% เป็น Trash
+
+จุดเริ่มต้นคือข้ออ้างแคบ ๆ ว่ามือ Premium ไม่ควร fold เลยเมื่อยังไม่มีใครเข้า pot และเราเป็นคนแรกที่ตัดสินใจ
+เราขยายเป็นสามคำถาม: solver raise, limp หรือ fold มือไหนในแต่ละตำแหน่ง, การให้ระดับของ Hwang ขัดกับ solver
+ตรงไหน และ archetype ชุดเล็ก ๆ ชุดใหม่อธิบาย solver ได้ดีกว่าหรือไม่
+
+คำแนะนำของ Hwang เองมีเงื่อนไข เขาเขียนว่ามือระดับ Premium ``มักเล่นได้จากทุกตำแหน่งและในสถานการณ์ส่วนใหญ่''
+ว่าควร ``limp จากตำแหน่งหน้าเป็นปกติ'' และว่ามือ Marginal เป็น ``มือตำแหน่งหลัง ลงขั้นต่ำเท่านั้น'' \cite{hwang}
+หนังสือของเขามุ่งไปที่เกม cash ที่ stack ลึกและเล่นกันหลายคน stack 20 big blinds เป็นอีกสถานการณ์หนึ่ง
+และส่วนหนึ่งของงานนี้คือดูว่าความคิดไหนของเขายังใช้ได้
+
+\section{เกมและ solver}
+ผู้เล่น 6 คน blinds 0.5/1 stack คนละ 20 big blinds ไม่มี ante ไม่มี rake และวัดผลเป็น chip EV ทุกการ raise
+เป็นขนาด pot และไม่เกิน all-in ก่อน flop raise ได้สามครั้ง (open, three-bet และ four-bet ซึ่งแทบเท่ากับ shove)
+ใน flop, turn และ river bet ขนาด pot ได้หนึ่งครั้งและ raise ได้อีกสองครั้ง side pot, pot แบ่งเท่า และกฎ showdown
+ของ Omaha ที่ต้องใช้ไพ่ในมือสองใบกับไพ่กลางสามใบคำนวณแบบตรงทุกกรณี tree สาธารณะมี 474{,}658 node และ
+232{,}258 จุดตัดสินใจ
+
+\paragraph{การจัดกลุ่มมือ} ก่อน flop กลุ่มโครงสร้าง 572 กลุ่มถูกแยกตาม tier ของ Hwang เป็น 780 กลุ่ม ทำให้
+ไม่มีกลุ่มไหนปน tier กัน ใน flop และ turn มือถูกจัดกลุ่มตามสัดส่วนของไพ่สองใบบนกระดานที่ชนะมือเรา (10 ช่วง
+โดยแยกช่อง nut ไว้ต่างหาก) ตาม flush draw (ไม่มี, ไม่ใช่ nut, nut) และตามจำนวนอันดับไพ่ใบถัดไปที่ทำ straight ได้
+(0, 1, 2, 3 ขึ้นไป) รวม 120 กลุ่มต่อ street ส่วน river ใช้ความแข็งของมืออย่างเดียว
+
+\paragraph{การฝึก} ใช้ external-sampling Monte Carlo CFR พร้อม linear discounting อัปเดตแบบขนานบน Apple M4
+Pro 14 คอร์ ฝึกสอง seed ที่แยกกันอิสระ seed ละ 100 นาที ได้ \Deals\ ล้านดีลต่อ seed ดีลละหก traversal
+ความถี่การตัดสินใจแรกระดับ tier ของสอง seed ต่างกันไม่เกิน 3.1 จุดในทุกตำแหน่ง ยกเว้น small blind
+
+\paragraph{การตรวจสอบ} ตัวประเมินมือ Omaha ให้ผลตรงกับ \texttt{phevaluator} ทุกกลุ่มถูกตรวจว่ามี tier เดียว
+ชิปรวมคงที่ในทุก terminal และกรณีที่คำนวณด้วยมือได้ (ทุกคน fold ให้คน open ได้ +1.5 big blinds) ตรงเป๊ะ
+เมื่อสุ่มมือ 150 มือต่อตำแหน่ง การเปลี่ยนการตัดสินใจแรกให้ดีขึ้นได้กำไรเฉลี่ยไม่เกิน 0.05 big blinds
+แปลว่าการตัดสินใจแรกเกือบสอดคล้องกันเองแล้ว ตัวเลขนี้เป็นขอบล่างของ exploitability ไม่ใช่ใบรับรอง
+
+\section{หลักฐานสองแบบ}
+\paragraph{ความถี่จาก solver} สำหรับมือทั้ง 16{,}432 คลาสที่แยกตามความสมมาตรของดอก เราบันทึกความน่าจะเป็น
+fold, limp และ raise ที่ตำแหน่งเข้าเล่นคนแรกแต่ละตำแหน่ง เฉลี่ยจากสอง seed ข้อมูลนี้ครอบคลุมทุกมือ แต่ solver
+เลือกทีละกลุ่ม มือสองมือในกลุ่มเดียวกันจึงได้สัดส่วนเดียวกันเสมอ
+
+\paragraph{การตรวจทีละมือ} สำหรับมือจริงหนึ่งมือที่จุดเข้าเล่นคนแรก เราประมาณมูลค่าของการ fold, limp และ raise
+เมื่อทุกคนรวมถึงตัวเราเล่นตามกลยุทธ์ที่แก้ได้หลังจากนั้น แต่ละดีลถ่วงน้ำหนักด้วยความน่าจะเป็นที่ทุกตำแหน่งก่อนหน้า
+fold มือหนึ่ง \emph{ควรเข้าเล่นอย่างชัดเจน} ถ้า limp หรือ raise ดีกว่า fold อย่างน้อยสามเท่าของ standard error,
+\emph{ควร fold อย่างชัดเจน} ถ้าทั้งสองแย่กว่า fold อย่างน้อยสามเท่าของ standard error และ \emph{ก้ำกึ่ง}
+ในกรณีอื่น เราตรวจคลาส Premium ครบทั้ง 922 คลาส และสุ่มมือ 400 มือจากแต่ละ tier ที่เหลือ ในทั้งห้าตำแหน่ง
+รวม \AuditRows\ แถวจาก \AuditClasses\ คลาส ถ่วงน้ำหนักให้แทนประชากรทั้งหมด เมื่อเทียบสอง seed มีมือ
+Premium ที่ UTG \SeedContra\ จาก \SeedPairs\ มือที่ได้ผลชัดเจนสวนทางกัน การตรวจทีละมือแยกมือที่อยู่กลุ่มเดียวกัน
+ได้ เช่น KK32 single-suited ได้ +0.30 big blinds เมื่อ limp จาก UTG แต่ TT32 เสีย 0.93 ทั้งที่ solver
+เล่นสองมือนี้เหมือนกัน
+
+\section{แต่ละ tier fold บ่อยแค่ไหน}
+\begin{table}[H]
+\centering
+\caption{สัดส่วนการตัดสินใจแรกจาก solver เป็น fold/limp/raise (\%) เฉลี่ยสอง seed}
+\small
+\input{generated/table_tiers_th.tex}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{ผลตรวจทีละมือ: สัดส่วนคอมโบที่ควรเข้าเล่นชัดเจน / ก้ำกึ่ง / ควร fold ชัดเจน (\%)}
+\small
+\input{generated/table_verdicts_th.tex}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{generated/fig_verdicts_th.pdf}
+\caption{ผลตรวจทีละมือแยกตาม tier และตำแหน่ง}
+\end{figure}
+
+tier ยังเรียงลำดับเดิมในทุกตำแหน่ง Premium ถูก fold น้อยที่สุด Trash มากที่สุด และทุก tier ถูกเล่นมากขึ้นเมื่อ
+ตำแหน่งขยับเข้าใกล้ button ที่ UTG มือ Premium \PremEnterUTG\% ของคอมโบควรเข้าเล่นและ \PremFoldUTG\%
+ควร fold ส่วนที่ button สัดส่วนที่ควร fold ลดเหลือ \PremFoldBTN\% ขณะที่ Trash ควร fold ชัดเจน
+\TrashFoldUTG\% ของคอมโบที่ UTG ตำแหน่ง small blind ต่างจากที่อื่นในทุก tier เพราะเจอแค่ big blind และจ่าย
+ไปแล้วครึ่ง big blind solver จึง limp มือจำนวนมาก รวมถึง Trash 45\% และแทบไม่มีมือไหนที่ควร fold ชัดเจน
+มือ Marginal ส่วนใหญ่และมือ Speculative จำนวนมากอยู่ในกลุ่มก้ำกึ่ง แปลว่าที่ 20 big blinds มือพวกนี้ใกล้เสมอตัว
+มากกว่าเป็นมือที่ต้อง fold ชัด ๆ
+
+\section{อะไรตัดสินว่าจะ raise, limp หรือ fold}
+ตารางถัดไปแบ่งมือทั้งหมดตามลักษณะทีละอย่าง ``เล่น'' คือความน่าจะเป็นที่ solver limp หรือ raise ส่วน ``EV
+เข้าเล่น'' คือมูลค่าของทางที่ดีกว่าระหว่าง limp กับ raise ลบด้วยการ fold หน่วยเป็น big blinds จากการตรวจทีละมือ
+
+\begin{table}[H]
+\centering
+\caption{อัตราการเล่นและ EV เข้าเล่นแยกตามลักษณะทีละอย่าง}
+\small
+\input{generated/table_drivers_th.tex}
+\end{table}
+
+\paragraph{ไพ่ใหญ่มาก่อน} มือที่มีไพ่ตั้งแต่ T ขึ้นไปศูนย์หรือหนึ่งใบแทบไม่ถูกเล่นจากตำแหน่งหน้า และเสียเกือบหนึ่ง
+big blind เมื่อเล่น มือที่มีไพ่ใหญ่สามใบถูกเล่น 69\% ที่ UTG และ 96\% ที่ button ส่วนสี่ใบแทบเล่นทุกครั้ง
+ไม่มีลักษณะเดี่ยวอื่นที่แยกมือได้ชัดเท่านี้
+
+\paragraph{ดอกของ A สำคัญกว่าดอกที่สอง} การมี A ที่มีดอกคู่ยก EV เข้าเล่นที่ UTG จาก -0.45 (ดอกที่ดีที่สุด
+นำด้วย T ถึง K) เป็น +0.24 ดอกที่สองช่วยได้ (double-suited +0.12 เทียบ single-suited -0.53)
+ส่วนมือที่ดอกดีที่สุดนำด้วย 9 หรือต่ำกว่าเล่นแทบไม่ต่างจากมือ rainbow
+
+\paragraph{คู่ขึ้นกับระดับ} AA ถูกเล่นเสมอและมีค่าราวสาม big blinds KK และ QQ ได้กำไรจากทุกตำแหน่ง
+JJ และ TT ใกล้เสมอตัวที่ UTG (-0.12) และได้กำไรเฉพาะตำแหน่งหลัง คู่เล็กควร fold ยกเว้นที่ small blind
+
+\paragraph{ความต่อเนื่องของไพ่อย่างเดียวช่วยน้อย} มือที่ไพ่ทั้งสี่อยู่ในช่วงห้าอันดับถูกเล่นที่ UTG แค่ 35\% และ
+EV เข้าเล่นยังติดลบ rundown มีค่าเมื่อมีไพ่ใหญ่และดอกมาด้วย ซึ่งเป็นปฏิสัมพันธ์ที่ archetype ของเราใช้
+
+\paragraph{Limp หรือ raise} AA และมือที่มีไพ่ใหญ่ตั้งแต่สามใบพร้อม A มีดอกหรือ double-suited ถูก raise
+บ่อยกว่า limp มากในทุกตำแหน่ง และ raise ดีกว่า limp ราว 0.15--0.3 big blinds คู่ใหญ่ที่ไม่มี A มีดอกถูก limp
+ราว 60\% ที่ UTG แม้มูลค่าของ limp กับ raise ต่างกันแค่ราว 0.1 big blinds rundown ไพ่ใหญ่เป็นกลุ่มเดียวที่ limp
+จาก UTG ดีกว่าชัดเจน (+0.22 เทียบ +0.12) ซึ่งตรงกับคำแนะนำของ Hwang ที่ให้มือ draw เล่นหลายคนจากตำแหน่งหน้า
+ส่วนที่ small blind มือที่เข้าเล่นถูก raise บ่อยกว่า limp ยกเว้นกลุ่มที่อ่อนที่สุด
+
+\section{Hwang ขัดกับ solver ตรงไหน}
+ตารางต่อไปนี้แสดงกลุ่มใหญ่ที่สุด (tier, รูปแบบ และดอกตามแบบของ Hwang) ที่คำแนะนำของ Hwang กับ solver ชี้ไปคนละ
+ทางที่ UTG เราตีความคำแนะนำของ Hwang ว่า raise มือ Premium, limp มือ Speculative, เล่นมือ Marginal เฉพาะ
+cutoff, button และ small blind และ fold มือ Trash
+
+\begin{table}[H]
+\centering
+\caption{ความขัดแย้งที่ใหญ่ที่สุดที่ UTG EV เข้าเล่นเป็นค่าเฉลี่ยจากการตรวจทีละมือเมื่อมีข้อมูล}
+\small
+\resizebox{\linewidth}{!}{\input{generated/table_mismatch_th.tex}}
+\end{table}
+
+ความขัดแย้งส่วนใหญ่มาจากสามรูปแบบ
+\begin{itemize}
+\item \textbf{มือสาย straight และมือคู่บวกไพ่ต่อถูกให้ค่าสูงเกินไป} มือคู่บวกไพ่ต่อแบบ single-suited (เช่น 9-9-8-7)
+และมือ straight มีช่องว่างที่ไม่มีไพ่ใหญ่ เป็น Speculative หรือ Premium ในระบบของ Hwang แต่ที่ UTG เสียราว
+0.35--0.7 big blinds เทียบกับ fold มือพวกนี้ต้องพึ่ง stack ลึกและ implied odds
+\item \textbf{มือไพ่ใหญ่ที่มีไพ่ห้อยถูกให้ค่าต่ำเกินไป} คู่ใหญ่ที่มีไพ่ห้อย Broadway สามใบที่มีไพ่ห้อย และมือ A มีดอก
+อ่อน ๆ แบบ double-suited เป็น Marginal สำหรับ Hwang แต่ solver เล่นมือเหล่านี้ส่วนใหญ่จาก UTG และแบบ
+double-suited ได้กำไร (+0.17 ถึง +0.66) ที่ 20 big blinds ความแข็งของไพ่สูงมักได้ผลตอน showdown หรือด้วยการ
+ทุ่มครั้งเดียวบน flop ไพ่ห้อยจึงเสียน้อยกว่าตอน stack ลึก
+\item \textbf{การนับดอกหยาบเกินไป} ตัวจัดกลุ่มถือว่าไพ่สองใบดอกเดียวกันคือ ``มีดอก'' แต่ solver แยก A มีดอก,
+K ถึง T มีดอก และดอกต่ำออกจากกันชัดเจน และเล่นมือ three-flush น้อยเกือบเท่ามือ rainbow (9\% และ 6\% ที่ UTG
+เทียบกับ 20\% ของมือ single-suited)
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.52\linewidth]{generated/fig_rundowns_th.pdf}
+\caption{มือสาย straight ระดับ Premium ที่ UTG: EV เข้าเล่นที่ดีที่สุดลบ fold หน่วย big blinds แยกตามอันดับไพ่และ
+แบบดอก (ds = double-suited, ss = single-suited, 3f = three-flush, mono = monotone)}
+\end{figure}
+
+รูปนี้แสดงกรณี Premium อย่างละเอียด rundown แบบ double-suited ใกล้เสมอตัวหรือดีกว่า และ rundown ที่นำด้วยไพ่ใหญ่
+สองใบ (J-T-9-8, Q-J-T-9, K-Q-J-9) เล่นได้เมื่อมีดอก แต่ rundown แบบ single-suited, three-flush และ monotone
+ตั้งแต่ 6-5-3-2 ถึง 9-8-7-6 เสีย 0.4--1.3 big blinds เทียบกับ fold มือเหล่านี้ได้ป้าย Premium เพราะตัวจัดกลุ่มให้ระดับ
+มือสาย straight จากช่องว่าง และถือว่ามีดอกอะไรก็พอ ขณะที่ที่ความลึกนี้ equity ของมันเมื่อถูก call ต่ำเกินไป
+
+\section{Archetype ใหม่ที่ตรงกับ solver}
+ปัจจัยข้างต้นชี้ว่าควรจัดกลุ่มมือตามจำนวนไพ่ใหญ่ ดอกของ A ดอกที่สอง และระดับของคู่ โดยใช้ความต่อเนื่องของไพ่
+เฉพาะเมื่อมีไพ่ใหญ่ด้วย ตารางแรกด้านล่างเป็นกฎที่ตรวจตามลำดับ ตารางที่สองเป็นการตัดสินใจแรกที่แนะนำในแต่ละ
+ตำแหน่ง ซึ่งมาจากค่าเฉลี่ยของ limp และ raise ที่ตรวจทีละมือ ช่องที่เขียนว่า ``ก้ำกึ่ง'' คือทางเข้าเล่นที่ดีกว่าอยู่ห่าง
+จาก fold ไม่ถึง 0.10 big blinds
+
+\begin{table}[H]
+\centering
+\caption{กฎของ archetype ไพ่ใหญ่คือ T ขึ้นไป คู่ใหญ่นับเป็นไพ่ใหญ่สองใบ และ rundown คือไพ่ทั้งสี่อยู่ในช่วงห้าอันดับ}
+\small
+\input{generated/table_archetype_rules_th.tex}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Archetype: สัดส่วนมือ, tier ของ Hwang ที่อยู่ในกลุ่ม (P, S, M, T เป็น \%) และการตัดสินใจแรกที่แนะนำแยกตาม
+ตำแหน่ง}
+\small
+\input{generated/table_archetypes_th.tex}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{generated/fig_archetypes_th.pdf}
+\caption{สัดส่วนการตัดสินใจแรกจาก solver ของแต่ละ archetype แยกตามตำแหน่ง}
+\end{figure}
+
+archetype เก้าจากสิบเอ็ดกลุ่มมีมือจาก tier ของ Hwang อย่างน้อยสอง tier ที่มีสัดส่วนตั้งแต่ 10\% ขึ้นไป กลุ่ม
+``ไพ่ใหญ่ดอก nut'' เป็น Speculative ครึ่งหนึ่งและ Marginal หนึ่งในสาม กลุ่ม ``คู่ใหญ่แข็ง'' เป็น Marginal เป็นส่วนใหญ่
+และ rundown ต่ำแบบ single-suited ที่ Hwang เรียกว่า Premium ตกไปอยู่ในกลุ่มมืออื่นทั้งหมด
+
+\paragraph{การประเมิน} ตารางสุดท้ายเทียบการจัดกลุ่มสองวิธี วิธีแรกคือ EV ที่แต่ละกฎเสียเทียบกับทางที่ดีที่สุดของแต่ละมือ
+โดยเลือก action ของแต่ละกลุ่มจากมือครึ่งหนึ่งแล้ววัดผลกับอีกครึ่ง วิธีที่สองคือสัดส่วนความแปรปรวนของอัตรา fold ของ
+solver บนมือทั้งหมดที่การจัดกลุ่มอธิบายได้ archetype เสีย EV ราวหนึ่งในสามของคำแนะนำของ Hwang ตั้งแต่ UTG ถึง
+cutoff และราวครึ่งหนึ่งที่ button และห่างจากกลยุทธ์ 780 กลุ่มของ solver เองไม่กี่ส่วนร้อยของ big blind ทุกการจัดกลุ่ม
+ทำได้ไม่ดีที่ small blind ซึ่งมือส่วนใหญ่ใกล้เสมอตัว
+
+\begin{table}[H]
+\centering
+\caption{การจัดกลุ่มแต่ละแบบเลียนแบบการตัดสินใจแรกของ solver ได้ดีแค่ไหน}
+\small
+\resizebox{\linewidth}{!}{\input{generated/table_evaluation_th.tex}}
+\end{table}
+
+\section{ข้อจำกัด}
+\begin{itemize}
+\item ใช้ความลึกเดียว (20 big blinds) bet ขนาด pot อย่างเดียว ไม่มี rake และ ante archetype ถูกสร้างสำหรับเกมนี้
+และควรหาใหม่เมื่อ stack ลึกขึ้น ซึ่ง implied odds จะเข้าข้างมือสาย straight ของ Hwang
+\item การเล่นหลัง flop ใช้การจัดกลุ่มแบบลืมประวัติ และ CFR หลายผู้เล่นไม่รับประกัน equilibrium หลักฐานด้าน
+exploitability มีเพียงกำไรเล็กน้อยจากการเปลี่ยนการตัดสินใจแรก
+\item การตรวจทีละมือให้ทุกคนเล่นตามกลยุทธ์ที่แก้ได้หลังการตัดสินใจแรก จึงวัดการเปลี่ยนแค่หนึ่งขั้น ไม่ใช่ best response เต็มรูปแบบ
+\item archetype ถูกออกแบบหลังจากดูผล solve เดียวกับที่ใช้ประเมิน การแยกมือทดสอบป้องกันการเลือก action ของแต่ละ
+กลุ่มได้ แต่ไม่ป้องกันการเลือกกฎ การทดสอบที่แข็งแรงกว่าคือ solve อิสระที่ความลึกอื่น
+\item tier ที่ไม่ใช่ Premium ตรวจเพียง 400 มือต่อ tier และหลายมืออยู่ในกลุ่มก้ำกึ่งเมื่อใช้ 2{,}048 ดีลต่อมือ
+\end{itemize}
+
+\section{สรุป}
+ที่ 20 big blinds tier ของ Hwang เรียงมือได้ถูก แต่วางผิดที่สองตระกูล คือมือสาย straight ไพ่ต่ำที่ไม่ใช่ double-suited
+ซึ่งระบบของเขาเรียกว่า Premium หรือ Speculative และมือไพ่ใหญ่ที่มีไพ่ห้อย ซึ่งเขาเรียกว่า Marginal การตัดสินใจแรกของ
+solver อธิบายได้หลัก ๆ ด้วยไพ่ใหญ่ ดอกของ A และระดับของคู่ archetype สิบเอ็ดกลุ่มที่สร้างจากปัจจัยเหล่านี้เลียนแบบ
+การตัดสินใจแรกของ solver ได้ดีกว่าสี่ tier มาก และเกือบเท่ากลุ่มของ solver เอง โดยยังง่ายพอจะใช้ที่โต๊ะได้
+
+\begin{thebibliography}{9}
+\bibitem{hwang} J.~Hwang. \emph{Pot-Limit Omaha Poker: The Big Play Strategy}. Lyle Stuart
+(Kensington), 2008, บทที่ 4.
+\end{thebibliography}
+
+\end{document}
