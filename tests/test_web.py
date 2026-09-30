@@ -328,6 +328,43 @@ class ServerTests(unittest.TestCase):
                 self.assertEqual((response.status, response.getheader("Content-Type")), (200, "application/pdf"))
                 self.assertTrue(content.startswith(b"%PDF"))
 
+    def test_the_mtt40_research_pages_and_csv_are_served(self):
+        for path in ("/research-mtt40", "/research-mtt40-range"):
+            with self.subTest(path=path):
+                response, body = self.request("GET", path)
+                self.assertEqual(response.status, 200)
+                self.assertIn(b"Copyright", body)
+        _, listing = self.request("GET", "/research")
+        self.assertIn(b"/research-mtt40", listing)
+        response, body = self.request("GET", "/static/mtt40-range.csv")
+        self.assertEqual(response.status, 200)
+        self.assertTrue(body.startswith(b"hand,cards,ranks"))
+
+    def test_the_plo_range_explorer_and_its_data_are_served(self):
+        response, body = self.request("GET", "/plo")
+        self.assertEqual(response.status, 200)
+        self.assertIn(b"Copyright", body)
+        for page in ("/", "/method", "/research"):
+            with self.subTest(page=page):
+                self.assertIn(b'href="/plo"', self.request("GET", page)[1])
+        response, raw = self.request("GET", "/static/plo-classes.json")
+        self.assertEqual(response.getheader("Content-Type"), "application/json")
+        classes = json.loads(raw)
+        self.assertEqual(len(classes["rows"]), 16432)
+        self.assertEqual(sum(row[2] for row in classes["rows"]), 270725)  # C(52, 4) hands
+        for name in ("20bb", "mtt40"):
+            with self.subTest(game=name):
+                game = json.loads(self.request("GET", f"/static/plo-{name}.json")[1])
+                blob = base64.b64decode(game["strategy"])
+                self.assertEqual(len(blob), len(game["nodes"]) * game["buckets"] * 3)
+                root = game["nodes"][0]
+                self.assertEqual((root["actor"], [o["action"] for o in root["options"]]), (0, ["fold", "call", "pot"]))
+                self.assertEqual(root["options"][2]["total"], 3.5)  # antes do not size the pot raise
+                for node in game["nodes"]:
+                    for option in node["options"]:
+                        self.assertTrue(option["child"] < len(game["nodes"]))
+                        self.assertEqual(option["child"] < 0, "end" in option)
+
     def test_static_files_cannot_leave_the_folder(self):
         for path in ("/static/../server.py", "/static/%2e%2e/server.py", "/static/index.html", "/static/"):
             with self.subTest(path=path):

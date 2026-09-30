@@ -52,6 +52,7 @@
   .lede { margin-top: 1rem; max-width: 60ch; color: var(--on-puppet-2); font-size: 1.0625rem; }
 
   main { padding: clamp(2rem, 5vw, 3.5rem) var(--gutter) 0; }
+  .column > .paper + .paper { margin-top: 1.25rem; }
   .paper { display: grid; grid-template-columns: minmax(0, 1fr) 15rem; gap: clamp(1.25rem, 4vw, 2.5rem); background: var(--paper); border: 1px solid var(--ink); border-radius: var(--cut); padding: clamp(1.1rem, 3vw, 1.75rem); }
   .paper-main { min-width: 0; display: flex; flex-direction: column; gap: .9rem; }
   .tag { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); }
@@ -93,7 +94,7 @@
   <div class="column">
     <nav class="nav" aria-label="Main">
       <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
-      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a></div>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a></div>
     </nav>
     <p class="eyebrow rise">Research</p>
     <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>งานวิจัยจากตามควาย</h1>
@@ -103,6 +104,27 @@
 
 <main>
   <div class="column">
+    <article class="paper" aria-labelledby="p2-title">
+      <div class="paper-main">
+        <p class="tag">PLO MTT · 40bb มี ante · กันยายน 2026</p>
+        <h2 id="p2-title">ได้เป็นคนแรกที่ 40bb ควร raise, limp หรือ fold? เทียบ solver กับวิธีของ Jeff Hwang</h2>
+        <p class="byline">Nuttakit Kundum</p>
+        <ul class="findings">
+          <li>ante ทำให้ทุกตำแหน่งเล่นกว้างขึ้น: UTG เล่น <span class="mono">26%</span> ของมือ button <span class="mono">56%</span> และ small blind <span class="mono">88%</span></li>
+          <li>rundown ต่ำแบบ single-suited ที่ Hwang เรียก Premium ถูก fold <span class="mono">83%</span> ที่ UTG ส่วนมือไพ่ใหญ่ที่มีไพ่ห้อยที่ Hwang เรียก Marginal ถูกเล่นเกือบทั้งหมด</li>
+          <li>หกข้อที่ควรปรับจาก Hwang พร้อม range ของทุกมือ 16,432 แบบให้ค้นดูได้</li>
+        </ul>
+        <ul class="chips" aria-label="เงื่อนไขของเกม">
+          <li>PLO4</li><li>6-max</li><li>40bb</li><li>ante 0.116</li><li>chip EV</li>
+        </ul>
+      </div>
+      <aside class="paper-side">
+        <div class="figure"><b>0.44 → 0.71</b><span>R² ที่ UTG: 4 tier ของ Hwang เทียบกับ archetype ใหม่</span></div>
+        <a class="cta" href="/research-mtt40">อ่านบทสรุป</a>
+        <a class="cta cta--alt" href="/research-mtt40-range">ดู range ทุกมือ</a>
+        <p class="file">หน้าเว็บ · มีตารางและ CSV</p>
+      </aside>
+    </article>
     <article class="paper" aria-labelledby="p1-title">
       <div class="paper-main">
         <p class="tag">PLO 6-max · กันยายน 2026</p>
