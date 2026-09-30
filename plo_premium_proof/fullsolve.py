@@ -15,7 +15,7 @@ import numba
 import numpy as np
 
 from .fulltree import STREET_BUCKETS, FullTree, FullTreeConfig
-from .fullkernels import evaluate_root_actions, train_full, tree_links
+from .fullkernels import evaluate_root_actions, sample_root_actions, train_full, tree_links
 from .solve import thread_seeds
 from .tables import (
     FIRST_IN_POSITIONS,
@@ -36,6 +36,9 @@ ROOT_LABELS = {0: "fold", 2: "limp", 3: "pot_open"}
 class FullSolveConfig:
     seconds: float
     stack_bb: float = 20.0
+    raise_caps: tuple[int, int, int, int] = (3, 2, 2, 2)
+    ante_bb: float = 0.0
+    single_precision: bool = False
     threads: int = 12
     seed: int = 1
     epoch_deals: int = 200_000
@@ -63,11 +66,13 @@ def load_full(path: Path) -> tuple[np.ndarray, dict[str, Any]]:
 
 
 def solve_full(config: FullSolveConfig, output: Path, *, log=print) -> dict[str, Any]:
-    tree = FullTree.build(FullTreeConfig(stack_bb=config.stack_bb))
+    tree = FullTree.build(FullTreeConfig(stack_bb=config.stack_bb, raise_caps=config.raise_caps,
+                                         ante_bb=config.ante_bb))
     tables = HandTables.build()
     rank5, comb = five_card_ranks(), comb_table()
-    regrets = np.zeros((tree.rows, 3))
-    strategy_sum = np.zeros((tree.rows, 3))
+    dtype = np.float32 if config.single_precision else np.float64
+    regrets = np.zeros((tree.rows, 3), dtype=dtype)
+    strategy_sum = np.zeros((tree.rows, 3), dtype=dtype)
     states = thread_seeds(config.seed, config.threads)
     per_thread = config.epoch_deals // config.threads
     numba.set_num_threads(config.threads)
@@ -76,11 +81,11 @@ def solve_full(config: FullSolveConfig, output: Path, *, log=print) -> dict[str,
 
     def checkpoint() -> dict[str, Any]:
         meta = {
-            "schema": SCHEMA, "seed": config.seed, "stack_bb": config.stack_bb,
+            "schema": SCHEMA, "seed": config.seed, "stack_bb": config.stack_bb, "ante_bb": config.ante_bb,
             "raise_caps": list(tree.config.raise_caps), "street_buckets": list(STREET_BUCKETS),
             "epochs": epoch, "deals": epoch * per_thread * config.threads,
             "traversals": 6 * epoch * per_thread * config.threads,
-            "seconds": time.perf_counter() - started,
+            "seconds": time.perf_counter() - started, "dtype": str(np.dtype(dtype)),
             "game": "PLO4 6-max chip EV, pot-sized bets on all streets, all-in capped",
         }
         _save(output / "model.npz", strategy_sum, meta)
@@ -95,7 +100,7 @@ def solve_full(config: FullSolveConfig, output: Path, *, log=print) -> dict[str,
         )
         epoch += 1
         if epoch <= config.discount_epochs:
-            factor = epoch / (epoch + 1)
+            factor = dtype(epoch / (epoch + 1))
             regrets *= factor
             strategy_sum *= factor
         if epoch % config.checkpoint_every == 0:
@@ -122,7 +127,13 @@ def row_policy(strategy_sum: np.ndarray, tree: FullTree) -> np.ndarray:
     return policy
 
 
-def _rows(pairs, moments, policy, tree, tables, labels_by_seat):
+def _root_mix(strategy_sum: np.ndarray, row: int, count: int) -> np.ndarray:
+    weights = np.asarray(strategy_sum[row, :count], dtype=np.float64)
+    total = weights.sum()
+    return weights / total if total > 0 else np.full(count, 1.0 / count)
+
+
+def _rows(pairs, moments, strategy_sum, tree, tables, labels_by_seat):
     rows = []
     for index, (hand, seat) in enumerate(pairs):
         labels = labels_by_seat[seat]
@@ -130,7 +141,7 @@ def _rows(pairs, moments, policy, tree, tables, labels_by_seat):
         estimates = [_ratio(*moments[index, a, :3], sum_z, sum_z2) for a in range(len(labels))]
         root = int(tree.first_in_nodes[seat])
         row = int(tree.row_start[tree.decision_index[root]] + tables.bucket_of[colex_index(hand.cards)])
-        mix = policy[row, :len(labels)]
+        mix = _root_mix(strategy_sum, row, len(labels))
         fold = estimates[0].mean
         best = max(range(1, len(labels)), key=lambda a: estimates[a].mean)
         if estimates[best].mean - Z_CRITICAL * estimates[best].se > fold:
@@ -155,14 +166,15 @@ def _rows(pairs, moments, policy, tree, tables, labels_by_seat):
 def verify_full(model: Path, *, samples: int, threads: int, seed: int,
                 positions: tuple[str, ...] = FIRST_IN_POSITIONS, limit: int | None = None,
                 other_classes: int = 0, tier: str = "Premium", per_tier: int | None = None,
-                log=print) -> dict[str, Any]:
+                sampled: bool = False, log=print) -> dict[str, Any]:
     started = time.perf_counter()
     strategy_sum, meta = load_full(model)
-    tree = FullTree.build(FullTreeConfig(stack_bb=meta["stack_bb"], raise_caps=tuple(meta["raise_caps"])))
+    tree = FullTree.build(FullTreeConfig(stack_bb=meta["stack_bb"], raise_caps=tuple(meta["raise_caps"]),
+                                         ante_bb=meta.get("ante_bb", 0.0)))
     if strategy_sum.shape != (tree.rows, 3):
         raise ValueError("checkpoint does not match the rebuilt tree")
     tables = HandTables.build()
-    policy = row_policy(strategy_sum, tree)
+    policy = None if sampled else row_policy(strategy_sum, tree)
     rank5, comb = five_card_ranks(), comb_table()
     parent, parent_slot, subtree_end = tree_links(tree.children, tree.action_count, tree.actor)
     numba.set_num_threads(threads)
@@ -176,6 +188,16 @@ def verify_full(model: Path, *, samples: int, threads: int, seed: int,
     def run(classes, run_seed):
         pairs = [(hand, seat) for hand in classes for seat in seats]
         moments = np.zeros((len(pairs), 4, 3))
+        if sampled:
+            sample_root_actions(
+                np.asarray([h.cards for h, _ in pairs], dtype=np.int64),
+                np.asarray([s for _, s in pairs], dtype=np.int64),
+                thread_seeds(run_seed, len(pairs)), samples, tree.first_in_nodes, tables.bucket_of,
+                rank5, comb, strategy_sum, tree.actor, tree.street, tree.decision_index, tree.row_start,
+                tree.children, tree.action_count, tree.behind, tree.sidepot_count, tree.sidepot_amount,
+                tree.sidepot_eligible_mask, float(meta["stack_bb"]), moments,
+            )
+            return _rows(pairs, moments, strategy_sum, tree, tables, labels_by_seat)
         evaluate_root_actions(
             np.asarray([h.cards for h, _ in pairs], dtype=np.int64),
             np.asarray([s for _, s in pairs], dtype=np.int64),
@@ -185,7 +207,7 @@ def verify_full(model: Path, *, samples: int, threads: int, seed: int,
             tree.sidepot_amount, tree.sidepot_eligible_mask, parent, parent_slot, subtree_end,
             1e-9, float(meta["stack_bb"]), moments,
         )
-        return _rows(pairs, moments, policy, tree, tables, labels_by_seat)
+        return _rows(pairs, moments, strategy_sum, tree, tables, labels_by_seat)
 
     premium, weights = select_classes(tables, tier, per_tier=per_tier, limit=limit, seed=seed)
     log(f"{tier} classes {len(premium)} x seats {positions}", flush=True)
@@ -214,6 +236,6 @@ def verify_full(model: Path, *, samples: int, threads: int, seed: int,
                 if others else None),
         }
     return {"schema": "plo-premium-proof-full-report-v1", "tier": tier, "per_tier": per_tier,
-            "model_meta": meta, "samples": samples,
+            "model_meta": meta, "samples": samples, "evaluator": "sampled paths" if sampled else "full width",
             "summary": summary, "premium_rows": rows, "other_rows": others,
             "seconds": time.perf_counter() - started}

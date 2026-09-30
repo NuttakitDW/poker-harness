@@ -1,5 +1,6 @@
 """Build every table, number and figure of the 20bb paper from the generated datasets.
 
+Usage: python analyze_results.py --stack 20|100 (outputs go to that stack's generated folder).
 Inputs (run in this order first):
   solver_frequencies.py -> generated/solver_frequencies.json   exact tier mixes, both seeds
   class_actions.py      -> generated/class_actions.json        every class, features, solver mix
@@ -22,12 +23,14 @@ from matplotlib import font_manager  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
 
 import thai  # noqa: E402
+from study import from_args  # noqa: E402
 from archetypes import ARCHETYPES, NAMES, ORDER, archetype  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 RUNS = ROOT / "tmp" / "plo_premium_proof"
-GEN = HERE / "generated"
+GEN = HERE / "generated"  # replaced by the chosen study in main()
+TAG = "full20"
 SEATS = ("UTG", "HJ", "CO", "BTN", "SB")
 TIERS = ("Premium", "Speculative", "Marginal", "Trash")
 ACTIONS = ("fold", "limp", "open")
@@ -338,7 +341,7 @@ def tier_table(freq: dict) -> str:
     for tier in (*TIERS, "All"):
         cells = []
         for seat in SEATS:
-            mixes = [freq[f"full20-seed{s}"]["seats"][seat][tier] for s in (1, 2)]
+            mixes = [freq[f"{TAG}-seed{s}"]["seats"][seat][tier] for s in (1, 2)]
             mean = {a: (mixes[0][k] + mixes[1][k]) / 2 for a, k in (("fold", "fold"), ("limp", "limp"),
                                                                      ("open", "pot_open"))}
             cells.append(f"{pct(mean['fold'])}/{pct(mean['limp'])}/{pct(mean['open'])}")
@@ -460,8 +463,8 @@ def rundown_figure(grid: dict, path: Path, lang: str = "en") -> None:
 
 # ---------------------------------------------------------------- main
 def seed_agreement() -> dict:
-    a = json.loads((RUNS / "full20-report-seed-1.json").read_text())["premium_rows"]
-    b = json.loads((RUNS / "full20-report-seed-2.json").read_text())["premium_rows"]
+    a = json.loads((RUNS / f"{TAG}-report-seed-1.json").read_text())["premium_rows"]
+    b = json.loads((RUNS / f"{TAG}-report-seed-2.json").read_text())["premium_rows"]
     to = {"must_not_fold": "enter", "fold_beats_every_deviation": "fold", "inconclusive": "close"}
     first = {(r["hand"], r["position"]): to[r["verdict"]] for r in a}
     pairs = [(first[(r["hand"], r["position"])], to[r["verdict"]]) for r in b if (r["hand"], r["position"]) in first]
@@ -491,6 +494,9 @@ def write_thai(shares, freq, drivers_tex, mismatches, arch_rows, losses, r2, run
 
 
 def main() -> None:
+    global GEN, TAG
+    study = from_args(__doc__)
+    GEN, TAG = study.generated, study.tag
     freq = load("solver_frequencies.json")
     classes = load("class_actions.json")
     audit = load("audit_ev.json")
@@ -507,7 +513,7 @@ def main() -> None:
     mismatches = mismatch_rows(classes, audit)
     agreement = seed_agreement()
     rundowns = rundown_grid(audit)
-    meta = freq["full20-seed1"]["meta"]
+    meta = freq[f"{TAG}-seed1"]["meta"]
     numbers = {
         "PremFoldUTG": pct(shares["Premium"]["UTG"]["fold"]),
         "PremEnterUTG": pct(shares["Premium"]["UTG"]["enter"]),

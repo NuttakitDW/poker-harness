@@ -7,7 +7,7 @@ import numpy as np
 
 from plo_equity.cards import parse_cards
 from plo_premium_proof.fulltree import STREET_BUCKETS, FullTree, FullTreeConfig
-from plo_premium_proof.fullkernels import _utility, evaluate_root_actions, tree_links
+from plo_premium_proof.fullkernels import _utility, evaluate_root_actions, sample_root_actions, tree_links
 from plo_premium_proof.kernels import plo_rank
 from plo_premium_proof.postflop import (
     best_rank,
@@ -118,6 +118,63 @@ class FullTreeTest(unittest.TestCase):
         opens = moments[0, 2, 0] / moments[0, 3, 0]
         self.assertAlmostEqual(opens, 1.5)
         self.assertAlmostEqual(moments[0, 0, 0], 0.0)
+
+    def test_sampled_evaluation_against_folding_policy(self) -> None:
+        tree = self.tree
+        tables = HandTables.build()
+        strategy_sum = np.zeros((tree.rows, 3), dtype=np.float32)
+        strategy_sum[:, 0] = 1.0  # always the first slot: fold when facing a bet, else check
+        moments = np.zeros((2, 4, 3))
+        sample_root_actions(
+            np.stack([cards("KcKdAcAd"), cards("2c3c5d6c")]), np.asarray([0, 4]), thread_seeds(5, 2), 64,
+            tree.first_in_nodes, tables.bucket_of, five_card_ranks(), comb_table(), strategy_sum,
+            tree.actor, tree.street, tree.decision_index, tree.row_start, tree.children,
+            tree.action_count, tree.behind, tree.sidepot_count, tree.sidepot_amount,
+            tree.sidepot_eligible_mask, 20.0, moments,
+        )
+        utg_open = moments[0, 2, 0] / moments[0, 3, 0]
+        sb_fold = moments[1, 0, 0] / moments[1, 3, 0]
+        sb_open = moments[1, 2, 0] / moments[1, 3, 0]
+        self.assertAlmostEqual(utg_open, 1.5)
+        self.assertAlmostEqual(sb_fold, -0.5)
+        self.assertAlmostEqual(sb_open, 1.0)
+
+
+class AnteTreeTest(unittest.TestCase):
+    """GGPoker-style antes: everyone posts, antes play for the pot, preflop pot-limit ignores them."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.tree = FullTree.build(FullTreeConfig(stack_bb=5.0, raise_caps=(4, 1, 0, 0), ante_bb=0.116),
+                                  cache_dir=None)
+
+    def test_open_raise_ignores_antes_and_wins_them(self) -> None:
+        from plo_icm.game import Action, PLOState
+        state = PLOState.new((5.0,) * 6, sb=0.5, bb=1.0, ante=0.116, ante_mode="individual",
+                             opening_raise_mode="pot_only")
+        self.assertAlmostEqual(state.action_amount(Action.POT), 3.5)
+        tree = self.tree
+        node = int(tree.children[0, 2])  # UTG pot-opens
+        while tree.actor[node] >= 0:
+            node = int(tree.children[node, 0])  # everyone else folds
+        ranks = np.arange(6, dtype=np.int64)
+        gain = _utility(node, 0, 5.0, tree.behind, tree.sidepot_count, tree.sidepot_amount,
+                        tree.sidepot_eligible_mask, ranks)
+        self.assertAlmostEqual(gain, 1.5 + 5 * 0.116)
+
+    def test_folding_first_in_loses_only_the_ante(self) -> None:
+        tree = self.tree
+        node = int(tree.children[0, 0])  # UTG folds
+        while tree.actor[node] >= 0:
+            node = int(tree.children[node, 0])
+        ranks = np.arange(6, dtype=np.int64)
+        self.assertAlmostEqual(_utility(node, 0, 5.0, tree.behind, tree.sidepot_count, tree.sidepot_amount,
+                                        tree.sidepot_eligible_mask, ranks), -0.116)
+
+    def test_chips_are_conserved(self) -> None:
+        terminal = self.tree.actor < 0
+        totals = self.tree.behind[terminal].sum(1) + self.tree.sidepot_amount[terminal].sum(1)
+        self.assertTrue(np.allclose(totals, 30.0))
 
 
 if __name__ == "__main__":
