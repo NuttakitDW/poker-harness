@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย Research</title>
+<meta name="description" content="งานวิจัยของตามควาย ผลจาก solver ของเราเอง อ่านฉบับเต็มเป็น PDF ได้ฟรี">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Same CI tokens and stage/ledger layout as index.html and method.html */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --lamp: #FFF8E6; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 960px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.7 var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-size: .92em; }
+  .column { max-width: var(--column); margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) clamp(2rem, 5vw, 3rem); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage :focus-visible { outline-color: var(--on-puppet); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: var(--lamp); padding: 2px; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: .5rem clamp(1rem, 3vw, 2rem); }
+  .nav-links a { text-decoration: none; color: var(--on-puppet-2); }
+  .nav-links a[aria-current="page"] { color: var(--on-puppet); text-decoration: underline dotted; text-underline-offset: .35em; }
+  .eyebrow { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin: clamp(1rem, 4vw, 2.5rem) 0 1rem; }
+  .headline { font-size: clamp(1.8rem, 4.4vw, 3rem); line-height: 1.22; font-weight: 700; max-width: 22ch; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: 1rem; max-width: 60ch; color: var(--on-puppet-2); font-size: 1.0625rem; }
+
+  main { padding: clamp(2rem, 5vw, 3.5rem) var(--gutter) 0; }
+  .paper { display: grid; grid-template-columns: minmax(0, 1fr) 15rem; gap: clamp(1.25rem, 4vw, 2.5rem); background: var(--paper); border: 1px solid var(--ink); border-radius: var(--cut); padding: clamp(1.1rem, 3vw, 1.75rem); }
+  .paper-main { min-width: 0; display: flex; flex-direction: column; gap: .9rem; }
+  .tag { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); }
+  .paper h2 { font-size: clamp(1.3rem, 2.6vw, 1.7rem); line-height: 1.3; color: var(--blue); }
+  .paper .th-title { font-size: 1rem; color: var(--ash); font-weight: 500; }
+  .byline { font-size: .875rem; color: var(--ash); }
+  .findings { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .45rem; max-width: 64ch; }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; margin: 0; padding: 0; }
+  .chips li { font: 500 .75rem/1 var(--font-mono); padding: .35rem .55rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--ground); color: var(--ash); }
+  .paper-side { display: flex; flex-direction: column; gap: .8rem; border-left: 1px dashed var(--bronze); padding-left: clamp(1rem, 3vw, 1.5rem); }
+  .figure b { display: block; font: 600 1.6rem/1.1 var(--font-mono); color: var(--blue); }
+  .figure span { font-size: .8125rem; color: var(--ash); }
+  .cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 1.25rem; background: var(--red); color: var(--on-puppet); border: 2px solid var(--red-edge); border-radius: var(--cut); font: 600 1.0625rem/1 var(--font-display); text-decoration: none; }
+  .cta:hover { background: #B02C25; }
+  .file { font: 500 .75rem/1.4 var(--font-mono); color: var(--ash-2); }
+  .lang { display: flex; flex-direction: column; gap: .45rem; }
+  .lang-label { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); }
+  .lang .file + .cta { margin-top: .35rem; }
+  .cta--alt { background: transparent; color: var(--blue); border-color: var(--blue); }
+  .cta--alt:hover { background: var(--blue); color: var(--on-puppet); }
+  .note { margin-top: 1.5rem; max-width: 68ch; font-size: .875rem; color: var(--ash); }
+
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+
+  @media (max-width: 720px) {
+    .paper { grid-template-columns: minmax(0, 1fr); }
+    .paper-side { border-left: 0; border-top: 1px dashed var(--bronze); padding-left: 0; padding-top: 1rem; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a></div>
+    </nav>
+    <p class="eyebrow rise">Research</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>งานวิจัยจากตามควาย</h1>
+    <p class="lede rise d2">ผลการทดลองด้วย solver ของเราเอง ทุกตัวเลขมาจากการรันจริงบนเครื่องของเรา อ่านฉบับเต็มเป็น PDF ได้ฟรี</p>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <article class="paper" aria-labelledby="p1-title">
+      <div class="paper-main">
+        <p class="tag">PLO 6-max · กันยายน 2026</p>
+        <h2 id="p1-title" lang="en">Open, Limp or Fold at 20 Big Blinds: Testing Hwang's PLO Starting-Hand Tiers and Proposing Solver-Aligned Archetypes</h2>
+        <p class="th-title">ควร raise, limp หรือ fold ที่ 20bb: ทดสอบการจัดกลุ่มมือ PLO ของ Jeff Hwang และเสนอกลุ่มมือใหม่ที่ตรงกับ solver</p>
+        <p class="byline">Nuttakit Kundum</p>
+        <ul class="findings">
+          <li>สิ่งที่ตัดสินว่าจะเล่นมือไหนเป็นอันดับแรกคือจำนวนไพ่ใหญ่ (T ขึ้นไป) ตามด้วย A ที่มีดอกคู่ และระดับของคู่ ไพ่เรียงต่อกัน (rundown) แทบไม่ช่วยถ้าไม่มีไพ่ใหญ่</li>
+          <li>มือที่ Hwang จัดเป็น Premium ควร fold ที่ UTG <span class="mono">17%</span> ทั้งหมดเป็น rundown ต่ำที่ไม่ใช่ double-suited ส่วน AAxx และไพ่ Broadway ไม่ควร fold เลย</li>
+          <li>เสนอ archetype ใหม่ <span class="mono">11</span> กลุ่ม ลด EV ที่เสียจากการตัดสินใจแรกผิดที่ UTG จาก <span class="mono">0.101</span> เหลือ <span class="mono">0.030</span> bb ต่อครั้ง ใกล้กับ solver เองที่ <span class="mono">0.027</span></li>
+        </ul>
+        <ul class="chips" aria-label="เงื่อนไขของเกม">
+          <li>PLO4</li><li>6-max</li><li>20bb</li><li>chip EV</li><li>CFR 2 seeds</li>
+        </ul>
+      </div>
+      <aside class="paper-side">
+        <div class="figure"><b>17%</b><span>ของมือ Premium ควร fold ที่ UTG</span></div>
+        <div class="figure"><b>0.73</b><span>R² ของ archetype ใหม่ เทียบ 0.36 ของ 4 tier เดิม</span></div>
+        <div class="lang" role="group" aria-label="เลือกภาษาที่จะอ่าน">
+          <p class="lang-label">เลือกภาษาที่จะอ่าน</p>
+          <a class="cta" href="/static/open-limp-fold-20bb-th.pdf" target="_blank" rel="noopener" hreflang="th">อ่านภาษาไทย</a>
+          <p class="file">PDF · 10 หน้า · 146 KB</p>
+          <a class="cta cta--alt" href="/static/open-limp-fold-20bb.pdf" target="_blank" rel="noopener" hreflang="en" lang="en">Read in English</a>
+          <p class="file">PDF · 8 pages · 262 KB</p>
+        </div>
+      </aside>
+    </article>
+    <p class="note">ผลนี้ใช้กับเกมที่กำหนดไว้เท่านั้น: stack 20bb, bet ขนาด pot, ไม่มี rake และ ante วิธีทดลองและข้อจำกัดทั้งหมดอยู่ในฉบับเต็ม</p>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>งานวิจัยจาก solver ของตามควาย</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+</body>
+</html>

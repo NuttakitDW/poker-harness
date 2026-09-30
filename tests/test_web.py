@@ -317,6 +317,17 @@ class ServerTests(unittest.TestCase):
         self.assertTrue(body.startswith(b"\x89PNG"))
         self.assertIn("max-age", response.getheader("Cache-Control"))
 
+    def test_the_research_page_links_the_paper_pdf(self):
+        response, body = self.request("GET", "/research")
+        self.assertEqual(response.status, 200)
+        self.assertIn(b"Copyright", body)
+        for pdf in ("/static/open-limp-fold-20bb.pdf", "/static/open-limp-fold-20bb-th.pdf"):
+            with self.subTest(pdf=pdf):
+                self.assertIn(pdf.encode(), body)
+                response, content = self.request("GET", pdf)
+                self.assertEqual((response.status, response.getheader("Content-Type")), (200, "application/pdf"))
+                self.assertTrue(content.startswith(b"%PDF"))
+
     def test_static_files_cannot_leave_the_folder(self):
         for path in ("/static/../server.py", "/static/%2e%2e/server.py", "/static/index.html", "/static/"):
             with self.subTest(path=path):
