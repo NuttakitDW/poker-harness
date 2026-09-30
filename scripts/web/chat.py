@@ -91,6 +91,7 @@ class Tools:
     read_question: Callable = _read_question
     vision_key: Callable = lambda: keys.find(*table_image.KEY_NAMES)
     log: Callable = _record
+    place: dict = dataclasses.field(default_factory=lambda: dict(PLACE))  # ที่มาที่จดลงบันทึก บอท / ของ Discord ใช้ของตัวเอง
 
 
 def invalid_question(question: str) -> str | None:
@@ -131,7 +132,7 @@ def _log(tools: Tools, question: str, source: str, kind: str, request=None, **fi
     """จดคำถามลงบันทึก พังก็แค่เตือน ไม่ให้การจดทำให้ตอบไม่ได้"""
     try:
         tools.log({"question": question, "source": source, "kind": kind, "request": request,
-                   **PLACE, **fields})
+                   **tools.place, **fields})
     except OSError as error:
         print(f"จดบันทึกคำถามไม่ได้: {error}", flush=True)
 

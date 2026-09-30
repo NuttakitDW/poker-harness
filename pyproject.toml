@@ -1,4 +1,5 @@
-# Vercel reads this to run the website (api/index.py). The Discord bot uses deploy/requirements-bot.txt.
+# Vercel reads this to run the website and the Discord slash commands (api/index.py).
+# The gateway Discord bot (make bot) uses deploy/requirements-bot.txt.
 [project]
 name = "tamkwai-web"
 version = "0.1.0"
@@ -7,6 +8,8 @@ dependencies = [
     "numpy==2.5.3",
     "pillow==12.3.0",
     "pokerkit==0.7.6",
+    "pynacl==1.6.2",
+    "vercel-cache==0.7.5",
 ]
 
 [project.optional-dependencies]

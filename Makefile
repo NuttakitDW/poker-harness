@@ -7,6 +7,8 @@ bot:
 	.venv/bin/python scripts/discord_bot/bot.py
 bot-review: 
 	.venv/bin/python scripts/discord_bot/question_log.py
+bot-commands: 
+	.venv/bin/python scripts/discord_bot/slash_commands.py $(ARGS)
 web: 
 	.venv/bin/python scripts/web/server.py
 web-watch: 
