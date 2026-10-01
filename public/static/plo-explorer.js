@@ -1,0 +1,579 @@
+/* PLO range explorer, shared by /plo and the local final-table page.
+   PloExplorer.mount(container, {games, gamesEl, load, initial, hash, classesUrl}) draws the
+   action line, the two-step hand matrix, filters and hand list into ``container``.
+   ``games`` [{id, label, detail}] with ``load(id)`` fetch solved games; without games, call
+   the returned ``show(data)`` with a solved game and ``focus({seat, hand})`` to jump to a spot. */
+window.PloExplorer = (() => {
+  "use strict";
+  const MARKUP = `
+<section class="sheet" aria-labelledby="line-title">
+  <div class="line-head">
+    <h2 id="line-title" class="label">Action line</h2>
+    <button class="reset" id="reset" type="button">Reset</button>
+  </div>
+  <div class="line" id="line" aria-live="polite"></div>
+</section>
+
+<div class="work">
+  <section class="sheet" aria-labelledby="spot-title">
+    <h2 id="spot-title" class="spot-title">กำลังโหลด...</h2>
+    <p class="spot-meta" id="spot-meta"></p>
+    <div class="steps">
+      <button class="pick" id="pick1" type="button" data-on="true"><small>สองใบแรก</small><span id="pick1-v">เลือก</span></button>
+      <span class="plus" aria-hidden="true">+</span>
+      <button class="pick" id="pick2" type="button" disabled><small>อีกสองใบ</small><span id="pick2-v">-</span></button>
+      <span class="hint" id="step-hint"></span>
+    </div>
+    <div class="matrix" id="matrix" role="grid" aria-label="Hand matrix"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="sum-title">
+    <h2 id="sum-title" class="label">ตัวกรอง</h2>
+    <div class="filters" style="margin-top:.5rem">
+      <div class="search">
+        <input id="search" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="ค้นมือ เช่น AsKsQd9c หรือ KQJT" aria-label="ค้นมือ">
+      </div>
+      <div class="chips" id="shapes" role="group" aria-label="ทรงดอก"><span class="label">ทรงดอก</span></div>
+      <div class="chips" id="tiers" role="group" aria-label="Hwang tier"><span class="label">Hwang</span></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="bigbar" id="sum-bar" aria-hidden="true"></div>
+    <div class="list-head">
+      <h2 class="label" id="list-title">มือทั้งหมด</h2>
+      <span class="hint mono" id="list-count"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead id="list-head"></thead>
+        <tbody id="list"></tbody>
+      </table>
+      <p class="more" id="more" hidden></p>
+    </div>
+  </section>
+</div>
+`;
+
+  function mount(container, options) {
+    container.innerHTML = MARKUP;
+    if (!document.getElementById("tip")) {
+      const tip = document.createElement("div");
+      tip.className = "tip";
+      tip.id = "tip";
+      tip.setAttribute("role", "tooltip");
+      document.body.appendChild(tip);
+    }
+    const RANKS = "AKQJT98765432";
+    const SUIT_GLYPH = { s: "♠", h: "♥", d: "♦", c: "♣" };
+    const ACTION_COLOR = { pot: "var(--act-raise)", call: "var(--act-call)", check: "var(--act-call)", fold: "var(--act-fold)" };
+    const ACTION_ORDER = { pot: 0, call: 1, check: 1, fold: 2 };
+    const SHAPES = [["all", "ทั้งหมด"], ["ds", "ds"], ["ss", "ss"], ["rb", "rainbow"], ["3f", "3 ดอก"], ["mono", "4 ดอก"]];
+    const LIST_LIMIT = 300;
+    const END_TEXT = { multiway: "คนที่สามเข้า", flop: "ไป flop", "hand over": "จบมือ" };
+    const PAIRS = [[0, 1, 2, 3], [0, 2, 1, 3], [0, 3, 1, 2], [1, 2, 0, 3], [1, 3, 0, 2], [2, 3, 0, 1]];
+
+    const $ = id => document.getElementById(id);
+    const games = options.games || [];
+    const state = { game: options.initial || (games[0] && games[0].id), path: [], first: null, second: null, shape: "all", tier: -1, query: "" };
+    const cache = {};
+    let classes = null;
+    let data = null;
+    let strategy = null;
+    let pending = null;
+    let wanted = null;
+
+    // ---------- data ----------
+    async function getJSON(url) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url}: ${response.status}`);
+      return response.json();
+    }
+
+    function decode(b64) {
+      const text = atob(b64);
+      const bytes = new Uint8Array(text.length);
+      for (let i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i);
+      return bytes;
+    }
+
+    const rankOf = c => RANKS.indexOf(c);
+
+    function halfKey(a, b) {
+      const x = rankOf(a[0]), y = rankOf(b[0]);
+      if (x === y) return x * 13 + x;
+      const hi = Math.min(x, y), lo = Math.max(x, y);
+      return a[1] === b[1] ? hi * 13 + lo : lo * 13 + hi;
+    }
+
+    function signature(cards) {
+      const groups = {};
+      for (const card of cards) (groups[card[1]] ||= []).push(rankOf(card[0]));
+      return Object.values(groups).map(g => g.sort((p, q) => p - q).map(r => RANKS[r]).join(""))
+        .sort((p, q) => q.length - p.length || (p < q ? -1 : p > q ? 1 : 0)).join("|");
+    }
+
+    function prepareClasses(raw) {
+      return raw.rows.map(([text, shape, combos, bucket, tier]) => {
+        const cards = [];
+        for (let i = 0; i < 8; i += 2) cards.push(text.slice(i, i + 2));
+        cards.sort((p, q) => rankOf(p[0]) - rankOf(q[0]) || (p[1] < q[1] ? -1 : 1));
+        const halves = PAIRS.map(([a, b, c, d]) => [halfKey(cards[a], cards[b]), halfKey(cards[c], cards[d])]);
+        return {
+          cards, shape, combos, bucket, tier, halves,
+          firsts: [...new Set(halves.map(h => h[0]))],
+          ranks: cards.map(c => c[0]).join(""),
+          sig: signature(cards),
+        };
+      });
+    }
+
+    async function loadGame(name) {
+      if (!cache[name]) {
+        const raw = await options.load(name);
+        cache[name] = { raw, bytes: decode(raw.strategy) };
+      }
+      return cache[name];
+    }
+
+    // ---------- tree ----------
+    function currentNode() {
+      let index = 0;
+      for (const slot of state.path) index = data.nodes[index].options[slot].child;
+      return index;
+    }
+
+    function nodeProbs(index) {
+      const node = data.nodes[index];
+      const n = node.options.length, buckets = data.buckets;
+      const out = new Float32Array(buckets * n);
+      const base = index * buckets * 3;
+      for (let b = 0; b < buckets; b++) {
+        let sum = 0;
+        for (let k = 0; k < n; k++) sum += strategy[base + b * 3 + k];
+        for (let k = 0; k < n; k++) out[b * n + k] = sum > 0 ? strategy[base + b * 3 + k] / sum : 1 / n;
+      }
+      return out;
+    }
+
+    function optionLabel(node, option) {
+      if (option.action === "fold") return { name: "Fold", amount: "" };
+      if (option.action === "check") return { name: "Check", amount: "" };
+      const amount = fmt(option.total);
+      if (option.action === "call") {
+        const limp = Math.abs(option.total - 1) < 1e-9;  // calling the big blind itself: nobody has raised
+        return { name: option.all_in ? "Call all-in" : limp ? "Limp" : "Call", amount };
+      }
+      return { name: option.all_in ? "All-in" : "Raise", amount };
+    }
+
+    const pct = share => share > 0 && share < 0.001 ? "<0.1%" : `${(share * 100).toFixed(1)}%`;
+    const fmt = x => (Math.round(x * 1000) / 1000).toString();
+
+    function lineWords() {
+      const words = [];
+      let index = 0;
+      for (const slot of state.path) {
+        const node = data.nodes[index], option = node.options[slot];
+        if (option.action !== "fold") {
+          const label = optionLabel(node, option);
+          words.push(`${data.seats[node.actor]} ${label.name.toLowerCase()}${label.amount ? " " + label.amount : ""}`);
+        }
+        index = option.child;
+      }
+      return words;
+    }
+
+    // ---------- aggregation ----------
+    function passes(c) {
+      if (state.shape !== "all" && c.shape !== state.shape) return false;
+      if (state.tier >= 0 && c.tier !== state.tier) return false;
+      return true;
+    }
+
+    function parseQuery(text) {
+      const raw = text.replace(/[\s,]/g, "").replace(/10/g, "T");
+      if (!raw) return null;
+      const exact = raw.match(/^([2-9TJQKA][cdhs]){4}$/i);
+      if (exact) {
+        const cards = raw.match(/../g).map(c => c[0].toUpperCase() + c[1].toLowerCase());
+        if (new Set(cards).size !== 4) return { bad: true };
+        cards.sort((a, b) => rankOf(a[0]) - rankOf(b[0]));
+        return { sig: signature(cards), cards };
+      }
+      const ranks = raw.toUpperCase();
+      if (/^[2-9TJQKA]{1,4}$/.test(ranks)) return { ranks: [...ranks].sort((p, q) => rankOf(p) - rankOf(q)) };
+      return { bad: true };
+    }
+
+    function queryMatch(c, q) {
+      if (!q) return true;
+      if (q.bad) return false;
+      if (q.sig) return c.sig === q.sig;
+      const pool = [...c.ranks];
+      for (const r of q.ranks) {
+        const at = pool.indexOf(r);
+        if (at < 0) return false;
+        pool.splice(at, 1);
+      }
+      return true;
+    }
+
+    function aggregate(probs, n) {
+      const cells = Array.from({ length: 169 }, () => ({ combos: 0, freq: new Float64Array(n) }));
+      const total = { combos: 0, freq: new Float64Array(n) };
+      const rows = [];
+      const query = parseQuery(state.query);
+      for (const c of classes) {
+        if (!passes(c) || !queryMatch(c, query)) continue;
+        const p = probs.subarray(c.bucket * n, c.bucket * n + n);
+        let keys;
+        if (state.first === null) {
+          keys = c.firsts;
+        } else {
+          keys = [...new Set(c.halves.filter(h => h[0] === state.first).map(h => h[1]))];
+          if (!keys.length) continue;
+        }
+        for (const key of keys) {  // the matrix keeps every choice visible; the pick narrows the summary
+          const cell = cells[key];
+          cell.combos += c.combos;
+          for (let k = 0; k < n; k++) cell.freq[k] += c.combos * p[k];
+        }
+        if (state.second !== null && !keys.includes(state.second)) continue;
+        total.combos += c.combos;
+        for (let k = 0; k < n; k++) total.freq[k] += c.combos * p[k];
+        rows.push({ c, p, cards: query && query.sig ? query.cards : c.cards });  // searched hands keep their own suits
+      }
+      return { cells, total, rows };
+    }
+
+    // ---------- render ----------
+    function cellName(key) {
+      const row = Math.floor(key / 13), col = key % 13;
+      if (row === col) return RANKS[row] + RANKS[row];
+      return row < col ? RANKS[row] + RANKS[col] + "s" : RANKS[col] + RANKS[row] + "o";
+    }
+
+    function orderedSlots(node) {
+      return node.options.map((o, k) => k).sort((p, q) => ACTION_ORDER[node.options[p].action] - ACTION_ORDER[node.options[q].action]);
+    }
+
+    function barHTML(freq, node, weight) {
+      return orderedSlots(node).map(k => {
+        const share = weight > 0 ? freq[k] / weight : 0;
+        return share > 0.0005 ? `<i style="width:${(share * 100).toFixed(2)}%;background:${ACTION_COLOR[node.options[k].action]}"></i>` : "";
+      }).join("");
+    }
+
+    function renderGames() {
+      if (!options.gamesEl) return;
+      options.gamesEl.innerHTML = games.map(game =>
+        `<button class="game" type="button" data-game="${game.id}" aria-pressed="${state.game === game.id}"><b>${game.label}</b><span>${game.detail}</span></button>`).join("");
+    }
+
+    function seatName(node) {
+      const seat = data.seats[node.actor];
+      const alias = seat === "UTG" && data.seats.length === 6;  // LJ is the first seat at 6-max
+      return `${seat}${alias ? ' <span class="mono">/ LJ</span>' : ""}`;
+    }
+
+    // Past seats (click to go back to that decision), the seat to act, and the seats still to
+    // come if everyone folds to them (click to jump there).
+    function renderLine() {
+      const steps = [];
+      let index = 0;
+      [...state.path, null].forEach((slot, depth) => {
+        const node = data.nodes[index];
+        const opts = orderedSlots(node).map(k => {
+          const option = node.options[k];
+          const label = optionLabel(node, option);
+          const end = option.child < 0 ? `<span class="end">${END_TEXT[option.end] || ""}</span>` : "";
+          return `<button class="opt" type="button" data-depth="${depth}" data-slot="${k}" aria-pressed="${slot === k}" ${option.child < 0 ? "disabled" : ""}>`
+            + `<span class="sw" style="background:${ACTION_COLOR[option.action]}"></span>${label.name}${end}`
+            + `<span class="amt">${label.amount}</span></button>`;
+        }).join("");
+        const head = `<span>${seatName(node)}</span><span class="mono">${fmt(node.behind[node.actor])}bb</span>`;
+        steps.push(slot === null
+          ? `<div class="step now"><div class="step-seat">${head}</div><div class="step-opts">${opts}</div></div>`
+          : `<div class="step"><button class="step-seat" type="button" data-back="${depth}" title="กลับไปที่ decision นี้">${head}</button><div class="step-opts">${opts}</div></div>`);
+        if (slot !== null) index = node.options[slot].child;
+      });
+      for (let folds = 1; folds < data.seats.length; folds++) {
+        const fold = data.nodes[index].options.findIndex(o => o.action === "fold");
+        if (fold < 0 || data.nodes[index].options[fold].child < 0) break;
+        index = data.nodes[index].options[fold].child;
+        const node = data.nodes[index];
+        steps.push(`<button class="step ahead" type="button" data-ahead="${folds}" title="ทุกคนก่อนหน้า fold แล้วไปที่ ${data.seats[node.actor]}">`
+          + `<span class="step-seat"><span>${seatName(node)}</span><span class="mono">${fmt(node.behind[node.actor])}bb</span></span></button>`);
+      }
+      const line = $("line");
+      line.innerHTML = steps.join("");
+      const now = line.querySelector(".now");
+      line.scrollLeft = Math.max(0, now.offsetLeft - line.offsetLeft - line.clientWidth + now.offsetWidth + 8);
+    }
+
+    // Fold the seat to act and everyone up to the ``count``th seat ahead.
+    function foldAhead(count) {
+      const path = [...state.path];
+      let index = currentNode();
+      for (let i = 0; i < count; i++) {
+        const fold = data.nodes[index].options.findIndex(o => o.action === "fold");
+        path.push(fold);
+        index = data.nodes[index].options[fold].child;
+      }
+      return path;
+    }
+
+    function renderSpot(node) {
+      const seat = data.seats[node.actor];
+      const words = lineWords();
+      $("spot-title").textContent = words.length ? `${seat} · หลัง ${words.join(", ")}` : `${seat} · ได้เป็นคนแรก (first in)`;
+      const toCall = node.to_call > 0 ? ` · ต้องจ่าย ${fmt(node.to_call)}bb` : "";
+      $("spot-meta").textContent = `${data.label} · pot ${fmt(node.pot)}bb${toCall} · stack ${fmt(node.behind[node.actor])}bb`;
+    }
+
+    function renderMatrix(cells, node) {
+      const html = [];
+      for (let key = 0; key < 169; key++) {
+        const cell = cells[key];
+        const row = Math.floor(key / 13), col = key % 13;
+        const empty = cell.combos === 0;
+        const selected = state.second === key;
+        html.push(`<button class="cell${row === col ? " pair" : ""}${empty ? " empty" : ""}${selected ? " sel" : ""}" type="button" role="gridcell" data-key="${key}" ${empty ? 'aria-disabled="true"' : ""} aria-label="${cellName(key)}">`
+          + `<span class="name">${cellName(key)}</span><span class="bars">${empty ? "" : barHTML(cell.freq, node, cell.combos)}</span></button>`);
+      }
+      $("matrix").innerHTML = html.join("");
+      $("pick1-v").textContent = state.first === null ? "เลือก" : cellName(state.first);
+      $("pick2-v").textContent = state.second === null ? (state.first === null ? "-" : "เลือก") : cellName(state.second);
+      $("pick1").dataset.on = String(state.first === null);
+      $("pick2").dataset.on = String(state.first !== null);
+      $("pick2").disabled = state.first === null;
+      $("step-hint").textContent = state.first === null ? "แตะช่องเพื่อเลือกไพ่สองใบแรก"
+        : state.second === null ? "เลือกอีกสองใบ หรือแตะ สองใบแรก เพื่อเปลี่ยน" : "แตะช่องเดิมเพื่อยกเลิก";
+    }
+
+    function renderLegend(node) {
+      $("legend").innerHTML = orderedSlots(node).map(k => {
+        const option = node.options[k], label = optionLabel(node, option);
+        return `<span><i style="background:${ACTION_COLOR[option.action]}"></i>${label.name}${label.amount ? ` <span class="mono">${label.amount}</span>` : ""}</span>`;
+      }).join("");
+    }
+
+    function renderSummary(total, node) {
+      const tiles = orderedSlots(node).map(k => {
+        const option = node.options[k], label = optionLabel(node, option);
+        const share = total.combos ? total.freq[k] / total.combos : 0;
+        return `<div class="tile" style="--c:${ACTION_COLOR[option.action]}"><span>${label.name}${label.amount ? " " + label.amount : ""}</span>`
+          + `<b>${pct(share)}</b><small>${Math.round(total.freq[k]).toLocaleString("en-US")} combos</small></div>`;
+      });
+      tiles.push(`<div class="tile"><span>มือที่ตรงตัวกรอง</span><b>${pct(total.combos / 270725)}</b><small>${total.combos.toLocaleString("en-US")} / 270,725</small></div>`);
+      $("tiles").innerHTML = tiles.join("");
+      $("sum-bar").innerHTML = barHTML(total.freq, node, total.combos);
+    }
+
+    function cardsHTML(cards) {
+      return cards.map(c => `<span class="s-${c[1]}">${c[0]}${SUIT_GLYPH[c[1]]}</span>`).join("");
+    }
+
+    function renderList(rows, node) {
+      const slots = orderedSlots(node);
+      $("list-head").innerHTML = `<tr><th>มือ</th><th class="hide-sm">ทรง</th><th class="hide-sm">Hwang</th><th class="num hide-sm">combos</th><th>สัดส่วน</th>`
+        + slots.map(k => `<th class="num">${optionLabel(node, node.options[k]).name}</th>`).join("") + "</tr>";
+      const aggressive = slots[0];
+      rows.sort((p, q) => q.p[aggressive] - p.p[aggressive] || q.c.combos - p.c.combos);
+      const shown = rows.slice(0, LIST_LIMIT);
+      $("list").innerHTML = shown.map(({ c, p, cards }) => `<tr><td class="cards">${cardsHTML(cards)}</td>`
+        + `<td class="shape hide-sm">${c.shape}</td><td class="tier hide-sm">${classes.tiers[c.tier]}</td>`
+        + `<td class="num hide-sm">${c.combos}</td><td><div class="bigbar">${barHTML(p, node, 1)}</div></td>`
+        + slots.map(k => `<td class="num">${(p[k] * 100).toFixed(0)}%</td>`).join("") + "</tr>").join("");
+      $("list-count").textContent = `${rows.length.toLocaleString("en-US")} แบบ · ดอกเป็นตัวอย่าง สลับดอกได้`;
+      $("more").hidden = rows.length <= LIST_LIMIT;
+      $("more").textContent = `แสดง ${LIST_LIMIT} แบบแรกตามความถี่ ${optionLabel(node, node.options[aggressive]).name} ใช้ matrix หรือช่องค้นเพื่อกรองให้แคบลง`;
+      const title = state.first === null ? "มือทั้งหมด" : `มือที่มี ${cellName(state.first)}${state.second === null ? "" : " + " + cellName(state.second)}`;
+      $("list-title").textContent = title;
+    }
+
+    function renderFilters() {
+      $("shapes").innerHTML = '<span class="label">ทรงดอก</span>' + SHAPES.map(([key, text]) =>
+        `<button class="chip" type="button" data-shape="${key}" aria-pressed="${state.shape === key}">${text}</button>`).join("");
+      $("tiers").innerHTML = '<span class="label">Hwang</span>' + [["-1", "ทั้งหมด"], ...classes.tiers.map((t, i) => [String(i), t])].map(([key, text]) =>
+        `<button class="chip" type="button" data-tier="${key}" aria-pressed="${String(state.tier) === key}">${text}</button>`).join("");
+    }
+
+    let view = null;
+
+    function render() {
+      const index = currentNode();
+      const node = data.nodes[index];
+      const probs = nodeProbs(index);
+      const agg = aggregate(probs, node.options.length);
+      view = { node, cells: agg.cells };
+      renderLine();
+      renderSpot(node);
+      renderMatrix(agg.cells, node);
+      renderLegend(node);
+      renderSummary(agg.total, node);
+      renderList(agg.rows, node);
+      renderFilters();
+      saveHash();
+    }
+
+    // ---------- tooltip ----------
+    function showTip(event, key) {
+      const tip = $("tip");
+      const cell = view.cells[key];
+      if (!cell || cell.combos === 0) { tip.style.opacity = 0; return; }
+      const node = view.node;
+      const title = state.first === null ? cellName(key) : `${cellName(state.first)} + ${cellName(key)}`;
+      tip.innerHTML = `<b>${title}</b> <span>${cell.combos.toLocaleString("en-US")} combos</span>`
+        + orderedSlots(node).map(k => {
+          const option = node.options[k], label = optionLabel(node, option);
+          return `<div class="row"><i style="background:${ACTION_COLOR[option.action]}"></i>${label.name} ${(cell.freq[k] / cell.combos * 100).toFixed(1)}%</div>`;
+        }).join("");
+      const x = Math.min(event.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+      const y = Math.min(event.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+      tip.style.left = `${Math.max(8, x)}px`;
+      tip.style.top = `${Math.max(8, y)}px`;
+      tip.style.opacity = 1;
+    }
+
+    // ---------- state in the URL ----------
+    function saveHash() {
+      if (!options.hash) return;
+      const parts = [`g=${state.game}`];
+      if (state.path.length) parts.push(`l=${state.path.join(".")}`);
+      if (state.first !== null) parts.push(`h=${state.first}${state.second !== null ? "." + state.second : ""}`);
+      history.replaceState(null, "", "#" + parts.join("&"));
+    }
+
+    function readHash() {
+      if (!options.hash) return;
+      const params = new URLSearchParams(location.hash.slice(1));
+      if (games.some(game => game.id === params.get("g"))) state.game = params.get("g");
+      state.path = (params.get("l") || "").split(".").filter(Boolean).map(Number);
+      const hand = (params.get("h") || "").split(".").filter(Boolean).map(Number);
+      state.first = Number.isInteger(hand[0]) && hand[0] >= 0 && hand[0] < 169 ? hand[0] : null;
+      state.second = state.first !== null && Number.isInteger(hand[1]) && hand[1] >= 0 && hand[1] < 169 ? hand[1] : null;
+    }
+
+    function validPath() {
+      let index = 0;
+      const kept = [];
+      for (const slot of state.path) {
+        const option = data.nodes[index].options[slot];
+        if (!option || option.child < 0) break;
+        kept.push(slot);
+        index = option.child;
+      }
+      state.path = kept;
+    }
+
+    // ---------- events ----------
+    async function selectGame(name) {
+      state.game = name;
+      $("spot-title").textContent = "กำลังโหลด...";
+      renderGames();
+      const loaded = await loadGame(name);
+      data = loaded.raw;
+      strategy = loaded.bytes;
+      validPath();
+      render();
+    }
+
+    if (options.gamesEl) options.gamesEl.addEventListener("click", event => {
+      const button = event.target.closest("[data-game]");
+      if (button && button.dataset.game !== state.game) {
+        state.path = [];
+        selectGame(button.dataset.game).catch(fail);
+      }
+    });
+
+    $("line").addEventListener("click", event => {
+      const button = event.target.closest(".opt, [data-back], [data-ahead]");
+      if (!button || button.disabled) return;
+      if (button.dataset.back !== undefined) state.path = state.path.slice(0, Number(button.dataset.back));
+      else if (button.dataset.ahead !== undefined) state.path = foldAhead(Number(button.dataset.ahead));
+      else state.path = [...state.path.slice(0, Number(button.dataset.depth)), Number(button.dataset.slot)];
+      render();
+    });
+
+    $("reset").addEventListener("click", () => { state.path = []; state.first = null; state.second = null; render(); });
+
+    $("matrix").addEventListener("click", event => {
+      const button = event.target.closest(".cell");
+      if (!button || button.classList.contains("empty")) return;
+      const key = Number(button.dataset.key);
+      if (state.first === null) state.first = key;
+      else if (state.second === key) state.second = null;
+      else state.second = key;
+      $("tip").style.opacity = 0;
+      render();
+    });
+    $("matrix").addEventListener("pointermove", event => {
+      const button = event.target.closest(".cell");
+      if (button && event.pointerType === "mouse") showTip(event, Number(button.dataset.key));
+      else $("tip").style.opacity = 0;
+    });
+    $("matrix").addEventListener("pointerleave", () => { $("tip").style.opacity = 0; });
+
+    $("pick1").addEventListener("click", () => { state.first = null; state.second = null; render(); });
+    $("pick2").addEventListener("click", () => { state.second = null; render(); });
+
+    $("shapes").addEventListener("click", event => {
+      const button = event.target.closest("[data-shape]");
+      if (button) { state.shape = button.dataset.shape; render(); }
+    });
+    $("tiers").addEventListener("click", event => {
+      const button = event.target.closest("[data-tier]");
+      if (button) { state.tier = Number(button.dataset.tier); render(); }
+    });
+    let typing = null;
+    $("search").addEventListener("input", event => {
+      clearTimeout(typing);
+      typing = setTimeout(() => { state.query = event.target.value; render(); }, 150);
+    });
+
+    function fail(error) {
+      $("spot-title").textContent = "โหลดข้อมูลไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง";
+      $("spot-meta").textContent = String(error.message || error);
+    }
+
+    // Show a solved game given directly (the final-table page); keeps the line when it still exists.
+    function show(raw) {
+      if (!classes) { pending = raw; return; }
+      data = raw;
+      strategy = decode(raw.strategy);
+      validPath();
+      render();
+      if (wanted) { const spot = wanted; wanted = null; focus(spot); }
+    }
+
+    // Open the line where everyone folds to ``seat`` and search ``hand``.
+    function focus({ seat, hand }) {
+      if (!data) { wanted = { seat, hand }; return; }
+      state.path = [];
+      const target = data.seats.indexOf(seat);
+      let index = 0;
+      while (target >= 0 && data.nodes[index].actor !== target) {
+        const fold = data.nodes[index].options.findIndex(o => o.action === "fold");
+        if (fold < 0 || data.nodes[index].options[fold].child < 0) { state.path = []; break; }
+        state.path.push(fold);
+        index = data.nodes[index].options[fold].child;
+      }
+      if (hand) { state.query = hand; $("search").value = hand; }
+      render();
+    }
+
+    readHash();
+    renderGames();
+    getJSON(options.classesUrl || "/static/plo-classes.json")
+      .then(raw => {
+        classes = Object.assign(prepareClasses(raw), { tiers: raw.tiers });
+        if (pending) { const waiting = pending; pending = null; show(waiting); return null; }
+        return games.length ? selectGame(state.game) : null;
+      })
+      .catch(fail);
+    return { show, focus, fail };
+  }
+
+  return { mount };
+})();

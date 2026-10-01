@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="th">
+<html lang="{{t:lang}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ตามควาย Range 40bb</title>
-<meta name="description" content="ความถี่ raise, limp, fold ของทุกมือ PLO4 เมื่อได้เป็นคนแรก ทัวร์นาเมนต์ 6 คน 40bb มี ante">
+<title>{{t:title}}</title>
+<meta name="description" content="{{t:description}}">
+{{ALTERNATES}}
 <meta name="theme-color" content="#171512">
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,51 +88,51 @@
   <div class="col">
     <nav class="nav" aria-label="Main">
       <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
-      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a></div>
+      <div class="nav-links"><a href="/">{{t:nav_ask}}</a><a href="/plo">PLO range</a><a href="/method">{{t:nav_method}}</a><a href="/research" aria-current="page">{{t:nav_research}}</a>{{SWITCH}}</div>
     </nav>
-    <p class="eyebrow">งานวิจัย · range ทุกมือ · MTT 40bb</p>
-    <h1>ได้เป็นคนแรก ทุกมือควรทำอะไร</h1>
-    <p class="lede">สัดส่วน raise, limp และ fold ของมือ PLO4 ทั้ง 16,432 แบบ (270,725 มือ) ในแต่ละตำแหน่ง จาก solver สอง seed เฉลี่ยกัน เกม 6 คน stack 40bb ante 0.116bb ทุกคน</p>
-    <a class="back" href="/research-mtt40">อ่านบทสรุปงานวิจัยนี้</a>
+    <p class="eyebrow">{{t:eyebrow}}</p>
+    <h1>{{t:h1}}</h1>
+    <p class="lede">{{t:lede}}</p>
+    <a class="back" href="/{{SUMMARY}}">{{t:back}}</a>
   </div>
 </header>
 
 <div class="page">
-  <div class="seats" role="tablist" aria-label="ตำแหน่ง"></div>
+  <div class="seats" role="tablist" aria-label="{{t:seats}}"></div>
   <div class="summary" id="summary"></div>
   <div class="legend" aria-hidden="true"><span><i style="background:var(--raise)"></i>raise (pot)</span><span><i style="background:var(--limp)"></i>limp</span><span><i style="background:var(--fold)"></i>fold</span></div>
 
-  <section class="filters" aria-label="ตัวกรอง">
-    <label for="q">อันดับไพ่
-      <input id="q" type="search" placeholder="เช่น AA, JT98" autocomplete="off" spellcheck="false">
+  <section class="filters" aria-label="{{t:filters}}">
+    <label for="q">{{t:ranks}}
+      <input id="q" type="search" placeholder="{{t:example}}" autocomplete="off" spellcheck="false">
     </label>
-    <label for="suits">ดอก
-      <select id="suits"><option value="">ทั้งหมด</option><option value="ds">double-suited</option><option value="ss">single-suited</option><option value="3f">three-flush</option><option value="rb">rainbow</option><option value="mono">monotone</option></select>
+    <label for="suits">{{t:suits}}
+      <select id="suits"><option value="">{{t:all}}</option><option value="ds">double-suited</option><option value="ss">single-suited</option><option value="3f">three-flush</option><option value="rb">rainbow</option><option value="mono">monotone</option></select>
     </label>
-    <label for="tier">Tier ของ Hwang
-      <select id="tier"><option value="">ทั้งหมด</option><option value="P">Premium</option><option value="S">Speculative</option><option value="M">Marginal</option><option value="T">Trash</option></select>
+    <label for="tier">{{t:tier}}
+      <select id="tier"><option value="">{{t:all}}</option><option value="P">Premium</option><option value="S">Speculative</option><option value="M">Marginal</option><option value="T">Trash</option></select>
     </label>
-    <label for="act">ทางหลัก
-      <select id="act"><option value="">ทุกแบบ</option><option value="raise">raise</option><option value="limp">limp</option><option value="fold">fold</option><option value="mixed">ผสม</option></select>
+    <label for="act">{{t:action}}
+      <select id="act"><option value="">{{t:any}}</option><option value="raise">raise</option><option value="limp">limp</option><option value="fold">fold</option><option value="mixed">{{t:mixed}}</option></select>
     </label>
-    <label for="sort">เรียงตาม
-      <select id="sort"><option value="play">% เล่น (มากไปน้อย)</option><option value="raise">% raise</option><option value="limp">% limp</option><option value="fold">% fold</option><option value="hand">อันดับไพ่</option></select>
+    <label for="sort">{{t:sort}}
+      <select id="sort"><option value="play">{{t:by_play}}</option><option value="raise">% raise</option><option value="limp">% limp</option><option value="fold">% fold</option><option value="hand">{{t:ranks}}</option></select>
     </label>
     <p class="result" id="result" aria-live="polite"></p>
   </section>
 
   <div class="tablewrap">
     <table>
-      <thead><tr><th class="l">มือ</th><th class="l">อันดับ</th><th class="l">ดอก</th><th class="l">Tier</th><th>คอมโบ</th><th class="l">สัดส่วน</th><th>raise</th><th>limp</th><th>fold</th></tr></thead>
+      <thead><tr><th class="l">{{t:hand}}</th><th class="l">{{t:rank_col}}</th><th class="l">{{t:suits}}</th><th class="l">Tier</th><th>{{t:combos}}</th><th class="l">{{t:mix}}</th><th>raise</th><th>limp</th><th>fold</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
-  <button class="more" id="more" type="button">แสดงเพิ่มอีก 200 มือ</button>
+  <button class="more" id="more" type="button">{{t:more}}</button>
 
-  <p class="note">ดอกที่แสดงเป็นตัวแทนของแต่ละแบบ มือที่สลับดอกกันเล่นเหมือนกัน solver เลือกกลยุทธ์ทีละกลุ่มมือที่คล้ายกัน (780 กลุ่มที่ไม่ปน tier ของ Hwang) มือในกลุ่มเดียวกันจึงได้สัดส่วนเดียวกัน ทางหลักคือทางที่ใช้ตั้งแต่ 60% ขึ้นไป ไม่อย่างนั้นถือว่าผสม ante อยู่ใน pot แต่ไม่นับในขนาด pot-limit ก่อน flop เป็น chip EV ยังไม่ได้คิด ICM <a href="/static/mtt40-range.csv" download>ดาวน์โหลดข้อมูลทั้งหมดเป็น CSV</a></p>
+  <p class="note">{{t:note}} <a href="/static/mtt40-range.csv" download>{{t:csv}}</a></p>
 </div>
 
-<footer><div class="col"><span>งานวิจัยจาก solver ของตามควาย</span><span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span></div></footer>
+<footer><div class="col"><span>{{t:footer}}</span><span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span></div></footer>
 
 <script id="range-data" type="application/json">{{DATA}}</script>
 <script>
@@ -177,13 +178,13 @@
     const tierRows = ["P", "S", "M", "T"].map((t) => {
       const w = weighted(hands.filter((h) => h.tier === t), s);
       const m = { raise: Math.round(w.raise), limp: Math.round(w.limp), fold: Math.max(0, 100 - Math.round(w.raise) - Math.round(w.limp)) };
-      return `<div class="tierrow"><span>${TIER_NAME[t]}</span>${bar(m)}<span class="n">${(100 - w.fold).toFixed(0)}% เล่น</span></div>`;
+      return `<div class="tierrow"><span>${TIER_NAME[t]}</span>${bar(m)}<span class="n">${(100 - w.fold).toFixed(0)}% {{t:played}}</span></div>`;
     }).join("");
     $("summary").innerHTML =
-      `<div class="stat raise"><b>${all.raise.toFixed(1)}%</b><span>ของมือทั้งหมด raise</span></div>` +
+      `<div class="stat raise"><b>${all.raise.toFixed(1)}%</b><span>{{t:all_raise}}</span></div>` +
       `<div class="stat"><b>${all.limp.toFixed(1)}%</b><span>limp</span></div>` +
       `<div class="stat fold"><b>${all.fold.toFixed(1)}%</b><span>fold</span></div>` +
-      `<div class="tiers" aria-label="แยกตาม tier ของ Hwang">${tierRows}</div>`;
+      `<div class="tiers" aria-label="{{t:by_tier}}">${tierRows}</div>`;
   }
 
   function rows() {
@@ -193,7 +194,7 @@
     if (sort === "hand") list.sort((a, b) => a.ranks < b.ranks ? 1 : a.ranks > b.ranks ? -1 : a.order - b.order);
     else list.sort((a, b) => key[sort](a) - key[sort](b) || a.order - b.order);
     const w = weighted(list, s);
-    $("result").innerHTML = `<b>${list.length.toLocaleString()}</b> แบบ · <b>${w.n.toLocaleString()}</b> คอมโบ (${(100 * w.n / 270725).toFixed(1)}% ของมือ) · ชุดนี้ raise <b>${w.raise.toFixed(1)}%</b> limp <b>${w.limp.toFixed(1)}%</b> fold <b>${w.fold.toFixed(1)}%</b>`;
+    $("result").innerHTML = `<b>${list.length.toLocaleString()}</b> {{t:types}} · <b>${w.n.toLocaleString()}</b> {{t:combos_word}} (${(100 * w.n / 270725).toFixed(1)}% {{t:of_hands}}) · {{t:this_set}} raise <b>${w.raise.toFixed(1)}%</b> limp <b>${w.limp.toFixed(1)}%</b> fold <b>${w.fold.toFixed(1)}%</b>`;
     $("rows").innerHTML = list.slice(0, state.shown).map((h) => {
       const m = h.mix[s];
       return `<tr><td class="l cards">${h.cards}</td><td class="l">${h.ranks}</td><td class="l">${h.suits}</td><td class="l">${TIER_NAME[h.tier]}</td><td>${h.combos}</td><td class="l barcell">${bar(m)}</td><td>${m.raise}%</td><td>${m.limp}%</td><td>${m.fold}%</td></tr>`;

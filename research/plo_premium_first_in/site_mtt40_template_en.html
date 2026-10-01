@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TamKwai MTT 40bb</title>
+<meta name="description" content="We solved six-handed PLO tournament play at 40bb with antes and compared it with Jeff Hwang's starting-hand method: what holds up and what needs to change">
+{{ALTERNATES}}
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+{{STYLE}}</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
+      <div class="nav-links"><a href="/">Ask a chart</a><a href="/plo">PLO range</a><a href="/method">Method</a><a href="/research" aria-current="page">Research</a>{{SWITCH}}</div>
+    </nav>
+    <p class="eyebrow rise">Research · PLO MTT 40bb</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>First in: raise, limp or fold? The solver against Jeff Hwang's method</h1>
+    <p class="lede rise d2">We solved six-handed tournament PLO at 40bb with an ante from every player, then compared the result with Jeff Hwang's way of choosing starting hands. Hwang's ordering of hand strength still holds, but several of his rules need adjusting: straight hands, big-card hands with a dangler, and late position, where the ante calls for a much wider range.</p>
+    <div class="stats rise d3">
+      <div class="stat"><b>{{UTG_PLAY}}</b><span>of all hands the solver plays first in from UTG</span></div>
+      <div class="stat"><b>{{BTN_PLAY}}</b><span>on the button: the ante makes late position far wider than Hwang</span></div>
+      <div class="stat"><b>{{R2_TIERS}} → {{R2_ARCH}}</b><span>R² at UTG: Hwang's 4 tiers against 11 new archetypes</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <section aria-labelledby="game-h">
+      <p class="tag">1 · The game we solved</p>
+      <h2 id="game-h">Six-handed tournament, 40bb stacks</h2>
+      <dl class="settings">
+        <div><dt>Game</dt><dd>PLO4 6-max, chip EV</dd></div>
+        <div><dt>Stack</dt><dd>40bb each</dd></div>
+        <div><dt>Blinds / ante</dt><dd>0.5 / 1, 0.116bb ante each</dd></div>
+        <div><dt>Preflop pot size</dt><dd>ante not counted (first pot raise = 3.5bb)</dd></div>
+        <div><dt>Preflop</dt><dd>fold, call, pot raise up to the 5-bet</dd></div>
+        <div><dt>Postflop</dt><dd>bet pot, then up to 2 raises</dd></div>
+        <div><dt>Solve</dt><dd>CFR, 2 seeds × {{DEALS}} million deals</dd></div>
+      </dl>
+      <div class="prose" style="margin-top:1rem">
+        <p>Every player's ante goes into the pot and goes to the winner, but it is not counted when sizing a pot-limit raise before the flop, following GGPoker's rules. All results are chip EV with no ICM, and the solver picks one strategy for each group of similar hands (780 groups, none mixing Hwang tiers).</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="range-h">
+      <p class="tag">2 · The ranges at a glance</p>
+      <h2 id="range-h">The ante widens every position</h2>
+      {{RANGE_TABLE}}
+      <div class="legend" aria-hidden="true"><span><i style="background:var(--raise)"></i>raise (pot)</span><span><i style="background:var(--limp)"></i>limp</span><span><i style="background:var(--fold)"></i>fold</span></div>
+      <div class="prose" style="margin-top:1rem">
+        <p>In our 20bb game without an ante, UTG plays about 20% of hands. At 40bb the antes put 0.7bb in the pot before anyone acts, so UTG plays {{UTG_PLAY}}, the button {{BTN_PLAY}} and the small blind as much as {{SB_PLAY}}, mostly by limping. Limping is far more common than at 20bb, because deeper stacks make a cheap flop worth more.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="tier-h">
+      <p class="tag">3 · Hwang's tiers</p>
+      <h2 id="tier-h">The order is right, the position rules are not</h2>
+      {{TIER_TABLE}}
+      <div class="prose" style="margin-top:1rem">
+        <p>Hwang raises Premium hands from every position, limps Speculative hands, plays Marginal hands only from late position for the minimum, and folds Trash. The solver still ranks Premium above Trash, but it folds about 20% of Premium hands at UTG, plays more than half of Marginal hands from UTG, and plays about a third of Trash hands on the button.</p>
+      </div>
+      {{AGREE_TABLE}}
+      <p class="muted" style="margin-top:.75rem;max-width:70ch">At UTG the solver's decision to play or fold matches Hwang on {{AGREE_UTG}} of hands. R² is the share of the variance in the solver's fold rate that a grouping explains; the closer to 1, the better. On the button and in the small blind every grouping explains little, because the solver plays most hands anyway.</p>
+    </section>
+
+    <section aria-labelledby="drivers-h">
+      <p class="tag">4 · What decides whether to play</p>
+      <h2 id="drivers-h">Big cards first, the Ace's suit second</h2>
+      {{DRIVERS_TABLE}}
+      <div class="prose" style="margin-top:1rem">
+        <p>The figures are how often the solver plays (limps or raises) when first in. The number of cards Ten or higher separates hands most clearly: hands with three big cards are played 83% of the time at UTG, hands with none or one only 6%. A suit led by the Ace matters more than being double-suited, and connected cards on their own help little. That is the reverse of Hwang, whose method centres on straight structure.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="wrong-h">
+      <p class="tag">5 · Where Hwang goes wrong</p>
+      <h2 id="wrong-h">Six places the solver disagrees</h2>
+
+      <div class="finding">
+        <h3>1. Not every suited rundown is Premium</h3>
+        <p>Hwang counts a rundown with two cards of one suit as Premium. The figures are the solver's fold % at UTG. Low single-suited rundowns are folded 83% of the time, and three-flush and monotone ones almost always. Double-suited rundowns are playable at every rank level, from 6543 up to QJT9 (folded 7% of the time or less). Among rundowns with two or more big cards, JT98 is playable double-suited or single-suited (folded 0-3%), and QJT9 with any suits, even three-flush or monotone.</p>
+        {{RUNDOWN_TABLE}}
+      </div>
+
+      <div class="finding">
+        <h3>2. Pairs with connectors and gapped straights are overrated</h3>
+        <p>Hwang rates hands like 9-9-8-7 and gapped straights as Speculative, playable from every position. Single-suited, the solver plays them only 0-24% of the time at UTG. Pairs with connectors come back to 94% on the button, but gapped straights stay around 43-46% even there. Double-suited versions do much better: double-suited pairs with connectors are played 70% of the time at UTG.</p>
+      </div>
+
+      <div class="finding">
+        <h3>3. Big-card hands with a dangler are underrated</h3>
+        <p>Big pairs with danglers, three Broadway cards with a dangler, and double-suited hands with a suited Ace are Marginal for Hwang, yet the solver plays nearly all of them from UTG and raises the double-suited suited-Ace hands 75% of the time. At 40bb high cards win at showdown often enough that a dangler costs less than it does with deep stacks.</p>
+        {{MISMATCH_UTG}}
+      </div>
+
+      <div class="finding">
+        <h3>4. Ask which card leads the suit, not just whether the hand is suited</h3>
+        <p>At UTG the solver plays 60% of hands whose suit is led by an Ace, 30% when a King down to a Ten leads it, and only 7% when a Nine or lower leads it. Three-flush hands play almost the same as rainbow hands, yet a Hwang-style classifier calls any two cards of one suit "suited" and treats them all alike.</p>
+      </div>
+
+      <div class="finding">
+        <h3>5. Late position must be much wider because of the ante</h3>
+        <p>On the button the solver plays {{BTN_PLAY}} of hands, including about 12% of all hands from what Hwang calls Trash. In the small blind it completes nearly every hand. The rule "Marginal only from late position for the minimum, always fold Trash" is too tight once antes are in the pot.</p>
+        {{MISMATCH_BTN}}
+      </div>
+
+      <div class="finding">
+        <h3>6. "Limp from early position, raise only Premium" is only partly right</h3>
+        <p>Big pairs are limped about 80% of the time at UTG, as Hwang says, but AAxx and big-card hands with a suited Ace are raised 67-83% of the time from every position, and some Marginal hands with a suited Ace are raised from UTG. Choose between limp and raise by the kind of hand, not by tier.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="shift-h">
+      <p class="tag">6 · How to adjust Hwang</p>
+      <h2 id="shift-h">Six changes to make</h2>
+      <ol class="shift">
+        <li><b>Count big cards first</b> (Ten or higher; a big pair counts as two), then check for a suited Ace, then a second suit. Treat connected cards as a bonus only once you hold at least two big cards.</li>
+        <li><b>Redefine straight hands.</b> Double-suited rundowns from 6543 up to QJT9, and double- or single-suited rundowns with two or more big cards, are playable from every position. Fold single-suited rundowns below Ten from early position, and fold three-flush and monotone ones.</li>
+        <li><b>Move big-card hands with a dangler up.</b> Suited big pairs with a dangler can limp from early position; double-suited hands with a suited Ace and double-suited three-Broadway hands with a dangler can raise.</li>
+        <li><b>Move pairs with connectors and gapped straights down</b> to cutoff and button hands.</li>
+        <li><b>Adjust for position and the ante.</b> UTG and HJ play about 26-30%, the cutoff about 37% and the button about 56%, opening much more of what Hwang calls Trash, and the small blind completes almost every hand.</li>
+        <li><b>Choose limp or raise by hand type.</b> Raise AAxx, nut-suited big-card hands and Broadway rundowns from HJ onwards; limp big and medium pairs from early position.</li>
+      </ol>
+      <h3>11 archetypes and what the solver does with them at 40bb</h3>
+      <p class="muted" style="max-width:70ch">These hand groups come from our 20bb study. They are checked in order and the first match applies. Each bar is the solver's raise/limp/fold mix at 40bb, and the word under it is the main action.</p>
+      {{ARCHETYPE_TABLE}}
+      <div class="legend" aria-hidden="true"><span><i style="background:var(--raise)"></i>raise (pot)</span><span><i style="background:var(--limp)"></i>limp</span><span><i style="background:var(--fold)"></i>fold</span></div>
+      <div class="ctas">
+        <a class="cta" href="/{{RANGE_PAGE}}">See every hand</a>
+        <a class="cta cta--alt" href="/static/mtt40-range.csv" download>Download CSV</a>
+      </div>
+    </section>
+
+    <section aria-labelledby="limit-h">
+      <p class="tag">7 · Limitations</p>
+      <h2 id="limit-h">What these results do not tell you</h2>
+      <ul class="limits">
+        <li>The solver picks one strategy per group of similar hands, so hands in the same group share a mix, for example single-suited 6543 and 9876. We have not yet checked EV hand by hand at 40bb as we did in the 20bb study.</li>
+        <li>Results are chip EV with no ICM. Near the bubble or at a final table, ranges should be tighter.</li>
+        <li>Bets are pot-sized only, there is no rake, and CFR with several players does not guarantee an equilibrium.</li>
+        <li>The two seeds agree within about 3 points at every position and tier.</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>Research from the TamKwai solver · solved on an Apple M4 Pro, 14 cores</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+</body>
+</html>

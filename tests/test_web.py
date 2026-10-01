@@ -329,13 +329,27 @@ class ServerTests(unittest.TestCase):
                 self.assertTrue(content.startswith(b"%PDF"))
 
     def test_the_mtt40_research_pages_and_csv_are_served(self):
-        for path in ("/research-mtt40", "/research-mtt40-range"):
+        for path in ("/research-mtt40", "/research-mtt40-range", "/research-mtt40-en", "/research-mtt40-range-en"):
             with self.subTest(path=path):
                 response, body = self.request("GET", path)
                 self.assertEqual(response.status, 200)
                 self.assertIn(b"Copyright", body)
         _, listing = self.request("GET", "/research")
-        self.assertIn(b"/research-mtt40", listing)
+        self.assertIn(b'href="/research-mtt40"', listing)
+        self.assertIn(b'href="/research-mtt40-en"', listing)
+
+    def test_the_mtt40_pages_link_to_their_other_language(self):
+        pairs = (("/research-mtt40", "/research-mtt40-en"), ("/research-mtt40-range", "/research-mtt40-range-en"))
+        for thai, english in pairs:
+            with self.subTest(page=thai):
+                th_body, en_body = self.request("GET", thai)[1], self.request("GET", english)[1]
+                self.assertIn(b'<html lang="th">', th_body)
+                self.assertIn(b'<html lang="en">', en_body)
+                self.assertIn(f'href="{english}" hreflang="en"'.encode(), th_body)
+                self.assertIn(f'href="{thai}" hreflang="th"'.encode(), en_body)
+        # the English summary sends readers to the English range page, and back
+        self.assertIn(b'href="/research-mtt40-range-en"', self.request("GET", "/research-mtt40-en")[1])
+        self.assertIn(b'href="/research-mtt40-en"', self.request("GET", "/research-mtt40-range-en")[1])
         response, body = self.request("GET", "/static/mtt40-range.csv")
         self.assertEqual(response.status, 200)
         self.assertTrue(body.startswith(b"hand,cards,ranks"))
@@ -347,6 +361,11 @@ class ServerTests(unittest.TestCase):
         for page in ("/", "/method", "/research"):
             with self.subTest(page=page):
                 self.assertIn(b'href="/plo"', self.request("GET", page)[1])
+        self.assertIn(b"/static/plo-explorer.js", body)
+        for name, kind in (("plo-explorer.js", "text/javascript"), ("plo-explorer.css", "text/css")):
+            with self.subTest(static=name):
+                response, _ = self.request("GET", f"/static/{name}")
+                self.assertTrue(response.getheader("Content-Type").startswith(kind))
         response, raw = self.request("GET", "/static/plo-classes.json")
         self.assertEqual(response.getheader("Content-Type"), "application/json")
         classes = json.loads(raw)

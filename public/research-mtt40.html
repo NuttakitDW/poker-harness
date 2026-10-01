@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ตามควาย MTT 40bb</title>
 <meta name="description" content="เราแก้เกม PLO 6 คน MTT 40bb มี ante แล้วเทียบกับวิธีเลือกมือของ Jeff Hwang: อะไรใช้ได้ อะไรต้องปรับ">
+<link rel="alternate" hreflang="th" href="https://tamkwai.com/research-mtt40">
+<link rel="alternate" hreflang="en" href="https://tamkwai.com/research-mtt40-en">
 <meta name="theme-color" content="#171512">
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,7 +119,7 @@
   <div class="column">
     <nav class="nav" aria-label="Main">
       <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
-      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a></div>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a><a href="/research-mtt40-en" hreflang="en" lang="en">EN</a></div>
     </nav>
     <p class="eyebrow rise">งานวิจัย · PLO MTT 40bb</p>
     <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>ได้เป็นคนแรก ควร raise, limp หรือ fold? เทียบ solver กับวิธีของ Jeff Hwang</h1>
@@ -185,8 +187,8 @@
 
       <div class="finding">
         <h3>1. Rundown ที่มีดอกไม่ได้เป็น Premium ทุกมือ</h3>
-        <p>Hwang ให้ rundown ที่มีสองใบดอกเดียวกันเป็น Premium ตารางนี้คือสัดส่วนที่ solver fold ที่ UTG rundown ต่ำแบบ single-suited ถูก fold 83% ส่วน three-flush และ monotone ถูก fold เกือบทั้งหมด แต่ double-suited เล่นได้ทุกความสูง และ rundown ที่มีไพ่ใหญ่สองใบ (JT98, QJT9) เล่นได้เมื่อมีดอก</p>
-        <div class="table-wrap"><table><thead><tr><th>Rundown (Premium)</th><th class="num">double-suited</th><th class="num">single-suited</th><th class="num">three-flush</th><th class="num">monotone</th></tr></thead><tbody><tr><th scope="row" class="mono">6543</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">7654</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">8765</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">9876</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">T987</th><td class="num mono">1%</td><td class="num mono">38%</td><td class="num mono warn">90%</td><td class="num mono warn">56%</td></tr><tr><th scope="row" class="mono">JT98</th><td class="num mono">0%</td><td class="num mono">3%</td><td class="num mono">42%</td><td class="num mono warn">53%</td></tr><tr><th scope="row" class="mono">QJT9</th><td class="num mono">0%</td><td class="num mono">0%</td><td class="num mono">0%</td><td class="num mono">3%</td></tr></tbody></table></div>
+        <p>Hwang ให้ rundown ที่มีสองใบดอกเดียวกันเป็น Premium ตัวเลขในตารางคือ % ที่ solver fold ที่ UTG rundown ต่ำแบบ single-suited ถูก fold 83% ส่วน three-flush และ monotone ถูก fold เกือบทั้งหมด แต่ถ้าเป็น double-suited เล่นได้ทุกระดับ ตั้งแต่ 6543 ถึง QJT9 (fold ไม่เกิน 7%) ส่วน rundown ที่มีไพ่ใหญ่ตั้งแต่สองใบ JT98 เล่นได้เมื่อเป็น double-suited หรือ single-suited (fold 0-3%) และ QJT9 เล่นได้ทุกแบบดอก แม้เป็น three-flush หรือ monotone</p>
+        <div class="table-wrap"><table><thead><tr><th>Rundown (Premium) · % fold ที่ UTG</th><th class="num">double-suited</th><th class="num">single-suited</th><th class="num">three-flush</th><th class="num">monotone</th></tr></thead><tbody><tr><th scope="row" class="mono">6543</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">7654</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">8765</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">9876</th><td class="num mono">7%</td><td class="num mono warn">83%</td><td class="num mono warn">100%</td><td class="num mono warn">100%</td></tr><tr><th scope="row" class="mono">T987</th><td class="num mono">1%</td><td class="num mono">38%</td><td class="num mono warn">90%</td><td class="num mono warn">56%</td></tr><tr><th scope="row" class="mono">JT98</th><td class="num mono">0%</td><td class="num mono">3%</td><td class="num mono">42%</td><td class="num mono warn">53%</td></tr><tr><th scope="row" class="mono">QJT9</th><td class="num mono">0%</td><td class="num mono">0%</td><td class="num mono">0%</td><td class="num mono">3%</td></tr></tbody></table></div>
       </div>
 
       <div class="finding">
@@ -222,7 +224,7 @@
       <h2 id="shift-h">หกข้อที่ควรเปลี่ยน</h2>
       <ol class="shift">
         <li><b>นับไพ่ใหญ่ก่อน</b> (T ขึ้นไป คู่ใหญ่นับเป็นสองใบ) แล้วดูว่ามี A มีดอกไหม ตามด้วยดอกที่สอง ความต่อเนื่องของไพ่ใช้เป็นแต้มเสริมเมื่อมีไพ่ใหญ่อย่างน้อยสองใบแล้วเท่านั้น</li>
-        <li><b>นิยามมือสาย straight ใหม่</b> rundown แบบ double-suited ทุกความสูง และ rundown มีดอกที่มีไพ่ใหญ่สองใบ เล่นได้ทุกตำแหน่ง rundown single-suited ที่ต่ำกว่า T ให้ทิ้งจากตำแหน่งหน้า three-flush และ monotone ทิ้ง</li>
+        <li><b>นิยามมือสาย straight ใหม่</b> rundown แบบ double-suited ทุกระดับ (6543 ถึง QJT9) และ rundown แบบ double-suited หรือ single-suited ที่มีไพ่ใหญ่ตั้งแต่สองใบ เล่นได้ทุกตำแหน่ง rundown single-suited ที่ต่ำกว่า T ให้ทิ้งจากตำแหน่งหน้า three-flush และ monotone ทิ้ง</li>
         <li><b>เลื่อนมือไพ่ใหญ่ที่มีไพ่ห้อยขึ้น</b> คู่ใหญ่มีดอกกับไพ่ห้อย limp จากตำแหน่งหน้าได้ A มีดอกแบบ double-suited และ Broadway สามใบกับไพ่ห้อยแบบ double-suited raise ได้</li>
         <li><b>เลื่อนคู่กับไพ่ต่อและ straight มีช่องว่างลง</b> เป็นมือสำหรับ cutoff และ button</li>
         <li><b>ปรับตามตำแหน่งและ ante</b> UTG กับ HJ เล่นราว 26-30% cutoff ราว 37% button ราว 56% โดยเปิดมือที่ Hwang เรียกว่า Trash เพิ่มขึ้นมาก และ small blind complete เกือบทุกมือ</li>
