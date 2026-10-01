@@ -34,38 +34,43 @@ SHAPES = {(2, 2): "ds", (2, 1, 1): "ss", (1, 1, 1, 1): "rb", (3, 1): "3f", (4,):
 TIERS = ("Premium", "Speculative", "Marginal", "Trash")
 
 
-def export_game(name: str, out_dir: Path) -> dict:
-    book = chart(name)
+def heads_up_tree(root: PLOState, actor, children, action_ids, action_count, rows_of,
+                  seat_names: tuple[str, ...]) -> tuple[list[dict], bytes]:
+    """Preflop decisions reachable while at most two players have put chips in voluntarily.
+
+    ``rows_of(node)`` gives the node's (buckets, 3) uint8 strategy (probability x 255).
+    Returns the page's node list and the concatenated strategy bytes, in node order.
+    """
     nodes: list[dict] = []
     blobs: list[bytes] = []
-    local: dict[int, int] = {}
-    sys.setrecursionlimit(10_000)
+    limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(max(limit, 10_000))
 
     def visit(node: int, state: PLOState, active: frozenset) -> int:
         index = len(nodes)
-        local[node] = index
-        seat = int(book.actor[node])
+        seat = int(actor[node])
         entry = {"actor": seat, "pot": round(float(state.pot), 4),
                  "behind": [round(float(b), 4) for b in state.behind],
                  "to_call": round(max(0.0, state.current_bet - state.street_put[seat]), 4), "options": []}
         nodes.append(entry)
-        rows = np.zeros((book.strategy.shape[1], 3), dtype=np.uint8)
-        count = int(book.action_count[node])
-        rows[:, :count] = book.strategy[node, :, :count]
+        count = int(action_count[node])
+        source = rows_of(node)
+        rows = np.zeros((source.shape[0], 3), dtype=np.uint8)
+        rows[:, :count] = source[:, :count]
         blobs.append(rows.tobytes())
         for slot in range(count):
-            action = ACTION_NAMES[int(book.action_ids[node, slot])]
+            action = ACTION_NAMES[int(action_ids[node, slot])]
             amount = state.action_amount(Action(action))
             joined = active | {seat} if action in ("call", "pot") else active
             after = state.apply(Action(action))
-            child = int(book.children[node, slot])
+            child = int(children[node, slot])
             if child >= 0 and len(joined) <= MAX_ACTIVE and not after.terminal and after.street == 0:
                 target = visit(child, after, joined)
                 end = None
             else:
                 target = -1
                 end = ("multiway" if len(joined) > MAX_ACTIVE
-                       else "hand over" if after.terminal and len([s for s in range(6) if s not in after.folded]) == 1
+                       else "hand over" if after.terminal and len(after.live) == 1
                        else "flop")
             entry["options"].append({
                 "action": action, "total": round(float(state.street_put[seat] + amount), 4),
@@ -74,13 +79,23 @@ def export_game(name: str, out_dir: Path) -> dict:
             })
         return index
 
+    try:
+        visit(0, root, frozenset())
+    finally:
+        sys.setrecursionlimit(limit)
+    return nodes, b"".join(blobs)
+
+
+def export_game(name: str, out_dir: Path) -> dict:
+    book = chart(name)
     root = PLOState.new((book.stack,) * 6, sb=0.5, bb=1.0, ante=book.ante, ante_mode="individual",
                         opening_raise_mode="pot_only")
-    visit(0, root, frozenset())
+    nodes, blob = heads_up_tree(root, book.actor, book.children, book.action_ids, book.action_count,
+                                lambda node: book.strategy[node], SEATS)
     data = {"name": name, **GAMES[name], "stack": book.stack, "ante": book.ante,
             "deals_per_seed": book.meta.get("deals_per_seed"), "seeds": book.meta.get("seeds"),
             "buckets": int(book.strategy.shape[1]), "seats": list(SEATS), "nodes": nodes,
-            "strategy": base64.b64encode(b"".join(blobs)).decode()}
+            "strategy": base64.b64encode(blob).decode()}
     (out_dir / f"plo-{name}.json").write_text(json.dumps(data, separators=(",", ":")))
     return data
 

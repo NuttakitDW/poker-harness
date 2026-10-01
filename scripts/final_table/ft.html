@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย Final Table</title>
+<meta name="description" content="Solve โต๊ะ final ของ PLO ด้วย ICM บนเครื่องนี้ ใช้ทุก core">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="stylesheet" href="/static/plo-explorer.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Same CI tokens and stage layout as the tamkwai.com pages */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --lamp: #FFF8E6; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 1180px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); }
+  .column { max-width: var(--column); margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) clamp(1.5rem, 4vw, 2.25rem); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: var(--lamp); padding: 2px; }
+  .local { font: 500 .75rem/1 var(--font-mono); color: var(--on-puppet-3); border: 1px solid var(--puppet-edge); border-radius: var(--cut); padding: .35rem .55rem; }
+  .eyebrow { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin: clamp(.75rem, 3vw, 1.5rem) 0 .75rem; }
+  .headline { font-size: clamp(1.6rem, 3.8vw, 2.5rem); line-height: 1.22; font-weight: 700; max-width: 26ch; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: .75rem; max-width: 70ch; color: var(--on-puppet-2); }
+
+  main { padding: clamp(1.25rem, 3vw, 2rem) var(--gutter) 0; }
+  .setup { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(1rem, 2.5vw, 1.5rem); align-items: start; }
+  .sheet h2.title { font-size: 1.2rem; color: var(--blue); margin-bottom: .75rem; }
+  .field { display: flex; flex-direction: column; gap: .3rem; }
+  .field > span { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); }
+  input[type="text"], input[type="number"], select, textarea { min-height: 38px; padding: .3rem .55rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--ground); font-family: var(--font-mono); font-size: .9rem; min-width: 0; }
+  input:focus, select:focus, textarea:focus { outline: 2px dotted var(--blue); outline-offset: 1px; border-color: var(--ink); }
+  textarea { resize: vertical; min-height: 7.5rem; line-height: 1.5; }
+  .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+  .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+
+  .drop { display: grid; place-items: center; gap: .35rem; min-height: 110px; padding: 1rem; border: 1.5px dashed var(--bronze); border-radius: var(--cut); background: repeating-linear-gradient(135deg, var(--paper) 0 8px, var(--ground) 8px 9px); text-align: center; cursor: pointer; color: var(--ash); }
+  .drop b { font: 600 1rem/1.3 var(--font-display); color: var(--ink); }
+  .drop.over { border-style: solid; border-color: var(--ink); background: var(--lamp); }
+  .drop input { display: none; }
+  .notes { margin: .6rem 0 0; padding-left: 1.1rem; font-size: .85rem; color: var(--red-edge); }
+  .notes:empty { display: none; }
+  .ok { font-size: .85rem; color: var(--ash); margin-top: .5rem; }
+
+  .seats { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: .9rem; }
+  .seats th { text-align: left; font: 600 .75rem/1.2 var(--font-body); color: var(--bronze-txt); padding: .3rem .35rem; border-bottom: 1px solid var(--edge); }
+  .seats td { padding: .3rem .35rem; border-bottom: 1px solid var(--ground); vertical-align: middle; }
+  .seats td.pos { font: 600 .85rem/1 var(--font-mono); white-space: nowrap; }
+  .seats input[type="number"] { width: 6.5rem; }
+  .seats input[type="text"] { width: 100%; }
+  .seats td.icm { font: 500 .85rem/1 var(--font-mono); text-align: right; white-space: nowrap; color: var(--blue); }
+  .seats th.num { text-align: right; }
+  .seats input[type="radio"] { width: 18px; height: 18px; accent-color: var(--ink); }
+  .seats tr.hero td.pos { color: var(--red); }
+
+  .choice { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .chip2 { min-height: 34px; padding: .2rem .7rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--ground); font: 500 .8rem/1 var(--font-mono); color: var(--ash); cursor: pointer; }
+  .chip2[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .go { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; width: 100%; margin-top: 1rem; background: var(--red); color: var(--on-puppet); border: 2px solid var(--red-edge); border-radius: var(--cut); font: 600 1.05rem/1 var(--font-display); cursor: pointer; }
+  .go:hover:not(:disabled) { background: #B02C25; }
+  .go:disabled { opacity: .55; cursor: default; }
+  .stop { background: transparent; color: var(--blue); border: 1px solid var(--blue); border-radius: var(--cut); min-height: 36px; padding: 0 .9rem; cursor: pointer; }
+  .error { margin-top: .6rem; font-size: .875rem; color: var(--red-edge); }
+  .error:empty { display: none; }
+
+  .progress { margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--bronze); display: flex; flex-direction: column; gap: .5rem; }
+  .progress[hidden] { display: none; }
+  .progress-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+  .state { font: 600 1rem/1.2 var(--font-display); color: var(--blue); }
+  .meter { height: 10px; border-radius: 3px; background: var(--ground); border: 1px solid var(--edge); overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--blue); transition: width .6s ease; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+  .stats div { font-size: .75rem; color: var(--ash); }
+  .stats b { display: block; font: 600 1rem/1.3 var(--font-mono); color: var(--ink); }
+  .history { margin-top: 1rem; display: flex; flex-direction: column; gap: .3rem; }
+  .history button { display: flex; justify-content: space-between; gap: .75rem; width: 100%; padding: .4rem .55rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--ground); cursor: pointer; text-align: left; font-size: .8rem; }
+  .history button:hover { border-color: var(--ink); }
+  .history .mono { color: var(--ash); }
+
+  .result { margin-top: clamp(1.25rem, 3vw, 2rem); }
+  .result[hidden] { display: none; }
+  .result-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .5rem 1rem; margin-bottom: .75rem; }
+  .result-head h2 { font-size: clamp(1.2rem, 2.6vw, 1.6rem); color: var(--blue); }
+  .result-head p { font: 400 .8rem/1.4 var(--font-mono); color: var(--ash); }
+  .explain { margin-top: 1.25rem; max-width: 80ch; font-size: .875rem; color: var(--ash); display: flex; flex-direction: column; gap: .4rem; }
+
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+
+  @media (max-width: 900px) { .setup { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 520px) {
+    .seats .name-col { display: none; }
+    .seats input[type="number"] { width: 5rem; }
+    .row3 { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <span class="brand"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</span>
+      <span class="local" id="cores">local</span>
+    </nav>
+    <p class="eyebrow rise">PLO4 · Final table · ICM</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>Solve โต๊ะ final ด้วย ICM บนเครื่องนี้</h1>
+    <p class="lede rise d2">ใส่สแตกของทุกที่นั่งกับเงินรางวัลที่เหลือ หรือวางรูปหน้าจอโต๊ะให้อ่านเอง แล้ว solve ทั้งเกมถึง river โดยคิดผลเป็นเงินรางวัลตาม ICM ไม่ใช่ชิป</p>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <div class="setup">
+      <section class="sheet" aria-labelledby="table-title">
+        <h2 class="title" id="table-title">โต๊ะ</h2>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="image/png,image/jpeg,image/webp">
+          <b id="drop-title">วางรูปหน้าจอโต๊ะที่นี่</b>
+          <span>ลากไฟล์มาวาง เลือกไฟล์ หรือกด Cmd+V</span>
+        </label>
+        <ul class="notes" id="read-notes"></ul>
+        <p class="ok" id="read-ok" hidden></p>
+
+        <div class="row3" style="margin-top:1rem">
+          <label class="field"><span>จำนวนผู้เล่น</span>
+            <select id="players"></select>
+          </label>
+          <label class="field"><span>Ante (bb)</span>
+            <input type="number" id="ante" min="0" step="0.001" value="0.12">
+          </label>
+          <label class="field"><span>แบบ ante</span>
+            <select id="ante-mode"><option value="individual">ทุกคนจ่าย</option><option value="bb">BB ante</option></select>
+          </label>
+        </div>
+        <table class="seats">
+          <thead><tr><th>ที่นั่ง</th><th class="name-col">ชื่อ</th><th>สแตก (bb)</th><th class="num">ICM ($)</th><th>เรา</th></tr></thead>
+          <tbody id="seat-rows"></tbody>
+        </table>
+        <div class="row2" style="margin-top:.8rem">
+          <label class="field"><span>ไพ่ของเรา</span>
+            <input type="text" id="hand" placeholder="AsKsQd9c" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="field"><span>BB เป็นชิป (ถ้าสแตกเป็นชิป)</span>
+            <input type="number" id="bb-chips" min="0" step="any" placeholder="เช่น 40000">
+          </label>
+        </div>
+      </section>
+
+      <section class="sheet" aria-labelledby="solve-title">
+        <h2 class="title" id="solve-title">รางวัลและการ solve</h2>
+        <label class="field"><span>เงินรางวัลที่เหลือ อันดับ 1 ก่อน บรรทัดละอันดับ</span>
+          <textarea id="payouts" spellcheck="false"></textarea>
+        </label>
+        <div class="field" style="margin-top:.8rem"><span>เวลา solve</span>
+          <div class="choice" id="minutes" role="group" aria-label="เวลา solve"></div>
+        </div>
+        <div class="field" style="margin-top:.8rem"><span>ขนาดเกม</span>
+          <div class="choice" id="caps" role="group" aria-label="จำนวน raise"></div>
+        </div>
+        <button class="go" id="go" type="button">Solve</button>
+        <p class="error" id="error"></p>
+
+        <div class="progress" id="progress" hidden>
+          <div class="progress-head"><span class="state" id="state">-</span><button class="stop" id="stop" type="button">หยุดและดูผล</button></div>
+          <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+          <div class="stats">
+            <div>เวลา<b id="st-time">-</b></div>
+            <div>deals<b id="st-deals">-</b></div>
+            <div>ต่อวินาที<b id="st-speed">-</b></div>
+          </div>
+          <p class="ok" id="st-note"></p>
+        </div>
+        <div class="history" id="history"></div>
+      </section>
+    </div>
+
+    <section class="result" id="result" hidden aria-labelledby="result-title">
+      <div class="result-head">
+        <h2 id="result-title">ผล solve</h2>
+        <p id="result-meta"></p>
+      </div>
+      <div id="explorer"></div>
+      <div class="explain">
+        <p>ความถี่ทุกตัวมาจาก solve ที่ให้คะแนนแต่ละมือเป็นเงินรางวัลตาม ICM (Malmuth-Harville) ของสแตกหลังจบมือ ไม่ใช่ชิป ระหว่าง solve หน้านี้โหลดผลใหม่ทุกนาที</p>
+        <p>ดูได้เฉพาะเส้นที่มีผู้เล่นใส่ชิปไม่เกินสองคน solver ใช้ bucket ตามลักษณะมือและ Hwang tier มือที่คล้ายกันมากจะได้ความถี่เดียวกัน ผลช่วงแรกของ solve ยังแกว่ง ยิ่ง solve นานยิ่งนิ่ง</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>Final table solver ของตามควาย (ใช้ในเครื่อง)</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+
+<script src="/static/plo-explorer.js"></script>
+<script>
+(() => {
+  "use strict";
+  const SEAT_NAMES = {
+    2: ["SB", "BB"], 3: ["BTN", "SB", "BB"], 4: ["CO", "BTN", "SB", "BB"], 5: ["HJ", "CO", "BTN", "SB", "BB"],
+    6: ["UTG", "HJ", "CO", "BTN", "SB", "BB"], 7: ["UTG", "LJ", "HJ", "CO", "BTN", "SB", "BB"],
+  };
+  const MINUTES = [5, 15, 30, 60, 180];
+  const CAPS = [["4,1,1,1", "มาตรฐาน · raise 4 ครั้ง preflop"], ["3,1,1,1", "เร็ว · 3 ครั้ง"], ["4,2,1,1", "ละเอียด flop · ใช้แรมมาก"]];
+  const $ = id => document.getElementById(id);
+  const form = { players: 7, minutes: 30, caps: "4,1,1,1", seats: [], hero: "BTN" };
+  let explorer = null;
+  let job = null;
+  let lastExport = null;
+  let focused = false;
+  let poll = null;
+  let formJob = null;  // the solve whose table the form shows
+
+  const api = async (path, body) => {
+    const response = await fetch(path, body === undefined ? {} : {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `${path}: ${response.status}`);
+    return data;
+  };
+  const money = x => "$" + x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const clock = s => { s = Math.round(s || 0); const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; };
+
+  // ---------- ICM (Malmuth-Harville), same as the solver ----------
+  function icm(stacks, prizes) {
+    const n = stacks.length, total = stacks.reduce((a, b) => a + b, 0);
+    const out = new Array(n).fill(0);
+    if (!(total > 0)) return out;
+    const size = 1 << n, chance = new Float64Array(size), used = new Float64Array(size);
+    chance[0] = 1;
+    for (let set = 0; set < size; set++) {
+      if (!chance[set]) continue;
+      const left = total - used[set];
+      let place = 0;
+      for (let s = 0; s < n; s++) if (set & (1 << s)) place++;
+      for (let s = 0; s < n; s++) {
+        const bit = 1 << s;
+        if (set & bit || !(stacks[s] > 0)) continue;
+        const p = chance[set] * stacks[s] / left;
+        out[s] += p * (prizes[place] || 0);
+        chance[set | bit] += p;
+        used[set | bit] = used[set] + stacks[s];
+      }
+    }
+    return out;
+  }
+
+  function prizes() {
+    return $("payouts").value.split(/[\n,]+/).map(x => parseFloat(x.replace(/[$\s]/g, ""))).filter(x => Number.isFinite(x));
+  }
+
+  // ---------- table form ----------
+  function renderPlayers() {
+    $("players").innerHTML = [2, 3, 4, 5, 6, 7].map(n => `<option value="${n}" ${n === form.players ? "selected" : ""}>${n} คน</option>`).join("");
+  }
+
+  function renderSeats() {
+    const names = SEAT_NAMES[form.players];
+    while (form.seats.length < form.players) form.seats.push({ name: "", stack: 25, raw: null });
+    form.seats.length = form.players;
+    if (!names.includes(form.hero)) form.hero = names[Math.max(0, names.length - 3)];
+    $("seat-rows").innerHTML = names.map((pos, i) => {
+      const seat = form.seats[i];
+      return `<tr class="${pos === form.hero ? "hero" : ""}"><td class="pos">${pos}</td>`
+        + `<td class="name-col"><input type="text" data-i="${i}" data-k="name" value="${escapeAttr(seat.name)}" aria-label="ชื่อ ${pos}"></td>`
+        + `<td><input type="number" data-i="${i}" data-k="stack" min="0.2" step="0.01" value="${seat.stack ?? ""}" aria-label="สแตก ${pos}"></td>`
+        + `<td class="icm" data-icm="${i}">-</td>`
+        + `<td><input type="radio" name="hero" value="${pos}" ${pos === form.hero ? "checked" : ""} aria-label="เราอยู่ ${pos}"></td></tr>`;
+    }).join("");
+    renderICM();
+  }
+
+  function escapeAttr(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
+  function renderICM() {
+    const stacks = form.seats.map(s => Number(s.stack) || 0);
+    const values = icm(stacks, prizes());
+    values.forEach((v, i) => { const cell = document.querySelector(`[data-icm="${i}"]`); if (cell) cell.textContent = money(v); });
+  }
+
+  $("players").addEventListener("change", e => { form.players = Number(e.target.value); renderSeats(); });
+  $("seat-rows").addEventListener("input", e => {
+    const input = e.target.closest("[data-i]");
+    if (!input) return;
+    const seat = form.seats[Number(input.dataset.i)];
+    if (input.dataset.k === "stack") { seat.stack = input.value === "" ? null : Number(input.value); seat.raw = null; renderICM(); }
+    else seat.name = input.value;
+  });
+  $("seat-rows").addEventListener("change", e => {
+    if (e.target.name === "hero") { form.hero = e.target.value; renderSeats(); }
+  });
+  $("payouts").addEventListener("input", renderICM);
+  $("bb-chips").addEventListener("input", () => {
+    const bb = Number($("bb-chips").value);
+    if (!(bb > 0)) return;
+    form.seats.forEach(seat => { if (seat.raw) seat.stack = Math.round(seat.raw / bb * 100) / 100; });
+    renderSeats();
+  });
+
+  function renderChoices() {
+    $("minutes").innerHTML = MINUTES.map(m => `<button class="chip2" type="button" data-m="${m}" aria-pressed="${m === form.minutes}">${m < 60 ? m + " นาที" : m / 60 + " ชม."}</button>`).join("");
+    $("caps").innerHTML = CAPS.map(([key, text]) => `<button class="chip2" type="button" data-c="${key}" aria-pressed="${key === form.caps}">${text}</button>`).join("");
+  }
+  $("minutes").addEventListener("click", e => { const b = e.target.closest("[data-m]"); if (b) { form.minutes = Number(b.dataset.m); renderChoices(); } });
+  $("caps").addEventListener("click", e => { const b = e.target.closest("[data-c]"); if (b) { form.caps = b.dataset.c; renderChoices(); } });
+
+  // ---------- screenshot ----------
+  function readImage(file) {
+    if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) { $("read-notes").innerHTML = "<li>ใช้รูป PNG, JPEG หรือ WebP</li>"; return; }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      $("drop-title").textContent = "กำลังอ่านรูป...";
+      $("read-notes").innerHTML = "";
+      $("read-ok").hidden = true;
+      try {
+        const table = await api("/api/detect", { image: reader.result });
+        applyReading(table);
+      } catch (error) {
+        $("read-notes").innerHTML = `<li>${escapeAttr(error.message)}</li>`;
+      } finally {
+        $("drop-title").textContent = "วางรูปหน้าจอโต๊ะที่นี่";
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function applyReading(table) {
+    form.players = table.seats.length;
+    form.seats = table.seats.map(s => ({ name: s.name, stack: s.stack_bb, raw: s.stack_bb === null ? s.stack_raw : null }));
+    form.hero = table.hero;
+    if (table.hand) $("hand").value = table.hand;
+    if (table.ante_bb !== null && table.ante_bb !== undefined) $("ante").value = table.ante_bb;
+    if (table.blinds && table.blinds.bb) $("bb-chips").value = table.blinds.bb;
+    renderPlayers();
+    renderSeats();
+    $("read-notes").innerHTML = table.notes.map(n => `<li>${escapeAttr(n)}</li>`).join("");
+    $("read-ok").textContent = `อ่านได้ ${table.seats.length} คน เราอยู่ ${table.hero}${table.hand ? " ถือ " + table.hand : ""} ตรวจตัวเลขก่อนกด Solve`;
+    $("read-ok").hidden = false;
+  }
+
+  const drop = $("drop");
+  $("file").addEventListener("change", e => readImage(e.target.files[0]));
+  ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => readImage(e.dataTransfer.files[0]));
+  document.addEventListener("paste", e => {
+    const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
+    if (item) readImage(item.getAsFile());
+  });
+
+  // A solve reopened from the list (or still running) puts its table back in the form.
+  function applySpec(spec) {
+    form.players = spec.stacks.length;
+    form.seats = spec.stacks.map((stack, i) => ({ name: (form.seats[i] || {}).name || "", stack, raw: null }));
+    form.hero = spec.hero || form.hero;
+    form.minutes = MINUTES.includes(spec.minutes) ? spec.minutes : form.minutes;
+    form.caps = spec.raise_caps.join(",");
+    $("ante").value = spec.ante_bb;
+    $("ante-mode").value = spec.ante_mode;
+    $("hand").value = spec.hand || "";
+    $("payouts").value = spec.payouts.join("\n");
+    renderPlayers();
+    renderSeats();
+    renderChoices();
+  }
+
+  // ---------- solve ----------
+  function spec() {
+    const stacks = form.seats.map(s => Number(s.stack));
+    return {
+      stacks, payouts: prizes(), ante_bb: Number($("ante").value) || 0, ante_mode: $("ante-mode").value,
+      raise_caps: form.caps.split(",").map(Number), minutes: form.minutes, hero: form.hero,
+      hand: $("hand").value.replace(/\s+/g, "") || null,
+    };
+  }
+
+  $("go").addEventListener("click", async () => {
+    $("error").textContent = "";
+    const s = spec();
+    if (s.stacks.some(x => !(x > 0))) { $("error").textContent = "ใส่สแตกของทุกที่นั่งเป็น bb"; return; }
+    try {
+      const { id } = await api("/api/solve", { spec: s });
+      watch(id);
+    } catch (error) {
+      $("error").textContent = error.message;
+    }
+  });
+
+  $("stop").addEventListener("click", async () => {
+    if (job) await api(`/api/jobs/${job}/stop`, {}).catch(e => { $("error").textContent = e.message; });
+  });
+
+  function watch(id) {
+    job = id;
+    lastExport = null;
+    focused = false;
+    $("progress").hidden = false;
+    clearInterval(poll);
+    poll = setInterval(tick, 2000);
+    tick();
+  }
+
+  const STATES = { starting: "กำลังเริ่ม", building: "กำลังสร้างเกม", solving: "กำลัง solve", done: "เสร็จแล้ว", stopped: "หยุดแล้ว", failed: "ล้มเหลว" };
+
+  async function tick() {
+    if (!job) return;
+    let status;
+    try { status = await api(`/api/jobs/${job}/status`); } catch (error) { $("error").textContent = error.message; return; }
+    if (status.spec && formJob !== job) { formJob = job; applySpec(status.spec); }
+    $("state").textContent = STATES[status.state] || status.state;
+    const budget = status.budget_seconds || 1, seconds = status.seconds || 0;
+    $("meter").style.width = `${Math.min(100, seconds / budget * 100).toFixed(1)}%`;
+    $("st-time").textContent = `${clock(seconds)} / ${clock(budget)}`;
+    $("st-deals").textContent = status.deals ? status.deals.toLocaleString("en-US") : "-";
+    $("st-speed").textContent = status.deals && seconds ? Math.round(status.deals / seconds).toLocaleString("en-US") : "-";
+    $("st-note").textContent = status.state === "building" ? "สร้างต้นไม้เกมครั้งแรกของโต๊ะนี้ใช้เวลาราวหนึ่งนาที"
+      : status.state === "failed" ? (status.log || "").split("\n").slice(-3).join(" ")
+      : status.nodes ? `${status.threads} threads · ${status.nodes.toLocaleString("en-US")} nodes` : "";
+    $("stop").hidden = !status.running;
+    $("go").disabled = status.running;
+    if (status.has_result && status.exported_at_seconds !== lastExport) {
+      lastExport = status.exported_at_seconds;
+      await showResult(job);
+    }
+    if (!status.running) { clearInterval(poll); loadHistory(); }
+  }
+
+  async function showResult(id) {
+    const data = await api(`/api/jobs/${id}/result`);
+    $("result").hidden = false;
+    $("result-title").textContent = data.label;
+    const meta = data.meta || {};
+    $("result-meta").textContent = `${data.detail} · ${(meta.deals || 0).toLocaleString("en-US")} deals · ${clock(meta.seconds)}`;
+    if (!explorer) explorer = PloExplorer.mount($("explorer"), {});
+    explorer.show(data);
+    if (!focused && data.spec) {
+      focused = true;
+      explorer.focus({ seat: data.spec.hero, hand: data.spec.hand });
+    }
+  }
+
+  async function loadHistory() {
+    const info = await api("/api/info");
+    $("cores").textContent = `local · ${info.cpus} cores`;
+    $("history").innerHTML = info.jobs.length ? '<span class="field"><span>solve ก่อนหน้า</span></span>' + info.jobs.slice(0, 8).map(j => {
+      const n = j.spec.stacks.length;
+      return `<button type="button" data-job="${j.id}"><span>${n} คน · ${j.spec.stacks.map(x => +x).join(" / ")}</span><span class="mono">${j.id} · ${STATES[j.state] || j.state}</span></button>`;
+    }).join("") : "";
+    return info;
+  }
+  $("history").addEventListener("click", async e => {
+    const b = e.target.closest("[data-job]");
+    if (!b) return;
+    job = b.dataset.job;
+    focused = false;
+    lastExport = null;
+    $("progress").hidden = false;
+    clearInterval(poll);
+    poll = setInterval(tick, 2000);
+    tick();
+  });
+
+  // ---------- start ----------
+  renderPlayers();
+  renderSeats();
+  renderChoices();
+  loadHistory().then(info => {
+    $("payouts").value = info.payouts.join("\n");
+    renderICM();
+    if (info.running) watch(info.running);
+  }).catch(error => { $("error").textContent = error.message; });
+})();
+</script>
+</body>
+</html>

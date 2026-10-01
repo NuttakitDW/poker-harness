@@ -60,7 +60,7 @@ def plo_rank(hole: np.ndarray, board: np.ndarray, rank5: np.ndarray, comb: np.nd
 def _deal(
     state: np.ndarray, hero: int, hero_cards: np.ndarray, hands: np.ndarray, board: np.ndarray
 ) -> None:
-    """Deal every non-hero seat and the board; ``hero < 0`` deals all six seats."""
+    """Deal every non-hero seat (``hands`` has one row per seat) and the board; ``hero < 0`` deals all."""
     deck = np.empty(52, dtype=np.int64)
     size = 0
     for card in range(52):
@@ -73,7 +73,7 @@ def _deal(
             deck[size] = card
             size += 1
     position = 0
-    for seat in range(6):
+    for seat in range(hands.shape[0]):
         for k in range(4):
             if seat == hero:
                 hands[seat, k] = hero_cards[k]
@@ -103,7 +103,7 @@ def _situation(
     buckets: np.ndarray,
     ranks: np.ndarray,
 ) -> None:
-    for seat in range(6):
+    for seat in range(hands.shape[0]):
         buckets[seat] = bucket_of[colex(hands[seat], 4, comb)]
         ranks[seat] = plo_rank(hands[seat], board, rank5, comb)
 

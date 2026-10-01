@@ -1,4 +1,4 @@
-"""CLI: ``python -m plo_premium_proof solve|verify``."""
+"""CLI: ``python -m plo_premium_proof solve|verify|solve-full|verify-full|ft-solve|export-chart``."""
 
 from __future__ import annotations
 
@@ -49,6 +49,10 @@ def main(argv: list[str] | None = None) -> int:
     full.add_argument("--discount-epochs", type=int, default=100)
     full.add_argument("--checkpoint-every", type=int, default=20)
 
+    table = commands.add_parser("ft-solve", help="final-table ICM solve from a JSON table spec")
+    table.add_argument("--spec", type=Path, required=True, help="FinalTableSpec as JSON")
+    table.add_argument("--output", type=Path, required=True, help="folder for status.json and result.json")
+
     audit = commands.add_parser("verify-full")
     audit.add_argument("--model", type=Path, required=True)
     audit.add_argument("--output", type=Path, required=True)
@@ -92,6 +96,11 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint_every=args.checkpoint_every,
         )
         print(json.dumps(solve_full(config, args.output), indent=2))
+        return 0
+    if args.command == "ft-solve":
+        from .finaltable import FinalTableSpec, solve as solve_table
+        spec = FinalTableSpec.from_dict(json.loads(args.spec.read_text()))
+        print(json.dumps(solve_table(spec, args.output), indent=1))
         return 0
     if args.command == "verify-full":
         positions = tuple(name.strip().upper() for name in args.positions.split(","))

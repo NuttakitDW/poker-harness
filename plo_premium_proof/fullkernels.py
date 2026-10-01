@@ -20,27 +20,123 @@ DISTRIBUTION_SIZE = 1176
 
 
 @njit(cache=True)  # pragma: no cover - compiled native code
-def _utility(node: int, target: int, stack: float, behind: np.ndarray, sidepot_count: np.ndarray,
-             sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray, ranks: np.ndarray) -> float:
-    """Chips ``target`` ends with minus the starting stack (ties split exactly)."""
-    result = behind[node, target]
+def _payout(payouts: np.ndarray, place: int) -> float:
+    return payouts[place] if place < payouts.size else 0.0
+
+
+@njit(cache=True)  # pragma: no cover - compiled native code
+def icm_equity(final: np.ndarray, start: np.ndarray, payouts: np.ndarray, target: int,
+               work: np.ndarray) -> float:
+    """Malmuth-Harville prize equity of ``target`` for chip counts ``final``.
+
+    ``payouts[p]`` is the prize for place p + 1. Players left with no chips finish below
+    everyone still in, the bigger starting stack higher, equal starts splitting their places.
+    ``work`` needs 2 * 2**seats floats.
+    """
+    n = final.size
+    alive = 0
+    k = 0
+    total = 0.0
+    for seat in range(n):
+        if final[seat] > 1e-9:
+            alive |= 1 << seat
+            k += 1
+            total += final[seat]
+    if final[target] <= 1e-9:
+        above = 0
+        ties = 0
+        for seat in range(n):
+            if seat != target and final[seat] <= 1e-9:
+                if start[seat] > start[target] + 1e-9:
+                    above += 1
+                elif abs(start[seat] - start[target]) <= 1e-9:
+                    ties += 1
+        value = 0.0
+        for place in range(k + above, k + above + ties + 1):
+            value += _payout(payouts, place)
+        return value / (ties + 1)
+    if k == 1:
+        return _payout(payouts, 0)
+    others = alive & ~(1 << target)
+    size = 1 << n
+    for subset in range(size):
+        work[subset] = 0.0
+    work[0] = 1.0
+    work[size] = 0.0
+    x = final[target]
+    value = 0.0
+    for subset in range(size):  # supersets have larger numbers, so every subset is complete here
+        if subset & ~others:
+            continue
+        chance = work[subset]
+        if chance == 0.0:
+            continue
+        left = total - work[size + subset]
+        place = 0
+        for seat in range(n):
+            if subset & (1 << seat):
+                place += 1
+        value += chance * x / left * _payout(payouts, place)
+        for seat in range(n):
+            bit = 1 << seat
+            if others & bit and not subset & bit:
+                work[subset | bit] += chance * final[seat] / left
+                work[size + (subset | bit)] = work[size + subset] + final[seat]
+    return value
+
+
+@njit(cache=True)  # pragma: no cover - compiled native code
+def _utility(node: int, target: int, stacks: np.ndarray, behind: np.ndarray, sidepot_count: np.ndarray,
+             sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray, ranks: np.ndarray,
+             payouts: np.ndarray, scratch: np.ndarray) -> float:
+    """``target``'s result: chips won or lost, or with ``payouts`` its ICM prize equity.
+
+    Ties split exactly. ``scratch`` needs seats + 2 * 2**seats floats when ``payouts`` is set.
+    """
+    n = behind.shape[1]
+    if payouts.size == 0:
+        result = behind[node, target]
+        for layer in range(sidepot_count[node]):
+            best = 1 << 30
+            winners = 0
+            target_wins = False
+            mask = sidepot_eligible_mask[node, layer]
+            for seat in range(n):
+                if mask & (1 << seat):
+                    if ranks[seat] < best:
+                        best = ranks[seat]
+                        winners = 1
+                        target_wins = seat == target
+                    elif ranks[seat] == best:
+                        winners += 1
+                        target_wins = target_wins or seat == target
+            if target_wins:
+                result += sidepot_amount[node, layer] / winners
+        return result - stacks[target]
+    final = scratch[:n]
+    for seat in range(n):
+        final[seat] = behind[node, seat]
     for layer in range(sidepot_count[node]):
         best = 1 << 30
         winners = 0
-        target_wins = False
         mask = sidepot_eligible_mask[node, layer]
-        for seat in range(6):
+        for seat in range(n):
             if mask & (1 << seat):
                 if ranks[seat] < best:
                     best = ranks[seat]
                     winners = 1
-                    target_wins = seat == target
                 elif ranks[seat] == best:
                     winners += 1
-                    target_wins = target_wins or seat == target
-        if target_wins:
-            result += sidepot_amount[node, layer] / winners
-    return result - stack
+        share = sidepot_amount[node, layer] / winners
+        for seat in range(n):
+            if mask & (1 << seat) and ranks[seat] == best:
+                final[seat] += share
+    return icm_equity(final, stacks, payouts, target, scratch[n:])
+
+
+def scratch_size(seats: int) -> int:
+    return seats + 2 * (1 << seats)
+
 
 # Numba cannot reload cached recursive functions, so recursive kernels are not cached.
 
@@ -61,7 +157,7 @@ def _bucket(street: int, seat: int, hands: np.ndarray, board: np.ndarray, bucket
 
 @njit(cache=True)  # pragma: no cover - compiled native code
 def _reset_deal(buckets: np.ndarray, counts: np.ndarray, preflop: np.ndarray) -> None:
-    for seat in range(6):
+    for seat in range(buckets.shape[1]):
         buckets[0, seat] = preflop[seat]
         for street in range(1, 4):
             buckets[street, seat] = -1
@@ -88,12 +184,13 @@ def _traverse(
     comb: np.ndarray, actor: np.ndarray, street: np.ndarray, decision_index: np.ndarray,
     row_start: np.ndarray, children: np.ndarray, action_count: np.ndarray, behind: np.ndarray,
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
-    regrets: np.ndarray, strategy_sum: np.ndarray, state: np.ndarray, stack: float,
+    regrets: np.ndarray, strategy_sum: np.ndarray, state: np.ndarray, stacks: np.ndarray,
+    payouts: np.ndarray, scratch: np.ndarray,
 ) -> float:
     seat = actor[node]
     if seat < 0:
-        return _utility(node, traverser, stack, behind, sidepot_count, sidepot_amount,
-                        sidepot_eligible_mask, ranks)
+        return _utility(node, traverser, stacks, behind, sidepot_count, sidepot_amount,
+                        sidepot_eligible_mask, ranks, payouts, scratch)
     bucket = _bucket(street[node], seat, hands, board, buckets, distributions, counts, rank5, comb)
     row = row_start[decision_index[node]] + bucket
     count = action_count[node]
@@ -103,7 +200,7 @@ def _traverse(
             children[node, 0], traverser, hands, board, buckets, distributions, counts, ranks,
             rank5, comb, actor, street, decision_index, row_start, children, action_count,
             behind, sidepot_count, sidepot_amount, sidepot_eligible_mask, regrets,
-            strategy_sum, state, stack,
+            strategy_sum, state, stacks, payouts, scratch,
         )
         v1 = 0.0
         v2 = 0.0
@@ -112,14 +209,14 @@ def _traverse(
                 children[node, 1], traverser, hands, board, buckets, distributions, counts,
                 ranks, rank5, comb, actor, street, decision_index, row_start, children,
                 action_count, behind, sidepot_count, sidepot_amount, sidepot_eligible_mask,
-                regrets, strategy_sum, state, stack,
+                regrets, strategy_sum, state, stacks, payouts, scratch,
             )
         if count > 2:
             v2 = _traverse(
                 children[node, 2], traverser, hands, board, buckets, distributions, counts,
                 ranks, rank5, comb, actor, street, decision_index, row_start, children,
                 action_count, behind, sidepot_count, sidepot_amount, sidepot_eligible_mask,
-                regrets, strategy_sum, state, stack,
+                regrets, strategy_sum, state, stacks, payouts, scratch,
             )
         expected = p0 * v0 + p1 * v1 + p2 * v2
         regrets[row, 0] += v0 - expected
@@ -140,7 +237,8 @@ def _traverse(
     return _traverse(
         children[node, choice], traverser, hands, board, buckets, distributions, counts, ranks,
         rank5, comb, actor, street, decision_index, row_start, children, action_count, behind,
-        sidepot_count, sidepot_amount, sidepot_eligible_mask, regrets, strategy_sum, state, stack,
+        sidepot_count, sidepot_amount, sidepot_eligible_mask, regrets, strategy_sum, state, stacks,
+        payouts, scratch,
     )
 
 
@@ -150,29 +248,34 @@ def train_full(
     comb: np.ndarray, actor: np.ndarray, street: np.ndarray, decision_index: np.ndarray,
     row_start: np.ndarray, children: np.ndarray, action_count: np.ndarray, behind: np.ndarray,
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
-    regrets: np.ndarray, strategy_sum: np.ndarray, stack: float,
+    regrets: np.ndarray, strategy_sum: np.ndarray, stacks: np.ndarray, payouts: np.ndarray,
 ) -> None:
-    """Hogwild MCCFR: one deal per step, traversed once for each of the six seats."""
+    """Hogwild MCCFR: one deal per step, traversed once for each seat.
+
+    Payoffs are chips, or ICM prize equity when ``payouts`` is non-empty.
+    """
+    seats = behind.shape[1]
     for thread in prange(rng_states.size):
         state = rng_states[thread:thread + 1]
-        hands = np.empty((6, 4), dtype=np.int64)
+        hands = np.empty((seats, 4), dtype=np.int64)
         board = np.empty(5, dtype=np.int64)
-        preflop = np.empty(6, dtype=np.int64)
-        ranks = np.empty(6, dtype=np.int64)
-        buckets = np.empty((4, 6), dtype=np.int64)
+        preflop = np.empty(seats, dtype=np.int64)
+        ranks = np.empty(seats, dtype=np.int64)
+        buckets = np.empty((4, seats), dtype=np.int64)
         distributions = np.empty((4, DISTRIBUTION_SIZE), dtype=np.int64)
         counts = np.zeros(4, dtype=np.int64)
         none = np.empty(4, dtype=np.int64)
+        scratch = np.empty(seats + 2 * (1 << seats), dtype=np.float64)
         for _ in range(deals_per_thread):
             _deal(state, -1, none, hands, board)
             _situation(hands, board, bucket_of, rank5, comb, preflop, ranks)
             _reset_deal(buckets, counts, preflop)
-            for traverser in range(6):
+            for traverser in range(seats):
                 _traverse(
                     0, traverser, hands, board, buckets, distributions, counts, ranks, rank5,
                     comb, actor, street, decision_index, row_start, children, action_count,
                     behind, sidepot_count, sidepot_amount, sidepot_eligible_mask,
-                    regrets, strategy_sum, state, stack,
+                    regrets, strategy_sum, state, stacks, payouts, scratch,
                 )
 
 
@@ -187,7 +290,7 @@ def evaluate_root_actions(
     row_start: np.ndarray, action_count: np.ndarray, behind: np.ndarray,
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
     parent: np.ndarray, parent_slot: np.ndarray, subtree_end: np.ndarray, prune: float,
-    stack: float, moments: np.ndarray,
+    stacks: np.ndarray, payouts: np.ndarray, moments: np.ndarray,
 ) -> None:
     """One-step deviation values at hero's first-in node.
 
@@ -197,19 +300,21 @@ def evaluate_root_actions(
     = sums of z, z^2 (z = chance all earlier seats folded).
     """
     nodes = actor.size
+    seats = behind.shape[1]
     for task in prange(task_cards.shape[0]):
         hero = task_seat[task]
         root = first_in_nodes[hero]
         end = subtree_end[root]
         state = task_seed[task:task + 1].copy()
         hero_cards = task_cards[task]
-        hands = np.empty((BATCH, 6, 4), dtype=np.int64)
+        hands = np.empty((BATCH, seats, 4), dtype=np.int64)
         board = np.empty((BATCH, 5), dtype=np.int64)
-        ranks = np.empty((BATCH, 6), dtype=np.int64)
-        buckets = np.empty((BATCH, 4, 6), dtype=np.int64)
+        ranks = np.empty((BATCH, seats), dtype=np.int64)
+        buckets = np.empty((BATCH, 4, seats), dtype=np.int64)
         distributions = np.empty((BATCH, 4, DISTRIBUTION_SIZE), dtype=np.int64)
         counts = np.zeros((BATCH, 4), dtype=np.int64)
-        preflop = np.empty(6, dtype=np.int64)
+        preflop = np.empty(seats, dtype=np.int64)
+        scratch = np.empty(seats + 2 * (1 << seats), dtype=np.float64)
         prefix = np.empty(BATCH, dtype=np.float64)
         reach = np.zeros((nodes, BATCH), dtype=np.float64)
         per_sample = np.zeros((3, BATCH), dtype=np.float64)
@@ -259,8 +364,8 @@ def evaluate_root_actions(
                         value = reach[node, k]
                         if value > prune:
                             per_sample[root_action[node], k] += value * _utility(
-                                node, hero, stack, behind, sidepot_count, sidepot_amount,
-                                sidepot_eligible_mask, ranks[k])
+                                node, hero, stacks, behind, sidepot_count, sidepot_amount,
+                                sidepot_eligible_mask, ranks[k], payouts, scratch)
                 node += 1
             for action in range(count_root):
                 for k in range(BATCH):
@@ -301,7 +406,7 @@ def sample_root_actions(
     strategy_sum: np.ndarray, actor: np.ndarray, street: np.ndarray, decision_index: np.ndarray,
     row_start: np.ndarray, children: np.ndarray, action_count: np.ndarray, behind: np.ndarray,
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
-    stack: float, moments: np.ndarray,
+    stacks: np.ndarray, payouts: np.ndarray, moments: np.ndarray,
 ) -> None:
     """Sampled one-step deviation values at hero's first-in node (for trees too big to walk).
 
@@ -309,16 +414,18 @@ def sample_root_actions(
     actions from the average strategy; the root actions share the deal. Same moment layout
     as ``evaluate_root_actions``.
     """
+    seats = behind.shape[1]
     for task in prange(task_cards.shape[0]):
         hero = task_seat[task]
         root = first_in_nodes[hero]
         state = task_seed[task:task + 1].copy()
         hero_cards = task_cards[task]
-        hands = np.empty((6, 4), dtype=np.int64)
+        hands = np.empty((seats, 4), dtype=np.int64)
         board = np.empty(5, dtype=np.int64)
-        preflop = np.empty(6, dtype=np.int64)
-        ranks = np.empty(6, dtype=np.int64)
-        buckets = np.empty((4, 6), dtype=np.int64)
+        preflop = np.empty(seats, dtype=np.int64)
+        ranks = np.empty(seats, dtype=np.int64)
+        buckets = np.empty((4, seats), dtype=np.int64)
+        scratch = np.empty(seats + 2 * (1 << seats), dtype=np.float64)
         distributions = np.empty((4, DISTRIBUTION_SIZE), dtype=np.int64)
         counts = np.zeros(4, dtype=np.int64)
         count_root = action_count[root]
@@ -343,8 +450,8 @@ def sample_root_actions(
                     choice = _average_action(strategy_sum, row_start[decision_index[node]] + bucket,
                                              action_count[node], state)
                     node = children[node, choice]
-                y = z * _utility(node, hero, stack, behind, sidepot_count, sidepot_amount,
-                                 sidepot_eligible_mask, ranks)
+                y = z * _utility(node, hero, stacks, behind, sidepot_count, sidepot_amount,
+                                 sidepot_eligible_mask, ranks, payouts, scratch)
                 moments[task, action, 0] += y
                 moments[task, action, 1] += y * y
                 moments[task, action, 2] += y * z

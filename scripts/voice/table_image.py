@@ -72,22 +72,26 @@ class Table:
     finished: bool
 
 
-def read(data: bytes, mime: str, api_key: str) -> Table:
-    """ส่งรูปให้ DeepSeek อ่าน พังตรงไหนก็เป็น TableError ให้ผู้เรียกตอบผู้ใช้ได้"""
+def ask(data: bytes, mime: str, api_key: str, prompt: str) -> str:
+    """ส่งรูปกับคำสั่งให้โมเดลภาพของ DeepSeek คืนข้อความที่ตอบ พังเป็น TableError"""
     image = f"data:{mime};base64,{base64.b64encode(data).decode()}"
     body = {"model": MODEL, "temperature": 0, "thinking": {"type": "disabled"},
             "messages": [{"role": "user", "content": [
                 {"type": "image_url", "image_url": {"url": image}},
-                {"type": "text", "text": PROMPT}]}]}
+                {"type": "text", "text": prompt}]}]}
     request = urllib.request.Request(URL, json.dumps(body).encode(), {
         "Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
             reply = json.loads(response.read())
-        text = reply["choices"][0]["message"]["content"]
+        return reply["choices"][0]["message"]["content"]
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, IndexError) as error:
         raise TableError(f"DeepSeek อ่านรูปไม่สำเร็จ: {error}") from error
-    return parse(text)
+
+
+def read(data: bytes, mime: str, api_key: str) -> Table:
+    """ส่งรูปให้ DeepSeek อ่าน พังตรงไหนก็เป็น TableError ให้ผู้เรียกตอบผู้ใช้ได้"""
+    return parse(ask(data, mime, api_key, PROMPT))
 
 
 def parse(text: str) -> Table:

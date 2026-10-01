@@ -11,6 +11,8 @@ bot-commands:
 	.venv/bin/python scripts/discord_bot/slash_commands.py $(ARGS)
 web: 
 	.venv/bin/python scripts/web/server.py
+ft: 
+	.venv/bin/python scripts/final_table/ft_server.py
 web-watch: 
 	.venv/bin/python scripts/web/watch.py
 web-review: 

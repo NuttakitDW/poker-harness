@@ -30,6 +30,7 @@ from .verify import Z_CRITICAL, _ratio, hwang_form
 
 SCHEMA = "plo-premium-proof-full-v1"
 ROOT_LABELS = {0: "fold", 2: "limp", 3: "pot_open"}
+CHIP_EV = np.zeros(0)  # no payouts: the kernels score chips
 
 
 @dataclasses.dataclass(frozen=True)
@@ -96,7 +97,7 @@ def solve_full(config: FullSolveConfig, output: Path, *, log=print) -> dict[str,
             per_thread, states, tables.bucket_of, rank5, comb, tree.actor, tree.street,
             tree.decision_index, tree.row_start, tree.children, tree.action_count, tree.behind,
             tree.sidepot_count, tree.sidepot_amount, tree.sidepot_eligible_mask,
-            regrets, strategy_sum, config.stack_bb,
+            regrets, strategy_sum, tree.start_stacks, CHIP_EV,
         )
         epoch += 1
         if epoch <= config.discount_epochs:
@@ -195,7 +196,7 @@ def verify_full(model: Path, *, samples: int, threads: int, seed: int,
                 thread_seeds(run_seed, len(pairs)), samples, tree.first_in_nodes, tables.bucket_of,
                 rank5, comb, strategy_sum, tree.actor, tree.street, tree.decision_index, tree.row_start,
                 tree.children, tree.action_count, tree.behind, tree.sidepot_count, tree.sidepot_amount,
-                tree.sidepot_eligible_mask, float(meta["stack_bb"]), moments,
+                tree.sidepot_eligible_mask, tree.start_stacks, CHIP_EV, moments,
             )
             return _rows(pairs, moments, strategy_sum, tree, tables, labels_by_seat)
         evaluate_root_actions(
@@ -205,7 +206,7 @@ def verify_full(model: Path, *, samples: int, threads: int, seed: int,
             tables.bucket_of, rank5, comb, policy, tree.actor, tree.street, tree.decision_index,
             tree.row_start, tree.action_count, tree.behind, tree.sidepot_count,
             tree.sidepot_amount, tree.sidepot_eligible_mask, parent, parent_slot, subtree_end,
-            1e-9, float(meta["stack_bb"]), moments,
+            1e-9, tree.start_stacks, CHIP_EV, moments,
         )
         return _rows(pairs, moments, strategy_sum, tree, tables, labels_by_seat)
 
