@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir -r deploy/requirements-bot.txt
 
 COPY scripts/ scripts/
 COPY pushfold/ pushfold/
+COPY icm_open/ icm_open/
+COPY plo_icm/ plo_icm/
+COPY plo_premium_proof/ plo_premium_proof/
 COPY harnesses/ harnesses/
 # Prebuilt caches (tmp/ is gitignored; building them takes ~35 min)
 COPY tmp/equity.sqlite tmp/equity-tables.npz tmp/pushfold-e2.npz tmp/pushfold-e3.npz tmp/

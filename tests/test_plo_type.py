@@ -316,7 +316,7 @@ class RenderTests(unittest.TestCase):
     def test_miracle_flop_is_a_verified_rank_nut_without_percentages(self):
         hand = plo_type.read("plo A234 ss23")
         text = plo_type.render(hand, "EN")
-        self.assertIn("4-3 + 6-5-2 rainbow → nut straight", " ".join(text.split()))
+        self.assertIn("4♦ 3♠ + 6♠ 5♥ 2♦ rainbow → nut straight", " ".join(text.split()))
         self.assertNotRegex(text, r"\d+(?:\.\d+)?%")
         hole = tuple(plo_hand.VALUE[rank] for rank in hand.ranks)
         board = tuple(plo_hand.VALUE[rank] for rank in "652")
@@ -335,7 +335,7 @@ class RenderTests(unittest.TestCase):
         for cards in ("As Ah Kh Qd", "As Ks 9s 5s", "As Ah Ks Kh", "As Ks 5s Qd"):
             with self.subTest(cards=cards):
                 hand = plo_type.read(cards)
-                miracle = plo_type._miracle(hand, "EN")
+                miracle = plo_type._miracle(hand, "EN").split("\n")[0]
                 shown = plo_type._ONE_CARD.findall(miracle)
                 self.assertEqual(len(shown), len(set(shown)))
                 board = frozenset(plo_hand.VALUE[rank] for rank, _ in shown[-3:])
@@ -365,6 +365,33 @@ class RenderTests(unittest.TestCase):
         text = plo_type._miracle(plo_type.read("plo AKQJ"), "EN")
         self.assertNotIn("A-A-A", text)
         self.assertNotIn("full house", text)
+
+    def test_pocket_pairs_list_quads_and_nut_full_house_flops(self):
+        text = plo_type._miracle(plo_type.read("plo 6633"), "EN")
+        self.assertIn("6-6 + A-6-6 rainbow → quads", text)
+        self.assertIn("3-3 + A-3-3 rainbow → quads", text)
+        self.assertIn("K-K + K-7-7 rainbow → nut full house",
+                      plo_type._miracle(plo_type.read("plo KK72"), "EN"))
+
+    def test_shape_only_hands_show_example_suits_on_cards_and_flops(self):
+        payload = plo_type.presentation(plo_type.read("plo AAKK ds"), "EN")
+        self.assertEqual([card["rank"] + card["suit"] for card in payload["cards"]],
+                         ["A♠", "A♥", "K♠", "K♥"])
+        self.assertIn("suits shown are an example", payload["title"])
+        lines = payload["miracle"].split("\n")
+        self.assertEqual(lines[0], "A♠ K♠ + Q♠ 9♠ 5♠ → nut flush")
+        self.assertIn("A♠ K♠ + Q♠ J♥ T♦ rainbow → nut straight", lines)
+        rainbow = plo_type.presentation(plo_type.read("plo 6633"), "EN")
+        self.assertEqual(len({card["suit"] for card in rainbow["cards"]}), 4)
+        self.assertIn("6♠ 6♥ + A♠ 6♦ 6♣ rainbow → quads", rainbow["miracle"])
+
+    def test_exact_cards_are_not_labelled_as_an_example(self):
+        payload = plo_type.presentation(plo_type.read("plo As Ks Qd Jd"), "EN")
+        self.assertNotIn("example", payload["title"])
+
+    def test_ambiguous_single_suited_ace_keeps_rank_only_cards(self):
+        payload = plo_type.presentation(plo_type.read("plo A654 ss"), "EN")
+        self.assertEqual({card["suit"] for card in payload["cards"]}, {""})
 
     def test_suited_ace_miracle_list_starts_with_the_nut_flush(self):
         lines = plo_type._miracle(plo_type.read("plo As Ks Qd Jd"), "EN").split("\n")

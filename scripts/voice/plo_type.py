@@ -185,10 +185,13 @@ STRAIGHT_FORMS = {
 ACE_FORMS = {(0, 0): ("ace_rundown", 4), (0, 1): ("ace_gapped", 3), (1, 0): ("ace_gapped", 3),
              (0, 2): ("ace_wrap17", 2), (1, 1): ("ace_two_gaps", 2), (2, 0): ("ace_sucker", 2)}
 KT98 = "KT98"  # หนังสือยกเว้นให้ limp ตำแหน่งหลังได้
-# miracle flop ที่โชว์: ชนิดจาก plo_hand.KINDS กับคำที่แสดง full house ใช้เมื่อไม่มีแบบอื่นเท่านั้น
-# เพราะ flop อย่าง A-A-A ไม่ได้บอกอะไรเกี่ยวกับมือ set โชว์คู่ละหนึ่ง flop
-MIRACLE_KINDS = {"straight": "nut straight", "set": "top set"}
-MIRACLE_FALLBACK = {"full house ขึ้นไป": "nut full house or better"}
+# miracle flop ที่โชว์กับคำที่แสดง quads และ full house นับเฉพาะที่ใช้คู่ในมือ (6-6 + A-6-6)
+# full house จากไพ่เดี่ยวกับ flop ตอง อย่าง A-K + A-A-A ไม่ได้บอกอะไรเกี่ยวกับมือ ใช้เมื่อไม่มีแบบอื่นเท่านั้น
+MIRACLE_KINDS = {"straight": "nut straight", "set": "top set", "quads": "quads",
+                 "full_house": "nut full house"}
+MIRACLE_FALLBACK = {"board_trips": "nut full house or better"}
+# ชนิดที่ใช้คู่ในมือ โชว์คู่ละหนึ่ง flop พอ
+MIRACLE_ONE_PER_PAIR = ("set", "quads", "full_house")
 MIRACLE_PER_KIND = 3
 MIRACLE_MAX = 6
 
@@ -481,6 +484,7 @@ LABELS = {
            "assumptions": "Assumptions",
            "source": "Source", "magnum": "Magnum",
            "assumed": "rainbow (no suits given, assumed)",
+           "example": "suits shown are an example",
            "overview": "PLO starting-hand types (Jeff Hwang ch. 4), tier when suited",
            "ask": "Ask about a hand, e.g. plo A234 ss A2 or plo As 2s 3d 4c"},
     "TH": {"type": "กลุ่ม", "tier": "ระดับ", "play": "วิธีเล่น", "why": "เหตุผล",
@@ -488,6 +492,7 @@ LABELS = {
            "assumptions": "สมมติฐาน",
            "source": "ที่มา", "magnum": "Magnum",
            "assumed": "rainbow (ไม่ได้บอกดอก ถือว่า rainbow)",
+           "example": "ดอกที่แสดงเป็นตัวอย่าง",
            "overview": "ชนิดมือเริ่มต้น PLO ตาม Jeff Hwang บทที่ 4 ระดับเมื่อมีดอกคู่",
            "ask": "ถามมือได้ เช่น plo A234 ss A2 หรือ plo As 2s 3d 4c"},
 }
@@ -660,6 +665,7 @@ def _flush_line(hand: Hand) -> str | None:
     if not board:
         return None
     mate = next(rank for rank in group if rank != ACE)
+    board = tuple(sorted(board, key=RANKS.index))
     if suit:
         cards_text = f"A{suit} {mate}{suit} + " + " ".join(f"{rank}{suit}" for rank in board)
     else:
@@ -667,9 +673,19 @@ def _flush_line(hand: Hand) -> str | None:
     return f"{cards_text} → nut flush"
 
 
+def _miracle_kind(kind: str, board: str, pair: str) -> str:
+    """แยก full house ขึ้นไปจาก plo_hand เป็น quads / full house ด้วยคู่ในมือ หรือ flop ตอง"""
+    if kind != "full house ขึ้นไป":
+        return kind
+    high, low = pair.split("-")
+    if high != low:
+        return "board_trips"
+    return "quads" if board.split("-").count(high) == 2 else "full_house"
+
+
 def _nut_flops(ranks: str) -> list[str]:
     """flop ที่ติด nuts ทันทีจากอันดับไพ่ ไพ่คู่ที่ยังไม่โชว์ขึ้นก่อน แต่ละชนิดไม่เกิน MIRACLE_PER_KIND"""
-    found = plo_hand.study(ranks).nut_boards
+    found = [(_miracle_kind(*board), board[1], board[2]) for board in plo_hand.study(ranks).nut_boards]
     names = MIRACLE_KINDS if any(kind in MIRACLE_KINDS for kind, _, _ in found) else MIRACLE_FALLBACK
     boards = [board for board in found if board[0] in names]
     picked: list[tuple[str, str, str]] = []
@@ -679,32 +695,106 @@ def _nut_flops(ranks: str) -> list[str]:
             same_kind = [shown for shown in picked if shown[0] == kind]
             repeated = any(shown[2] == pair for shown in same_kind)
             if (len(picked) >= MIRACLE_MAX or board in picked or len(same_kind) >= MIRACLE_PER_KIND
-                    or (repeated and (fresh_only or kind == "set"))):
+                    or (repeated and (fresh_only or kind in MIRACLE_ONE_PER_PAIR))):
                 continue
             picked.append(board)
     order = list(names)
     picked.sort(key=lambda board: (order.index(board[0]), boards.index(board)))
-    return [f"{pair} + {board} rainbow → {names[kind]}" for kind, board, pair in picked]
+    return [(names[kind], board, pair) for kind, board, pair in picked]
+
+
+def _held_cards(hand: Hand) -> list[tuple[str, str]]:
+    return [(rank.upper().replace("10", "T"), next(symbol for key, symbol in _SUIT_SYMBOL.items()
+                                                   if suit.lower() in (key, symbol)))
+            for rank, suit in _ONE_CARD.findall(hand.cards)]
+
+
+def _suited_flop(held: list[tuple[str, str]], pair: str, board: str, made: str) -> str | None:
+    """เขียน flop จากอันดับไพ่เป็นไพ่จริง ไพ่ในมือตามดอกที่ถือ flop สามดอกไม่ซ้ำกันและไม่ชนไพ่ในมือ"""
+    left = list(held)
+    holes = []
+    for rank in pair.split("-"):
+        card = next((card for card in left if card[0] == rank), None)
+        if card is None:
+            return None
+        left.remove(card)
+        holes.append(card)
+    ranks = board.split("-")
+    for suits in itertools.permutations(_SUIT_SYMBOL.values(), len(ranks)):
+        flop = list(zip(ranks, suits))
+        if not any(card in held for card in flop):
+            shown = " ".join(rank + suit for rank, suit in holes)
+            return f"{shown} + {' '.join(rank + suit for rank, suit in flop)} rainbow → {made}"
+    return None
 
 
 def _miracle(hand: Hand, lang: str) -> str:
     """รายการ miracle flop หนึ่งบรรทัดต่อ flop: nut flush ก่อนถ้า A มีดอกคู่ แล้วตามด้วย nuts จากอันดับไพ่"""
-    lines = [line for line in (_flush_line(hand),) if line] + _nut_flops(hand.ranks)
+    held = _held_cards(hand) if hand.cards else []
+    lines = [line for line in (_flush_line(hand),) if line]
+    for made, board, pair in _nut_flops(hand.ranks):
+        suited = _suited_flop(held, pair, board, made) if held else None
+        lines.append(suited or f"{pair} + {board} rainbow → {made}")
     if not lines:
         return ("No flop gives this hand the nuts by rank alone; its value is structural" if lang == "EN" else
                 "ไม่มี flop ไหนทำให้มือนี้ติด nuts จากอันดับไพ่ คุณค่าอยู่ที่โครงสร้างของมือ")
     return "\n".join(lines[:MIRACLE_MAX])
 
 
+def _example_groups(hand: Hand) -> list[list[int]] | None:
+    """ตำแหน่งไพ่ที่ดอกเดียวกันในตัวอย่างดอก None คือบอกไม่ได้ (ss ที่ไม่รู้ว่า A มีดอกคู่ไหม)"""
+    suiting, ranks = hand.suiting, hand.ranks
+    if suiting is None or not suiting.suited:
+        return []
+    if suiting.double:
+        for first, second in (((0, 1), (2, 3)), ((0, 2), (1, 3)), ((0, 3), (1, 2))):
+            if all(ranks[a] != ranks[b] for a, b in (first, second)):
+                return [list(first), list(second)]
+        return None
+    if suiting.suited_ranks:
+        wanted, group = list(suiting.suited_ranks), []
+        for index, rank in enumerate(ranks):
+            if rank in wanted:
+                wanted.remove(rank)
+                group.append(index)
+        return [group]
+    if ACE in ranks and suiting.ace_suited is None:
+        return None
+    start = 0 if (ACE not in ranks or suiting.ace_suited) else ranks.count(ACE)
+    first = start
+    second = next((index for index in range(first + 1, 4) if ranks[index] != ranks[first]), None)
+    return None if second is None else [[first, second]]
+
+
+def _with_example_suits(hand: Hand) -> tuple[Hand, bool]:
+    """มือที่บอกแค่รูปดอก (ds ss rb หรือไม่บอก) ใส่ดอกตัวอย่างให้เห็นไพ่จริง คืนมือกับว่าใส่ให้ไหม"""
+    if hand.cards:
+        return hand, False
+    if hand.suiting is None:
+        hand = dataclasses.replace(from_shape(hand.ranks, "rainbow"), suits_assumed=True)
+    groups = _example_groups(hand)
+    if groups is None:
+        return hand, False
+    symbols = list(_SUIT_SYMBOL.values())
+    suits: list[str | None] = [None] * len(hand.ranks)
+    for group, symbol in zip(groups, symbols):
+        for index in group:
+            suits[index] = symbol
+    spare = iter(symbol for symbol in symbols if symbol not in suits)
+    cards = "".join(rank + (suit or next(spare)) for rank, suit in zip(hand.ranks, suits))
+    return dataclasses.replace(hand, cards=cards), True
+
+
 def _plain_lines(hand: Hand, lang: str) -> list[tuple[str, str]]:
     words = LABELS.get(lang, LABELS["EN"])
     if hand.suiting is None and not hand.cards:
         hand = dataclasses.replace(from_shape(hand.ranks, "rainbow"), suits_assumed=True)
+    hand, example = _with_example_suits(hand)
     shown = hand.cards or "-".join(hand.ranks)
     suit_detail = words["assumed"] if hand.suits_assumed else _shape_of(hand.suiting)
     if hand.suiting and hand.suiting.suited_ranks:
         suit_detail += f" ({_known_suit_pair(hand)} share a suit)"
-    title = f"PLO {shown} · {suit_detail}"
+    title = f"PLO {shown} · {suit_detail}" + (f" · {words['example']}" if example else "")
     if hand.suiting.ace_suited is None and ACE in hand.ranks:
         yes, no = classify(_concrete(hand, True)), classify(_concrete(hand, False))
         yes_type, _ = _display(yes, _concrete(hand, True), lang)
@@ -761,9 +851,9 @@ def presentation(hand: Hand, lang: str) -> dict:
     rows = _plain_lines(hand, lang)
     values = dict(rows[1:])
     words = LABELS.get(lang, LABELS["EN"])
-    if hand.cards:
-        cards = [{"rank": rank.upper().replace("10", "T"), "suit": suit}
-                 for rank, suit in _ONE_CARD.findall(hand.cards)]
+    shown, _ = _with_example_suits(hand)
+    if shown.cards:
+        cards = [{"rank": rank, "suit": suit} for rank, suit in _held_cards(shown)]
     else:
         cards = [{"rank": rank, "suit": ""} for rank in hand.ranks]
     keys = ("tier", "play", "type", "why", "miracle", "assumptions", "source")
@@ -785,10 +875,8 @@ def terminal(hand: Hand, lang: str, color: bool = True, width: int | None = None
     """Spacious terminal presentation without changing the terminal's global font size."""
     width = max(48, min(width or shutil.get_terminal_size((64, 24)).columns, 88))
     bold, dim, reset = ("\033[1m", "\033[2m", "\033[0m") if color else ("", "", "")
-    if hand.cards:
-        cards = [(rank.upper().replace("10", "T"), suit) for rank, suit in _ONE_CARD.findall(hand.cards)]
-    else:
-        cards = [(rank, "") for rank in hand.ranks]
+    shown, _ = _with_example_suits(hand)
+    cards = _held_cards(shown) if shown.cards else [(rank, "") for rank in hand.ranks]
     faces = ["  ".join("┌─────┐" for _ in cards),
              "  ".join(f"│  {rank}  │" for rank, _ in cards),
              "  ".join(f"│  {suit or ' '}  │" for _, suit in cards),

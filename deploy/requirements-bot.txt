@@ -2,3 +2,4 @@ discord.py==2.7.1
 pillow==12.3.0
 numpy==2.5.3
 pokerkit==0.7.6
+pynacl==1.6.2
