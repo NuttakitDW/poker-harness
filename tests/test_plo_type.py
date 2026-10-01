@@ -51,7 +51,12 @@ class ReadTests(unittest.TestCase):
         self.assertFalse(plo_type.read("JT98 rainbow").suiting.suited)
         self.assertFalse(plo_type.read("AK54 rb").suiting.suited)
         self.assertFalse(plo_type.read("AK54 RB").suiting.suited)
-        self.assertIsNone(plo_type.read("plo JT98").suiting)
+        self.assertFalse(plo_type.read("AK54 rb").suits_assumed)
+
+    def test_missing_suits_are_read_as_assumed_rainbow(self):
+        hand = plo_type.read("plo JT98")
+        self.assertFalse(hand.suiting.suited)
+        self.assertTrue(hand.suits_assumed)
 
     def test_numeric_hand_with_rb_is_a_plo_lookup(self):
         asked = plo_type.lookup("9753 rb")
@@ -231,11 +236,19 @@ class RenderTests(unittest.TestCase):
                 self.assertIn(phrase, " ".join(text.split()))
                 self.assertNotIn("always reraise", text.lower())
 
-    def test_unknown_suits_do_not_get_a_definitive_play_line(self):
+    def test_unidentified_suited_pair_does_not_get_a_definitive_play_line(self):
         conditional = plo_type.render(plo_type.read("A654 ss"), "EN")
-        missing = plo_type.render(plo_type.read("A234"), "EN")
         self.assertIn("specify it like ss A2", " ".join(conditional.split()))
-        self.assertIn("exact suits before choosing a preflop plan", " ".join(missing.split()))
+
+    def test_play_includes_a_group_specific_postflop_plan(self):
+        cases = {"JT98 ds": "nut straight, 13+ out wraps", "AAKK ds": "unimproved Aces",
+                 "KKQJ ds": "set mining", "plo As Kd 8s 6c": "nut flush draw plus a wrap",
+                 "A876 rb": "no nut flush draw", "QJ76 rb": "only the nuts continues"}
+        for hand, phrase in cases.items():
+            with self.subTest(hand=hand):
+                payload = plo_type.presentation(plo_type.read(hand), "EN")
+                self.assertIn("After the flop:", payload["play"])
+                self.assertIn(phrase, payload["play"])
 
     def test_ak54_rb_is_the_same_direct_trash_answer_as_rainbow(self):
         short = plo_type.read("plo AK54 rb")
@@ -281,12 +294,18 @@ class RenderTests(unittest.TestCase):
                 self.assertNotIn("depends on the exact suits", text)
                 self.assertNotIn("Give the exact suits", text)
 
-    def test_suit_sensitive_or_ace_hands_still_request_suits(self):
-        for ranks in ("A234", "JT98"):
+    def test_missing_suits_are_classified_as_rainbow(self):
+        for ranks, tier in (("A234", "Trash"), ("JT98", "Marginal"), ("AKQJ", "Marginal")):
             with self.subTest(ranks=ranks):
-                text = plo_type.render(plo_type.read(ranks), "EN")
-                self.assertIn("depends on the exact suits", text)
-                self.assertIn("Give the exact suits", " ".join(text.split()))
+                hand = plo_type.read(f"plo {ranks}")
+                text = plo_type.render(hand, "EN")
+                self.assertEqual(plo_type.classify(hand), plo_type.classify(plo_type.read(f"{ranks} rb")))
+                self.assertIn(f"Tier      {tier}", text)
+                self.assertIn("rainbow (no suits given, assumed)", text)
+                self.assertNotIn("exact suits", text)
+                self.assertNotIn("Suited Ace", text)
+        thai = plo_type.render(plo_type.read("plo JT98"), "TH")
+        self.assertIn("ไม่ได้บอกดอก ถือว่า rainbow", thai)
 
     def test_known_non_ace_pair_has_neutral_type_and_no_nut_flush_claim(self):
         text = plo_type.render(plo_type.read("plo A654 ss65"), "EN")
@@ -322,11 +341,35 @@ class RenderTests(unittest.TestCase):
                 board = frozenset(plo_hand.VALUE[rank] for rank, _ in shown[-3:])
                 self.assertFalse(any(board <= window for window in plo_hand.STRAIGHT_WINDOWS))
 
-    def test_unspecified_suits_stay_unspecified(self):
-        text = plo_type.render(plo_type.read("plo A234"), "EN")
-        self.assertIn("suits not given", text)
-        self.assertIn("depends on the exact suits", text)
-        self.assertNotIn("single-suited", text)
+    def test_miracle_flops_list_several_verified_nut_flops(self):
+        for ranks in ("JT98", "KKQJ", "AAKK", "QJ76"):
+            with self.subTest(ranks=ranks):
+                hand = plo_type.read(f"plo {ranks}")
+                lines = plo_type._miracle(hand, "EN").split("\n")
+                self.assertGreaterEqual(len(lines), 3)
+                self.assertLessEqual(len(lines), plo_type.MIRACLE_MAX)
+                self.assertEqual(len(lines), len(set(lines)))
+                hole = tuple(plo_hand.VALUE[rank] for rank in hand.ranks)
+                for line in lines:
+                    holes, board = line.split(" rainbow")[0].split(" + ")
+                    board_values = tuple(plo_hand.VALUE[rank] for rank in board.split("-"))
+                    unseen = collections.Counter({value: plo_hand.DECK_COPIES
+                                                  for value in plo_hand.VALUE.values()})
+                    unseen.subtract(hole)
+                    unseen.subtract(board_values)
+                    score, pair = plo_hand._best(hole, board_values)
+                    self.assertGreaterEqual(score, plo_hand._nuts(board_values, unseen), line)
+                    self.assertEqual(plo_hand._label(pair), holes, line)
+
+    def test_miracle_flops_skip_trips_boards_when_real_flops_exist(self):
+        text = plo_type._miracle(plo_type.read("plo AKQJ"), "EN")
+        self.assertNotIn("A-A-A", text)
+        self.assertNotIn("full house", text)
+
+    def test_suited_ace_miracle_list_starts_with_the_nut_flush(self):
+        lines = plo_type._miracle(plo_type.read("plo As Ks Qd Jd"), "EN").split("\n")
+        self.assertTrue(lines[0].endswith("nut flush"))
+        self.assertTrue(any("nut straight" in line for line in lines[1:]))
 
     def test_terminal_is_spacious_wrapped_and_ansi_is_optional(self):
         hand = plo_type.read("plo A654 ss")

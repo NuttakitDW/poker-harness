@@ -197,7 +197,7 @@ def answer(prompt: str, memory: preflop.Request | None = None, lang: str = "EN")
     if hand is None:
         return Answer("missing_hand", "ขอไพ่ PLO สี่ใบ เช่น As Ks Qd 9c หรือ 9876 ds" if th
                       else "Give the four-card hand, e.g. As Ks Qd 9c or 9876 ds.", request)
-    assumed_rainbow = hand.suiting is None and not hand.cards
+    assumed_rainbow = hand.suits_assumed or (hand.suiting is None and not hand.cards)
     if assumed_rainbow:  # no suits given: read it as rainbow (four different suits)
         hand = plo_type.from_shape(hand.ranks, "rainbow")
     request = dataclasses.replace(request, plo_hand=plo_advisor._remembered_hand(hand))

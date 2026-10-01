@@ -185,6 +185,12 @@ STRAIGHT_FORMS = {
 ACE_FORMS = {(0, 0): ("ace_rundown", 4), (0, 1): ("ace_gapped", 3), (1, 0): ("ace_gapped", 3),
              (0, 2): ("ace_wrap17", 2), (1, 1): ("ace_two_gaps", 2), (2, 0): ("ace_sucker", 2)}
 KT98 = "KT98"  # หนังสือยกเว้นให้ limp ตำแหน่งหลังได้
+# miracle flop ที่โชว์: ชนิดจาก plo_hand.KINDS กับคำที่แสดง full house ใช้เมื่อไม่มีแบบอื่นเท่านั้น
+# เพราะ flop อย่าง A-A-A ไม่ได้บอกอะไรเกี่ยวกับมือ set โชว์คู่ละหนึ่ง flop
+MIRACLE_KINDS = {"straight": "nut straight", "set": "top set"}
+MIRACLE_FALLBACK = {"full house ขึ้นไป": "nut full house or better"}
+MIRACLE_PER_KIND = 3
+MIRACLE_MAX = 6
 
 
 @dataclasses.dataclass(frozen=True)
@@ -202,6 +208,7 @@ class Hand:
     ranks: str                 # เรียงใหญ่ไปเล็ก เช่น KKQJ
     suiting: Suiting | None    # None คือไม่ได้บอกดอก
     cards: str = ""            # ไพ่พร้อมดอกตามที่พิมพ์มา ถ้ามี
+    suits_assumed: bool = False  # ไม่ได้บอกดอก จึงถือว่า rainbow
 
 
 @dataclasses.dataclass(frozen=True)
@@ -341,6 +348,8 @@ def read(text: str) -> Hand | None:
         said = plo_hand.suited_ace(text) or bool(_SAYS_ACE_SUITED.search(text))
         ace_suited = ((ACE in group) if group else True if said else None) if ACE in ranks else False
         return from_shape(ranks, shape, ace_suited=ace_suited, suited_ranks=group or ())
+    if shape is None:  # ไม่ได้บอกดอก ถือว่า rainbow
+        return dataclasses.replace(from_shape(ranks, "rainbow"), suits_assumed=True)
     return from_shape(ranks, shape)
 
 
@@ -466,38 +475,19 @@ def classify(hand: Hand) -> Cluster:
     return _unpaired(ranks, suiting)
 
 
-def _invariant_trash_without_suits(hand: Hand) -> Cluster | None:
-    """Return a stable non-A Trash form across every legal physical suit assignment."""
-    if hand.suiting is not None or ACE in hand.ranks:
-        return None
-    found: Cluster | None = None
-    for suits in itertools.product("shdc", repeat=4):
-        cards = tuple(zip(hand.ranks, suits))
-        if len(set(cards)) != 4:
-            continue
-        cluster = classify(_from_cards(" ".join(rank + suit for rank, suit in cards)))
-        if cluster.tier != TRASH:
-            return None
-        if found is None:
-            found = cluster
-        elif (cluster.group, cluster.form) != (found.group, found.form):
-            return None
-    return found
-
-
 LABELS = {
     "EN": {"type": "Type", "tier": "Tier", "play": "How to play", "why": "Why",
-           "miracle": "Miracle flop (authored illustration)",
+           "miracle": "Miracle flops",
            "assumptions": "Assumptions",
-           "source": "Source", "suits_unknown": "depends on the exact suits",
-           "magnum": "Magnum", "shape_none": "suits not given",
+           "source": "Source", "magnum": "Magnum",
+           "assumed": "rainbow (no suits given, assumed)",
            "overview": "PLO starting-hand types (Jeff Hwang ch. 4), tier when suited",
            "ask": "Ask about a hand, e.g. plo A234 ss A2 or plo As 2s 3d 4c"},
     "TH": {"type": "กลุ่ม", "tier": "ระดับ", "play": "วิธีเล่น", "why": "เหตุผล",
-           "miracle": "miracle flop (ตัวอย่างที่เราแต่ง)",
+           "miracle": "miracle flop",
            "assumptions": "สมมติฐาน",
-           "source": "ที่มา", "suits_unknown": "ขึ้นกับดอกที่แท้จริง",
-           "magnum": "Magnum", "shape_none": "ไม่ได้บอกดอก",
+           "source": "ที่มา", "magnum": "Magnum",
+           "assumed": "rainbow (ไม่ได้บอกดอก ถือว่า rainbow)",
            "overview": "ชนิดมือเริ่มต้น PLO ตาม Jeff Hwang บทที่ 4 ระดับเมื่อมีดอกคู่",
            "ask": "ถามมือได้ เช่น plo A234 ss A2 หรือ plo As 2s 3d 4c"},
 }
@@ -530,6 +520,57 @@ def _how_to_play(tier: str, lang: str) -> str:
     }[tier]
 
 
+# แผนหลัง flop ตามกลุ่มมือ ใช้ต่อจากคำแนะนำ preflop ของระดับ
+POSTFLOP = {
+    "big_cards": ("After the flop: play for Broadway straights and top two pair with a draw; "
+                  "slow down on low, connected boards that miss you.",
+                  "หลัง flop: เล่นหา Broadway straight และ top two pair ที่มี draw; "
+                  "บอร์ดต่ำต่อกันที่ไม่โดนให้ชะลอ"),
+    "broadway_wrap": ("After the flop: drive the nut wraps and nut draws on high boards; "
+                      "low boards your cards cannot reach are folds.",
+                      "หลัง flop: เดินหน้ากับ nut wrap และ nut draw บนบอร์ดสูง; "
+                      "บอร์ดต่ำที่ไพ่เราไปไม่ถึงให้ fold"),
+    "straight": ("After the flop: continue with the nut straight, 13+ out wraps, or two pair plus a draw; "
+                 "fold non-nut straights and the low end of a wrap.",
+                 "หลัง flop: ไปต่อเมื่อได้ nut straight, wrap 13 outs ขึ้นไป หรือ two pair พร้อม draw; "
+                 "straight ที่ไม่ใช่ nuts และปลายล่างของ wrap ให้ fold"),
+    "suited_ace": ("After the flop: play hard with the nut flush or the nut flush draw plus a wrap; "
+                   "give up when the flop misses both your suit and your straight cards.",
+                   "หลัง flop: เล่นแรงเมื่อได้ nut flush หรือ nut flush draw พร้อม wrap; "
+                   "flop ที่ไม่โดนทั้งดอกและไพ่ straight ให้ทิ้ง"),
+    "ace_offsuit": ("After the flop: there is no nut flush draw, so continue only with the nut straight "
+                    "or a nut wrap.",
+                    "หลัง flop: ไม่มี nut flush draw ไปต่อเฉพาะเมื่อได้ nut straight หรือ nut wrap"),
+    "pair_plus": ("After the flop: mostly set mining; continue with a set (ideally top set) or a set plus "
+                  "a straight draw, otherwise fold to action.",
+                  "หลัง flop: ส่วนใหญ่คือหวัง set; ไปต่อเมื่อติด set (ดีที่สุดคือ top set) หรือ set "
+                  "พร้อม straight draw ไม่งั้นโดน bet ให้ fold"),
+    "aces": ("After the flop: unimproved Aces win small pots; build the pot preflop, then commit only "
+             "with a set, a nut draw or a safe board, especially multiway.",
+             "หลัง flop: AA ที่ไม่ติดอะไรชนะ pot เล็ก; ปั้น pot ตั้งแต่ preflop แล้วค่อยทุ่มเมื่อได้ set "
+             "nut draw หรือบอร์ดปลอดภัย โดยเฉพาะตอนหลายคน"),
+    "marginal": ("After the flop: continue only with the nuts or a nut draw; one pair and dominated draws "
+                 "are folds.",
+                 "หลัง flop: ไปต่อเฉพาะ nuts หรือ nut draw; one pair และ draw ที่ถูก dominate ให้ fold"),
+    "other": ("After the flop: if you do play it, only the nuts continues; everything else is a fold.",
+              "หลัง flop: ถ้าเล่นไปแล้ว ไปต่อเฉพาะ nuts นอกนั้น fold"),
+}
+
+
+def _postflop(cluster: Cluster, hand: Hand, lang: str) -> str:
+    key = cluster.group
+    if cluster.tier == TRASH:
+        key = "other"
+    elif key == "suited_ace" and not (hand.suiting and hand.suiting.ace_suited):
+        key = "ace_offsuit"
+    english, thai = POSTFLOP.get(key, POSTFLOP["other"])
+    return thai if lang == "TH" else english
+
+
+def _play(cluster: Cluster, hand: Hand, lang: str) -> str:
+    return f"{_how_to_play(cluster.tier, lang)}\n{_postflop(cluster, hand, lang)}"
+
+
 def _conditional_play(yes: Cluster, no: Cluster, lang: str) -> str:
     if yes.tier == no.tier:
         return _how_to_play(yes.tier, lang)
@@ -554,9 +595,13 @@ def _concrete(hand: Hand, ace_suited: bool) -> Hand:
 
 def _display(cluster: Cluster, hand: Hand, lang: str) -> tuple[str, str]:
     form = FORMS[cluster.form]
-    if (hand.suiting and hand.suiting.suited and hand.suiting.ace_suited is False
+    if (hand.suiting and hand.suiting.ace_suited is False
             and ACE in hand.ranks and cluster.group in ("suited_ace", "broadway_wrap")):
         kind = ("Ace-high connected hand" if lang == "EN" else "มือ A-high ที่เชื่อมกัน")
+        if not hand.suiting.suited:
+            why = ("Rainbow: the straight and wrap structure remains, but there is no flush draw"
+                   if lang == "EN" else "rainbow โครงสร้าง straight และ wrap ยังอยู่ แต่ไม่มี flush draw")
+            return kind, why
         why = ("The Ace is outside the suited pair: the straight and wrap structure remains, "
                "but its flush draw is not the nut flush draw" if lang == "EN" else
                "A อยู่นอกไพ่ดอกคู่ โครงสร้าง straight และ wrap ยังอยู่ แต่ flush draw ไม่ใช่ nut flush draw")
@@ -609,62 +654,58 @@ def _flush_board(group: tuple[str, ...]) -> tuple[str, str, str] | None:
     return None
 
 
-def _miracle(hand: Hand, lang: str) -> str:
+def _flush_line(hand: Hand) -> str | None:
     group, suit = _ace_suit_group(hand)
     board = _flush_board(group) if ACE in group and len(group) >= 2 else None
-    if board:
-        mate = next(rank for rank in group if rank != ACE)
-        if suit:
-            cards_text = (f"A{suit} {mate}{suit} + "
-                          + " ".join(f"{rank}{suit}" for rank in board))
-        else:
-            pair = f"A{mate}"
-            cards_text = f"A-{mate} + {'-'.join(board)}, all in the {pair} suit"
-        return f"{cards_text} → nut flush"
+    if not board:
+        return None
+    mate = next(rank for rank in group if rank != ACE)
+    if suit:
+        cards_text = f"A{suit} {mate}{suit} + " + " ".join(f"{rank}{suit}" for rank in board)
+    else:
+        cards_text = f"A-{mate} + {'-'.join(board)}, all in the A{mate} suit"
+    return f"{cards_text} → nut flush"
 
-    result = plo_hand.study(hand.ranks)
-    choice = next(((kind, result.examples[kind]) for kind in ("straight", "set", "full house ขึ้นไป")
-                   if result.examples.get(kind)), None)
-    if choice is None:
-        return ("No clean rank-only nut illustration; its value is structural" if lang == "EN" else
-                "ไม่มีตัวอย่าง nut จากอันดับไพ่ที่ชัดเจน คุณค่าอยู่ที่โครงสร้างของมือ")
-    kind, board = choice
-    values = tuple(VALUE[rank] for rank in board.split("-"))
-    _, used = plo_hand._best(tuple(VALUE[rank] for rank in hand.ranks), values)
-    holes = "-".join(plo_hand.LETTER[value] for value in used)
-    made = {"straight": "nut straight", "set": "top set",
-            "full house ขึ้นไป": "nut full house or better"}[kind]
-    return f"{holes} + {board} rainbow → {made}"
+
+def _nut_flops(ranks: str) -> list[str]:
+    """flop ที่ติด nuts ทันทีจากอันดับไพ่ ไพ่คู่ที่ยังไม่โชว์ขึ้นก่อน แต่ละชนิดไม่เกิน MIRACLE_PER_KIND"""
+    found = plo_hand.study(ranks).nut_boards
+    names = MIRACLE_KINDS if any(kind in MIRACLE_KINDS for kind, _, _ in found) else MIRACLE_FALLBACK
+    boards = [board for board in found if board[0] in names]
+    picked: list[tuple[str, str, str]] = []
+    for fresh_only in (True, False):
+        for board in boards:
+            kind, _, pair = board
+            same_kind = [shown for shown in picked if shown[0] == kind]
+            repeated = any(shown[2] == pair for shown in same_kind)
+            if (len(picked) >= MIRACLE_MAX or board in picked or len(same_kind) >= MIRACLE_PER_KIND
+                    or (repeated and (fresh_only or kind == "set"))):
+                continue
+            picked.append(board)
+    order = list(names)
+    picked.sort(key=lambda board: (order.index(board[0]), boards.index(board)))
+    return [f"{pair} + {board} rainbow → {names[kind]}" for kind, board, pair in picked]
+
+
+def _miracle(hand: Hand, lang: str) -> str:
+    """รายการ miracle flop หนึ่งบรรทัดต่อ flop: nut flush ก่อนถ้า A มีดอกคู่ แล้วตามด้วย nuts จากอันดับไพ่"""
+    lines = [line for line in (_flush_line(hand),) if line] + _nut_flops(hand.ranks)
+    if not lines:
+        return ("No flop gives this hand the nuts by rank alone; its value is structural" if lang == "EN" else
+                "ไม่มี flop ไหนทำให้มือนี้ติด nuts จากอันดับไพ่ คุณค่าอยู่ที่โครงสร้างของมือ")
+    return "\n".join(lines[:MIRACLE_MAX])
 
 
 def _plain_lines(hand: Hand, lang: str) -> list[tuple[str, str]]:
     words = LABELS.get(lang, LABELS["EN"])
-    shape = _shape_of(hand.suiting)
+    if hand.suiting is None and not hand.cards:
+        hand = dataclasses.replace(from_shape(hand.ranks, "rainbow"), suits_assumed=True)
     shown = hand.cards or "-".join(hand.ranks)
-    suit_detail = shape or words["shape_none"]
+    suit_detail = words["assumed"] if hand.suits_assumed else _shape_of(hand.suiting)
     if hand.suiting and hand.suiting.suited_ranks:
         suit_detail += f" ({_known_suit_pair(hand)} share a suit)"
     title = f"PLO {shown} · {suit_detail}"
-    if hand.suiting is None:
-        sample = from_shape(hand.ranks, "single-suited", ace_suited=True)
-        cluster = classify(sample)
-        kind, _ = _display(cluster, sample, lang)
-        invariant = _invariant_trash_without_suits(hand)
-        if invariant is not None:
-            cluster = invariant
-            kind, why = _display(cluster, hand, lang)
-            tier = _tier_text(cluster, words)
-            play = _how_to_play(cluster.tier, lang)
-        else:
-            if ACE in hand.ranks and cluster.group in ("suited_ace", "broadway_wrap"):
-                kind = "Ace-high connected hand" if lang == "EN" else "มือ A-high ที่เชื่อมกัน"
-            tier = words["suits_unknown"]
-            play = ("Give the exact suits before choosing a preflop plan."
-                    if lang == "EN" else "บอกดอกที่แท้จริงก่อนเลือกแผน preflop")
-            why = ("The exact suits determine the hand's flush potential and can change its tier."
-                   if lang == "EN" else
-                   "ดอกที่แท้จริงกำหนดโอกาสติด flush และอาจเปลี่ยนระดับของมือ")
-    elif hand.suiting.ace_suited is None and ACE in hand.ranks:
+    if hand.suiting.ace_suited is None and ACE in hand.ranks:
         yes, no = classify(_concrete(hand, True)), classify(_concrete(hand, False))
         yes_type, _ = _display(yes, _concrete(hand, True), lang)
         no_type, _ = _display(no, _concrete(hand, False), lang)
@@ -683,7 +724,7 @@ def _plain_lines(hand: Hand, lang: str) -> list[tuple[str, str]]:
         cluster = classify(hand)
         kind, why = _display(cluster, hand, lang)
         tier = _tier_text(cluster, words)
-        play = _how_to_play(cluster.tier, lang)
+        play = _play(cluster, hand, lang)
     assumptions = ("4-card PLO high; general deep-stack cash guidance. Position, effective stack, "
                    "rake and prior action are unspecified; tournament payouts are not applied."
                    if lang == "EN" else
@@ -695,6 +736,12 @@ def _plain_lines(hand: Hand, lang: str) -> list[tuple[str, str]]:
             (words["source"], SOURCE)]
 
 
+def _wrap(value: str, width: int) -> list[str]:
+    """ตัดบรรทัดทีละรายการ ค่าที่มีหลายรายการคั่นด้วย newline"""
+    return [part for item in value.split("\n")
+            for part in (textwrap.wrap(item, width=width) or [""])] or [""]
+
+
 def render(hand: Hand, lang: str) -> str:
     """Compact ANSI-free answer for web and Discord."""
     lines = []
@@ -703,7 +750,7 @@ def render(hand: Hand, lang: str) -> str:
             lines.append(value)
             continue
         field = max(WIDTH, len(label))
-        wrapped = textwrap.wrap(value, width=max(20, 64 - field - 1)) or [""]
+        wrapped = _wrap(value, max(20, 64 - field - 1))
         lines.append(f"{label:<{field}} {wrapped[0]}")
         lines.extend(f"{'':<{field}} {part}" for part in wrapped[1:])
     return "\n".join(lines)
@@ -757,7 +804,7 @@ def terminal(hand: Hand, lang: str, color: bool = True, width: int | None = None
     for label in ordered:
         value = values[label]
         heading = label.upper()
-        wrapped = textwrap.wrap(value, width=max(24, width - 2)) or [""]
+        wrapped = _wrap(value, max(24, width - 2))
         lines.append(f"{bold}{heading}{reset}")
         lines.extend(f"  {part}" for part in wrapped)
         if label != words["source"]:

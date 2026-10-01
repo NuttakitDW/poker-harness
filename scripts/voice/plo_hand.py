@@ -47,6 +47,7 @@ WRAP_OUTS = 13
 # อันดับมือแบบไม่มี flush
 HIGH, PAIR, TWO_PAIR, TRIPS, STRAIGHT, FULL_HOUSE, QUADS = range(7)
 HILO_HEADING = "# มือ PLO Hi/Lo ที่ถาม (โค้ดคำนวณให้ ใช้ข้อเท็จจริงนี้แทนการเดา)"
+ASSUMED_RAINBOW = "rainbow (ไม่ได้บอกดอก จึงถือว่า rainbow)"
 KINDS = ("straight", "set", "full house ขึ้นไป", "อื่น ๆ")
 # มือที่ไม่มีไพ่สามใบอยู่ใน straight เดียวกันคือ Hold'em สองมือแยกกัน อย่าง Q-J-7-6 ในแบบฝึก
 SPLIT_MAX_LINKED = 2
@@ -96,6 +97,8 @@ class Study:
     draw_rate: float = 0.0
     wrap_rate: float = 0.0
     wrap_example: str = ""
+    # ทุก flop ที่ติด nuts ทันที (ชนิด, flop, ไพ่คู่ที่ใช้) เรียงแบบเดียวกับ examples
+    nut_boards: tuple[tuple[str, str, str], ...] = ()
 
 
 def _suit_counts(text: str) -> collections.Counter:
@@ -252,6 +255,7 @@ def study(hand: str) -> Study:
     working: collections.Counter = collections.Counter()
     draws = [0.0, 0.0]
     wrap_example = ""
+    boards: list[tuple[str, str, str]] = []
     # ไล่ flop จากไพ่ใหญ่ลงเล็ก ตัวอย่างแรกที่เจอจึงเป็น flop ที่ไม่ซ้ำไพ่ในมือและสูงที่สุด
     flops = sorted(itertools.combinations_with_replacement(sorted(VALUE.values(), reverse=True), 3),
                    key=lambda flop: (len(set(flop) & set(hole)), len(set(flop)) < 3,
@@ -277,8 +281,9 @@ def study(hand: str) -> Study:
         # คั่นขีดไว้ ไม่งั้นโมเดลเขียน 65 แล้วเครื่องอ่านว่าหกสิบห้า
         working[f"{LETTER[pair[0]]}-{LETTER[pair[1]]}"] += share
         examples.setdefault(kind, _label(board))
+        boards.append((kind, _label(board), _label(pair)))
     return Study(hand, sum(rates.values()), rates, examples, dict(working),
-                 draws[0], draws[1], wrap_example)
+                 draws[0], draws[1], wrap_example, tuple(boards))
 
 
 def _percent(share: float) -> str:
@@ -346,12 +351,14 @@ def context_block(question: str, earlier: str = "", hilo: bool = False) -> str:
         return ""
     hand = found[0]
     form = shape(question) or (shape(earlier) if not retrieval.hands(question) else None)
+    shown_form = form or ASSUMED_RAINBOW
+    form = form or "rainbow"  # ไม่ได้บอกดอก ถือว่า rainbow
     ace_suited = suited_ace(question if retrieval.hands(question) else earlier)
     if hilo:
-        return _hilo_block(hand, form, ace_suited)
+        return _hilo_block(hand, form, ace_suited, shown_form)
     lines = [
         "# มือ PLO ที่ถาม (โค้ดคำนวณให้ ใช้ตัวเลขนี้แทนการเดา)",
-        f"มือ {'-'.join(hand)} ดอก: {form or 'ไม่ได้บอก'}",
+        f"มือ {'-'.join(hand)} ดอก: {shown_form}",
         "ไพ่ในมือมีแค่สี่ใบนี้ ตัวเลขอื่นในคำถามเป็นเสียงที่ถอดเพี้ยน ห้ามพูดถึงเป็นไพ่",
         "ระดับมือ Premium Speculative Marginal Trash ไม่ขึ้นกับตำแหน่งหรือ stack ห้ามถามตำแหน่งตอนจัดระดับ",
     ]
@@ -389,12 +396,12 @@ def _spot_lines(hand: str, form: str | None) -> list[str]:
     return lines
 
 
-def _hilo_block(hand: str, form: str | None, ace_suited: bool) -> str:
+def _hilo_block(hand: str, form: str | None, ace_suited: bool, shown_form: str = "") -> str:
     """ข้อเท็จจริงของมือใน PLO Hi/Lo ทั้งฝั่ง low และฝั่ง high"""
     result = study(hand)
     lines = [
         HILO_HEADING,
-        f"มือ {'-'.join(hand)} ดอก: {form or 'ไม่ได้บอก'}",
+        f"มือ {'-'.join(hand)} ดอก: {shown_form or form or ASSUMED_RAINBOW}",
         "ระดับจากแบบฝึก PLO high ใช้กับ Hi/Lo ตรง ๆ ไม่ได้ ตัดสินจากศักยภาพสองทางและโอกาส scoop",
         *plo_low.block_lines(hand),
         f"- ฝั่ง high: flop ที่ติด nuts ทันที {_percent(result.nut_rate)} (ไม่นับ flush)",
