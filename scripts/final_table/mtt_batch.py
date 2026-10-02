@@ -4,7 +4,7 @@ Each hand becomes an ICM spec: the real table in preflop order, the tournament's
 players left estimated from the history (``gg_history.players_left_curve``) and the rest of
 the chips spread over the other tables. Solves land in tmp/final_table/jobs/<id>/ like the
 ones started from the page, so ``make ft`` lists and explores them. Finished labels are
-skipped on a rerun.
+skipped on a rerun. Progress goes to tmp/final_table/batch.json for the page's Training tab.
 
     .venv/bin/python scripts/final_table/mtt_batch.py --history "GG...txt" --entries 374 \
         --start-stack 50000 --payouts payouts.json --pin TM191037843:14 --hands TM1,TM2,...
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -24,10 +25,12 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import gg_history  # noqa: E402
+import progress  # noqa: E402
 
 from plo_premium_proof.finaltable import STATUS, FinalTableSpec  # noqa: E402
 
 JOBS = ROOT / "tmp" / "final_table" / "jobs"
+BATCH = ROOT / "tmp" / "final_table" / "batch.json"
 
 
 def spec_for(hand: gg_history.Hand, left: int, total_chips: float, payouts: tuple[float, ...],
@@ -51,7 +54,7 @@ def finished_labels(jobs: Path) -> set[str]:
     return done
 
 
-def run(spec: FinalTableSpec, jobs: Path) -> str:
+def new_job(spec: FinalTableSpec, jobs: Path) -> str:
     while True:
         job = time.strftime("%Y%m%d-%H%M%S")
         folder = jobs / job
@@ -60,13 +63,48 @@ def run(spec: FinalTableSpec, jobs: Path) -> str:
         time.sleep(1)
     folder.mkdir(parents=True)
     (folder / "spec.json").write_text(json.dumps(spec.to_dict(), indent=1))
+    return job
+
+
+def run(job: str, jobs: Path) -> None:
+    folder = jobs / job
     with (folder / "log.txt").open("w") as log:
         code = subprocess.call([sys.executable, "-m", "plo_premium_proof", "ft-solve", "--spec",
                                 str(folder / "spec.json"), "--output", str(folder)],
                                cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
     if code:
         (folder / STATUS).write_text(json.dumps({"state": "failed", "exit": code}))
-    return job
+
+
+def run_batch(specs: list[FinalTableSpec], jobs: Path, batch_file: Path, name: str) -> dict:
+    """Solve ``specs`` in order, keeping ``batch_file`` current for the progress page."""
+    jobs.mkdir(parents=True, exist_ok=True)
+    done = finished_labels(jobs)
+    batch = {"name": name, "pid": os.getpid(), "started": time.time(), "state": "running",
+             "items": [{"label": s.label, "minutes": s.minutes, "seats": len(s.stacks),
+                        "state": "skipped" if s.label in done else "queued", "job": None}
+                       for s in specs]}
+    progress.write_json(batch_file, batch)
+    try:
+        for number, (spec, item) in enumerate(zip(specs, batch["items"]), 1):
+            if item["state"] == "skipped":
+                print(f"[{number}/{len(specs)}] skip (done) {spec.label}", flush=True)
+                continue
+            item.update(state="running", job=new_job(spec, jobs), started=time.time())
+            progress.write_json(batch_file, batch)
+            run(item["job"], jobs)
+            status = json.loads((jobs / item["job"] / STATUS).read_text())
+            item.update(state="done" if status.get("state") == "done" else "failed", finished=time.time())
+            progress.write_json(batch_file, batch)
+            print(f"[{number}/{len(specs)}] {item['job']} {item['state']} in "
+                  f"{(item['finished'] - item['started']) / 60:.1f} min  {spec.label}", flush=True)
+        batch["state"] = "done"
+    except KeyboardInterrupt:
+        batch["state"] = "stopped"
+    finally:
+        batch["finished"] = time.time()
+        progress.write_json(batch_file, batch)
+    return batch
 
 
 def main() -> int:
@@ -100,17 +138,8 @@ def main() -> int:
     print(f"total {sum(s.minutes for s in specs) / 60:.1f} h of solving", flush=True)
     if args.dry_run:
         return 0
-    JOBS.mkdir(parents=True, exist_ok=True)
-    for number, spec in enumerate(specs, 1):
-        if spec.label in finished_labels(JOBS):
-            print(f"[{number}/{len(specs)}] skip (done) {spec.label}", flush=True)
-            continue
-        started = time.time()
-        job = run(spec, JOBS)
-        state = json.loads((JOBS / job / STATUS).read_text()).get("state")
-        print(f"[{number}/{len(specs)}] {job} {state} in {(time.time() - started) / 60:.1f} min  {spec.label}",
-              flush=True)
-    return 0
+    batch = run_batch(specs, JOBS, BATCH, args.history.stem)
+    return 0 if batch["state"] == "done" else 1
 
 
 if __name__ == "__main__":

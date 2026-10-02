@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import progress  # noqa: E402
 import table_reader  # noqa: E402
 
 from plo_premium_proof.finaltable import (  # noqa: E402
@@ -128,6 +129,8 @@ def make_handler(jobs: Jobs) -> type[BaseHTTPRequestHandler]:
             path = urllib.parse.urlsplit(self.path).path
             if path in ("/", "/ft"):
                 self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
+            elif path == "/api/progress":
+                self._json(200, progress.snapshot(jobs.folder.parent, jobs.folder))
             elif path.startswith("/static/"):
                 name = path.removeprefix("/static/")
                 match = STATIC_NAME.fullmatch(name)

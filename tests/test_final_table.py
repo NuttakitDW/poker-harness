@@ -243,6 +243,14 @@ class LocalServerTest(unittest.TestCase):
         self.assertEqual(len(info["payouts"]), 51)
         self.assertIsNone(info["running"])
 
+    def test_progress_endpoint(self):
+        data = json.loads(self.request("GET", "/api/progress")[1])
+        self.assertIn("library", data)
+        self.assertIn("training", data)
+        self.assertGreater(data["disk_free_gb"], 0)
+        _, body = self.request("GET", "/")
+        self.assertIn(b'id="train-view"', body)
+
     def test_icm_prices_the_field_mid_tournament(self):
         table = {"stacks": [30, 12, 55, 20, 8, 41], "payouts": list(ft_server.DEFAULT_PAYOUTS)}
         final = json.loads(self.request("POST", "/api/icm", {"spec": table})[1])["icm"]

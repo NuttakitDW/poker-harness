@@ -114,6 +114,35 @@
   footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
   footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
 
+  .tabs { display: inline-flex; gap: .3rem; }
+  .tab { min-height: 34px; padding: 0 .85rem; border: 1px solid var(--puppet-edge); border-radius: var(--cut); background: transparent; color: var(--on-puppet-2); font: 500 .8rem/1 var(--font-mono); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--on-puppet); color: var(--puppet); border-color: var(--on-puppet); }
+  .nav-right { display: inline-flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  [hidden] { display: none !important; }
+
+  .train { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(1rem, 2.5vw, 1.5rem); align-items: start; }
+  .badge { display: inline-block; font: 600 .7rem/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; padding: .3rem .45rem; border-radius: var(--cut); border: 1px solid var(--edge); color: var(--ash); vertical-align: .2em; margin-left: .4rem; }
+  .badge.running { border-color: var(--blue); color: var(--blue); }
+  .badge.done { border-color: var(--bronze); color: var(--bronze-txt); }
+  .badge.interrupted, .badge.failed, .badge.stopped { border-color: var(--red-edge); color: var(--red-edge); }
+  .big { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; margin: .2rem 0 .5rem; }
+  .big b { font: 600 clamp(1.8rem, 4vw, 2.4rem)/1 var(--font-mono); color: var(--ink); }
+  .big span { font: 500 .9rem/1 var(--font-mono); color: var(--ash); }
+  .meter.tall { height: 16px; }
+  .meter i.lit { background: repeating-linear-gradient(135deg, var(--blue) 0 6px, #24365d 6px 12px); }
+  .now { margin-top: 1rem; padding: .75rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--paper); display: flex; flex-direction: column; gap: .45rem; }
+  .now .label { font: 500 .85rem/1.35 var(--font-mono); color: var(--ink); overflow-wrap: anywhere; }
+  .list { margin: .9rem 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .25rem; }
+  .list li { display: flex; justify-content: space-between; gap: .75rem; font: 400 .78rem/1.35 var(--font-mono); padding: .3rem .45rem; border-bottom: 1px solid var(--edge); }
+  .list li span:first-child { overflow-wrap: anywhere; }
+  .list li .st-done { color: var(--bronze-txt); } .list li .st-failed { color: var(--red-edge); } .list li .st-next { color: var(--ash-2); }
+  .sub { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); margin-top: 1rem; }
+  .empty { color: var(--ash); font-size: .9rem; display: flex; flex-direction: column; gap: .5rem; }
+  .empty code { font-family: var(--font-mono); font-size: .8rem; background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: .4rem .5rem; overflow-wrap: anywhere; }
+  .chart { width: 100%; height: 160px; margin-top: .6rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--paper); }
+  .legend { display: flex; gap: 1rem; font: 500 .75rem/1 var(--font-mono); color: var(--ash); margin-top: .4rem; }
+  .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: .2em; margin-right: .35rem; }
+  @media (max-width: 900px) { .train { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 900px) { .setup { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 520px) {
     .seats .name-col { display: none; }
@@ -132,7 +161,13 @@
   <div class="column">
     <nav class="nav" aria-label="Main">
       <span class="brand"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</span>
-      <span class="local" id="cores">local</span>
+      <span class="nav-right">
+        <span class="tabs" role="tablist" aria-label="หน้า">
+          <button class="tab" type="button" role="tab" id="tab-solve" aria-selected="true" aria-controls="solve-view">Solve</button>
+          <button class="tab" type="button" role="tab" id="tab-train" aria-selected="false" aria-controls="train-view">Training</button>
+        </span>
+        <span class="local" id="cores">local</span>
+      </span>
     </nav>
     <p class="eyebrow rise">PLO4 · MTT + Final table · ICM</p>
     <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>Solve spot ทัวร์ด้วย ICM บนเครื่องนี้</h1>
@@ -142,6 +177,7 @@
 
 <main>
   <div class="column">
+   <div id="solve-view" role="tabpanel" aria-labelledby="tab-solve">
     <div class="setup">
       <section class="sheet" aria-labelledby="table-title">
         <h2 class="title" id="table-title">โต๊ะ</h2>
@@ -229,6 +265,65 @@
         <p>ดูได้เฉพาะเส้นที่มีผู้เล่นใส่ชิปไม่เกินสองคน solver ใช้ bucket ตามลักษณะมือและ Hwang tier มือที่คล้ายกันมากจะได้ความถี่เดียวกัน ผลช่วงแรกของ solve ยังแกว่ง ยิ่ง solve นานยิ่งนิ่ง</p>
       </div>
     </section>
+   </div>
+
+   <div id="train-view" class="train" role="tabpanel" aria-labelledby="tab-train" hidden>
+    <section class="sheet" aria-labelledby="lib-title">
+      <h2 class="title" id="lib-title">คลัง spot ที่ solve แล้ว<span class="badge" id="lib-state">-</span></h2>
+      <div id="lib-empty" class="empty" hidden>
+        <p>ยังไม่มี batch รัน เริ่มได้ด้วย</p>
+        <code>.venv/bin/python scripts/final_table/mtt_batch.py --history ... --hands ...</code>
+      </div>
+      <div id="lib-body">
+        <div class="big"><b id="lib-count">-</b><span id="lib-pct"></span></div>
+        <div class="meter tall" aria-hidden="true"><i id="lib-meter" class="lit"></i></div>
+        <div class="stats" style="margin-top:.6rem">
+          <div>เหลืออีก<b id="lib-eta">-</b></div>
+          <div>เสร็จราว<b id="lib-finish">-</b></div>
+          <div>ผ่านไป<b id="lib-elapsed">-</b></div>
+        </div>
+        <div class="stats" style="margin-top:.4rem">
+          <div>ล้มเหลว<b id="lib-failed">-</b></div>
+          <div>เวลาเสริมต่อ spot<b id="lib-overhead">-</b></div>
+          <div>ดิสก์ว่าง<b id="disk">-</b></div>
+        </div>
+        <div class="now" id="lib-now" hidden>
+          <div class="progress-head"><span class="state" id="now-state">-</span><span class="mono" id="now-time">-</span></div>
+          <div class="label" id="now-label">-</div>
+          <div class="meter" aria-hidden="true"><i id="now-meter"></i></div>
+          <div class="mono" style="font-size:.75rem;color:var(--ash)" id="now-speed">-</div>
+        </div>
+        <p class="sub">เพิ่งเสร็จ</p>
+        <ul class="list" id="lib-recent"></ul>
+        <p class="sub">ถัดไป</p>
+        <ul class="list" id="lib-next"></ul>
+      </div>
+    </section>
+
+    <section class="sheet" aria-labelledby="net-title">
+      <h2 class="title" id="net-title">ฝึก network<span class="badge" id="net-state">-</span></h2>
+      <div id="net-empty" class="empty">
+        <p>ยังไม่เริ่มฝึก network จะเริ่มเมื่อคลังมี spot พอ (ราว 100 spot แรกสำหรับทดสอบ)</p>
+        <p>ตัวที่ต้องดูคือ loss ของ spot ที่กันไว้ไม่ให้ฝึก ถ้า train ลดแต่ held-out เพิ่ม แปลว่าจำแทนที่จะเข้าใจ</p>
+      </div>
+      <div id="net-body" hidden>
+        <div class="big"><b id="net-epoch">-</b><span id="net-pct"></span></div>
+        <div class="meter tall" aria-hidden="true"><i id="net-meter" class="lit"></i></div>
+        <div class="stats" style="margin-top:.6rem">
+          <div>เหลืออีก<b id="net-eta">-</b></div>
+          <div>loss train<b id="net-train">-</b></div>
+          <div>loss held-out<b id="net-hold">-</b></div>
+        </div>
+        <div class="stats" style="margin-top:.4rem">
+          <div>ห่างจาก solve จริง<b id="net-gap">-</b></div>
+          <div>ดีที่สุดที่ epoch<b id="net-best">-</b></div>
+          <div>อัปเดต<b id="net-updated">-</b></div>
+        </div>
+        <svg class="chart" id="net-chart" viewBox="0 0 400 160" preserveAspectRatio="none" role="img" aria-label="loss ต่อ epoch"></svg>
+        <div class="legend"><span><i style="background:var(--blue)"></i>train</span><span><i style="background:var(--red)"></i>held-out</span></div>
+      </div>
+    </section>
+   </div>
   </div>
 </main>
 
@@ -540,6 +635,103 @@
     tick();
   });
 
+  // ---------- training tab ----------
+  const BADGE = { running: "กำลังรัน", done: "เสร็จแล้ว", interrupted: "หยุดกลางทาง", stopped: "หยุดแล้ว", failed: "ล้มเหลว" };
+  const hours = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} ชม. ${m} นาที` : `${m} นาที`; };
+  const timeOf = t => t ? new Date(t * 1000).toLocaleString("th-TH", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "-";
+  let progressPoll = null;
+
+  function badge(id, state) {
+    const el = $(id);
+    el.textContent = BADGE[state] || state || "-";
+    el.className = `badge ${state || ""}`;
+  }
+
+  function renderLibrary(lib, disk) {
+    $("disk").textContent = `${disk} GB`;
+    $("lib-empty").hidden = !!lib;
+    $("lib-body").hidden = !lib;
+    if (!lib) { badge("lib-state", "-"); return; }
+    badge("lib-state", lib.state);
+    const pct = lib.total ? lib.done / lib.total * 100 : 0;
+    $("lib-count").textContent = `${lib.done} / ${lib.total}`;
+    $("lib-pct").textContent = `spot · ${pct.toFixed(0)}%`;
+    $("lib-meter").style.width = `${pct.toFixed(1)}%`;
+    $("lib-eta").textContent = lib.state === "running" ? hours(lib.eta_seconds) : "-";
+    $("lib-finish").textContent = lib.state === "running" ? timeOf(lib.finish_at) : "-";
+    $("lib-elapsed").textContent = hours(lib.elapsed);
+    $("lib-failed").textContent = String(lib.failed);
+    $("lib-overhead").textContent = `${lib.overhead_minutes} นาที`;
+    const now = lib.current;
+    $("lib-now").hidden = !now;
+    if (now) {
+      $("now-state").textContent = STATES[now.state] || now.state;
+      $("now-label").textContent = now.label;
+      $("now-time").textContent = `${clock(now.seconds)} / ${clock(now.budget)}`;
+      $("now-meter").style.width = `${Math.min(100, now.seconds / (now.budget || 1) * 100).toFixed(1)}%`;
+      $("now-speed").textContent = now.deals && now.seconds ? `${now.seats} คน · ${Math.round(now.deals / now.seconds).toLocaleString("en-US")} deals/s · job ${now.job}` : `${now.seats} คน · job ${now.job}`;
+    }
+    $("lib-recent").innerHTML = lib.recent.length ? lib.recent.map(r =>
+      `<li><span>${escapeAttr(r.label)}</span><span class="st-${r.state}">${r.state === "done" ? (r.minutes ?? "-") + " นาที" : "ล้มเหลว"}</span></li>`).join("")
+      : '<li><span class="st-next">ยังไม่มี</span></li>';
+    $("lib-next").innerHTML = lib.next.length ? lib.next.map(l => `<li><span class="st-next">${escapeAttr(l)}</span></li>`).join("")
+      : '<li><span class="st-next">ไม่มีคิว</span></li>';
+  }
+
+  function lossChart(train, hold) {
+    const all = [...(train || []), ...(hold || [])].filter(Number.isFinite);
+    if (!all.length) { $("net-chart").innerHTML = ""; return; }
+    const top = Math.max(...all), low = Math.min(...all), n = Math.max((train || []).length, (hold || []).length);
+    const x = i => n > 1 ? 8 + i / (n - 1) * 384 : 200, y = v => 152 - (v - low) / ((top - low) || 1) * 144;
+    const line = (pts, color) => pts && pts.length ? `<polyline fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}"/>` : "";
+    $("net-chart").innerHTML = line(train, "var(--blue)") + line(hold, "var(--red)");
+  }
+
+  function renderTraining(net) {
+    $("net-empty").hidden = !!net;
+    $("net-body").hidden = !net;
+    if (!net) { badge("net-state", "-"); return; }
+    badge("net-state", net.state);
+    const pct = net.epochs ? net.epoch / net.epochs * 100 : 0;
+    const last = a => a && a.length ? a[a.length - 1] : null;
+    const num = v => Number.isFinite(v) ? v.toFixed(4) : "-";
+    $("net-epoch").textContent = `${net.epoch ?? 0} / ${net.epochs ?? "-"}`;
+    $("net-pct").textContent = `epoch · ${pct.toFixed(0)}%`;
+    $("net-meter").style.width = `${pct.toFixed(1)}%`;
+    $("net-eta").textContent = net.state === "running" && net.eta_seconds != null ? hours(net.eta_seconds) : "-";
+    $("net-train").textContent = num(last(net.train_loss));
+    $("net-hold").textContent = num(last(net.holdout_loss));
+    $("net-gap").textContent = Number.isFinite(net.holdout_gap) ? `${(net.holdout_gap * 100).toFixed(1)}%` : "-";
+    $("net-best").textContent = net.best_epoch ?? "-";
+    $("net-updated").textContent = timeOf(net.updated);
+    lossChart(net.train_loss, net.holdout_loss);
+  }
+
+  async function progressTick() {
+    try {
+      const p = await api("/api/progress");
+      renderLibrary(p.library, p.disk_free_gb);
+      renderTraining(p.training);
+    } catch (error) {
+      badge("lib-state", "failed");
+      $("lib-empty").hidden = false;
+      $("lib-empty").firstElementChild.textContent = error.message;
+    }
+  }
+
+  function showTab(name) {
+    const train = name === "training";
+    $("solve-view").hidden = train;
+    $("train-view").hidden = !train;
+    $("tab-solve").setAttribute("aria-selected", String(!train));
+    $("tab-train").setAttribute("aria-selected", String(train));
+    clearInterval(progressPoll);
+    if (train) { progressTick(); progressPoll = setInterval(progressTick, 5000); }
+    if (location.hash !== (train ? "#training" : "")) history.replaceState(null, "", train ? "#training" : location.pathname);
+  }
+  $("tab-solve").addEventListener("click", () => showTab("solve"));
+  $("tab-train").addEventListener("click", () => showTab("training"));
+
   // ---------- start ----------
   renderPlayers();
   renderSeats();
@@ -549,6 +741,7 @@
     renderICM();
     if (info.running) watch(info.running);
   }).catch(error => { $("error").textContent = error.message; });
+  if (location.hash === "#training") showTab("training");
 })();
 </script>
 </body>
