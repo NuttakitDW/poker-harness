@@ -15,7 +15,7 @@ import numba
 import numpy as np
 
 from .fulltree import STREET_BUCKETS, FullTree, FullTreeConfig
-from .fullkernels import evaluate_root_actions, sample_root_actions, train_full, tree_links
+from .fullkernels import evaluate_root_actions, no_outcomes, sample_root_actions, train_full, tree_links
 from .solve import thread_seeds
 from .tables import (
     FIRST_IN_POSITIONS,
@@ -97,7 +97,7 @@ def solve_full(config: FullSolveConfig, output: Path, *, log=print) -> dict[str,
             per_thread, states, tables.bucket_of, rank5, comb, tree.actor, tree.street,
             tree.decision_index, tree.row_start, tree.children, tree.action_count, tree.behind,
             tree.sidepot_count, tree.sidepot_amount, tree.sidepot_eligible_mask,
-            regrets, strategy_sum, tree.start_stacks, CHIP_EV,
+            regrets, strategy_sum, tree.start_stacks, CHIP_EV, *no_outcomes(),
         )
         epoch += 1
         if epoch <= config.discount_epochs:
@@ -196,7 +196,7 @@ def verify_full(model: Path, *, samples: int, threads: int, seed: int,
                 thread_seeds(run_seed, len(pairs)), samples, tree.first_in_nodes, tables.bucket_of,
                 rank5, comb, strategy_sum, tree.actor, tree.street, tree.decision_index, tree.row_start,
                 tree.children, tree.action_count, tree.behind, tree.sidepot_count, tree.sidepot_amount,
-                tree.sidepot_eligible_mask, tree.start_stacks, CHIP_EV, moments,
+                tree.sidepot_eligible_mask, tree.start_stacks, CHIP_EV, moments, *no_outcomes(),
             )
             return _rows(pairs, moments, strategy_sum, tree, tables, labels_by_seat)
         evaluate_root_actions(
@@ -206,7 +206,7 @@ def verify_full(model: Path, *, samples: int, threads: int, seed: int,
             tables.bucket_of, rank5, comb, policy, tree.actor, tree.street, tree.decision_index,
             tree.row_start, tree.action_count, tree.behind, tree.sidepot_count,
             tree.sidepot_amount, tree.sidepot_eligible_mask, parent, parent_slot, subtree_end,
-            1e-9, tree.start_stacks, CHIP_EV, moments,
+            1e-9, tree.start_stacks, CHIP_EV, moments, *no_outcomes(),
         )
         return _rows(pairs, moments, strategy_sum, tree, tables, labels_by_seat)
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ตามควาย Final Table</title>
+<title>ตามควาย MTT ICM</title>
 <meta name="description" content="Solve โต๊ะ final ของ PLO ด้วย ICM บนเครื่องนี้ ใช้ทุก core">
 <meta name="theme-color" content="#171512">
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
@@ -134,9 +134,9 @@
       <span class="brand"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</span>
       <span class="local" id="cores">local</span>
     </nav>
-    <p class="eyebrow rise">PLO4 · Final table · ICM</p>
-    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>Solve โต๊ะ final ด้วย ICM บนเครื่องนี้</h1>
-    <p class="lede rise d2">ใส่สแตกของทุกที่นั่งกับเงินรางวัลที่เหลือ หรือวางรูปหน้าจอโต๊ะให้อ่านเอง แล้ว solve ทั้งเกมถึง river โดยคิดผลเป็นเงินรางวัลตาม ICM ไม่ใช่ชิป</p>
+    <p class="eyebrow rise">PLO4 · MTT + Final table · ICM</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>Solve spot ทัวร์ด้วย ICM บนเครื่องนี้</h1>
+    <p class="lede rise d2">ใส่สแตกของทุกที่นั่ง เงินรางวัลทุกอันดับ และจำนวนคนที่เหลือในทัวร์ (หรือวางรูปหน้าจอโต๊ะให้อ่านเอง) แล้ว solve ทั้งเกมถึง river โดยคิดผลเป็นเงินรางวัลตาม ICM ของทั้งทัวร์ ไม่ใช่ชิป เว้นช่องคนที่เหลือว่างไว้ = โต๊ะ final</p>
   </div>
 </header>
 
@@ -154,7 +154,7 @@
         <p class="ok" id="read-ok" hidden></p>
 
         <div class="row3" style="margin-top:1rem">
-          <label class="field"><span>จำนวนผู้เล่น</span>
+          <label class="field"><span>คนในโต๊ะนี้ (2-7)</span>
             <select id="players"></select>
           </label>
           <label class="field"><span>Ante (bb)</span>
@@ -180,9 +180,21 @@
 
       <section class="sheet" aria-labelledby="solve-title">
         <h2 class="title" id="solve-title">รางวัลและการ solve</h2>
-        <label class="field"><span>เงินรางวัลที่เหลือ อันดับ 1 ก่อน บรรทัดละอันดับ</span>
+        <label class="field"><span>เงินรางวัลทุกอันดับที่จ่าย อันดับ 1 ก่อน บรรทัดละอันดับ</span>
           <textarea id="payouts" spellcheck="false"></textarea>
         </label>
+        <div class="row3" style="margin-top:.8rem">
+          <label class="field"><span>คนที่เหลือทั้งทัวร์</span>
+            <input type="number" id="players-left" min="2" step="1" placeholder="ว่าง = final">
+          </label>
+          <label class="field"><span>ชิปทั้งทัวร์</span>
+            <input type="number" id="total-chips" min="0" step="any" placeholder="เช่น 18700000">
+          </label>
+          <label class="field"><span>สแตกเฉลี่ยโต๊ะอื่น (bb)</span>
+            <input type="number" id="field-stack" min="0.2" step="0.01" placeholder="คำนวณให้">
+          </label>
+        </div>
+        <p class="ok" id="field-note"></p>
         <div class="field" style="margin-top:.8rem"><span>เวลา solve</span>
           <div class="choice" id="minutes" role="group" aria-label="เวลา solve"></div>
         </div>
@@ -213,7 +225,7 @@
       </div>
       <div id="explorer"></div>
       <div class="explain">
-        <p>ความถี่ทุกตัวมาจาก solve ที่ให้คะแนนแต่ละมือเป็นเงินรางวัลตาม ICM (Malmuth-Harville) ของสแตกหลังจบมือ ไม่ใช่ชิป ระหว่าง solve หน้านี้โหลดผลใหม่ทุกนาที</p>
+        <p>ความถี่ทุกตัวมาจาก solve ที่ให้คะแนนแต่ละมือเป็นเงินรางวัลตาม ICM (Malmuth-Harville) ของสแตกหลังจบมือ ไม่ใช่ชิป ถ้าใส่คนที่เหลือทั้งทัวร์ ICM จะรวมผู้เล่นโต๊ะอื่นทุกคน (ถือสแตกเฉลี่ย) และทุกอันดับที่จ่าย ระหว่าง solve หน้านี้โหลดผลใหม่ทุกนาที</p>
         <p>ดูได้เฉพาะเส้นที่มีผู้เล่นใส่ชิปไม่เกินสองคน solver ใช้ bucket ตามลักษณะมือและ Hwang tier มือที่คล้ายกันมากจะได้ความถี่เดียวกัน ผลช่วงแรกของ solve ยังแกว่ง ยิ่ง solve นานยิ่งนิ่ง</p>
       </div>
     </section>
@@ -222,7 +234,7 @@
 
 <footer>
   <div class="column">
-    <span>Final table solver ของตามควาย (ใช้ในเครื่อง)</span>
+    <span>MTT ICM solver ของตามควาย (ใช้ในเครื่อง)</span>
     <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
   </div>
 </footer>
@@ -310,10 +322,33 @@
     return String(text).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   }
 
+  let icmRequest = 0;
+  function showICM(values) {
+    values.forEach((v, i) => { const cell = document.querySelector(`[data-icm="${i}"]`); if (cell) cell.textContent = money(v); });
+  }
+  // Mid-tournament the other tables share the prizes, so the server prices the table with them.
   function renderICM() {
     const stacks = form.seats.map(s => Number(s.stack) || 0);
-    const values = icm(stacks, prizes());
-    values.forEach((v, i) => { const cell = document.querySelector(`[data-icm="${i}"]`); if (cell) cell.textContent = money(v); });
+    fillField();
+    const left = Number($("players-left").value) || 0;
+    if (left <= stacks.length) { showICM(icm(stacks, prizes())); return; }
+    const ticket = ++icmRequest;
+    api("/api/icm", { spec: spec() })
+      .then(r => { if (ticket === icmRequest) showICM(r.icm); })
+      .catch(() => { if (ticket === icmRequest) showICM(stacks.map(() => NaN)); });
+  }
+
+  // Average stack elsewhere = (all chips in bb - this table) / (players left - seats).
+  function fillField() {
+    const left = Number($("players-left").value) || 0, total = Number($("total-chips").value) || 0;
+    const bb = Number($("bb-chips").value) || 0, n = form.seats.length;
+    const table = form.seats.reduce((a, s) => a + (Number(s.stack) || 0), 0);
+    if (left > n && total > 0 && bb > 0) {
+      $("field-stack").value = Math.round(((total / bb - table) / (left - n)) * 100) / 100;
+      $("field-note").textContent = `โต๊ะอื่น ${left - n} คน เฉลี่ย ${$("field-stack").value}bb`;
+    } else {
+      $("field-note").textContent = left > n ? "ใส่ชิปทั้งทัวร์กับ BB เป็นชิป ให้คำนวณสแตกเฉลี่ย หรือพิมพ์เอง" : "โต๊ะ final: จ่ายเฉพาะอันดับบนตามจำนวนคนในโต๊ะ";
+    }
   }
 
   $("players").addEventListener("change", e => { form.players = Number(e.target.value); renderSeats(); });
@@ -328,6 +363,8 @@
     if (e.target.name === "hero") { form.hero = e.target.value; renderSeats(); }
   });
   $("payouts").addEventListener("input", renderICM);
+  ["players-left", "total-chips"].forEach(id => $(id).addEventListener("input", renderICM));
+  $("field-stack").addEventListener("input", () => { $("total-chips").value = ""; renderICM(); });
   $("bb-chips").addEventListener("input", () => {
     const bb = Number($("bb-chips").value);
     if (!(bb > 0)) return;
@@ -397,6 +434,9 @@
     $("ante-mode").value = spec.ante_mode;
     $("hand").value = spec.hand || "";
     $("payouts").value = spec.payouts.join("\n");
+    $("players-left").value = spec.players_left || "";
+    $("total-chips").value = "";
+    $("field-stack").value = spec.field_stack_bb || "";
     renderPlayers();
     renderSeats();
     renderChoices();
@@ -409,6 +449,7 @@
       stacks, payouts: prizes(), ante_bb: Number($("ante").value) || 0, ante_mode: $("ante-mode").value,
       raise_caps: form.caps.split(",").map(Number), minutes: form.minutes, hero: form.hero,
       hand: $("hand").value.replace(/\s+/g, "") || null,
+      players_left: Number($("players-left").value) || 0, field_stack_bb: Number($("field-stack").value) || 0,
     };
   }
 
@@ -438,7 +479,7 @@
     tick();
   }
 
-  const STATES = { starting: "กำลังเริ่ม", building: "กำลังสร้างเกม", solving: "กำลัง solve", done: "เสร็จแล้ว", stopped: "หยุดแล้ว", failed: "ล้มเหลว" };
+  const STATES = { starting: "กำลังเริ่ม", building: "กำลังสร้างเกม", pricing: "กำลังคิด ICM", solving: "กำลัง solve", done: "เสร็จแล้ว", stopped: "หยุดแล้ว", failed: "ล้มเหลว" };
 
   async function tick() {
     if (!job) return;
@@ -480,9 +521,10 @@
   async function loadHistory() {
     const info = await api("/api/info");
     $("cores").textContent = `local · ${info.cpus} cores`;
-    $("history").innerHTML = info.jobs.length ? '<span class="field"><span>solve ก่อนหน้า</span></span>' + info.jobs.slice(0, 8).map(j => {
+    $("history").innerHTML = info.jobs.length ? '<span class="field"><span>solve ก่อนหน้า</span></span>' + info.jobs.slice(0, 40).map(j => {
       const n = j.spec.stacks.length;
-      return `<button type="button" data-job="${j.id}"><span>${n} คน · ${j.spec.stacks.map(x => +x).join(" / ")}</span><span class="mono">${j.id} · ${STATES[j.state] || j.state}</span></button>`;
+      const name = j.spec.label ? escapeAttr(j.spec.label) : `${n} คน · ${j.spec.stacks.map(x => +x).join(" / ")}`;
+      return `<button type="button" data-job="${j.id}"><span>${name}</span><span class="mono">${j.id} · ${STATES[j.state] || j.state}</span></button>`;
     }).join("") : "";
     return info;
   }

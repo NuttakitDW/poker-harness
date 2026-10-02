@@ -29,6 +29,7 @@ from plo_premium_proof.finaltable import (  # noqa: E402
 from plo_premium_proof.fullkernels import (  # noqa: E402
     _utility,
     icm_equity,
+    no_outcomes,
     scratch_size,
 )
 from plo_premium_proof.fulltree import FullTree, FullTreeConfig  # noqa: E402
@@ -127,7 +128,7 @@ class ShortTableTreeTest(unittest.TestCase):
         final = np.asarray([5.9, 2.4, 9.7])
         for seat in range(3):
             got = _utility(node, seat, tree.start_stacks, tree.behind, tree.sidepot_count, tree.sidepot_amount,
-                           tree.sidepot_eligible_mask, ranks, prizes, scratch)
+                           tree.sidepot_eligible_mask, ranks, prizes, scratch, *no_outcomes())
             self.assertAlmostEqual(got, brute_icm(list(final), prizes)[seat])
 
 
@@ -238,8 +239,20 @@ class LocalServerTest(unittest.TestCase):
         response, _ = self.request("GET", "/static/plo-explorer.js")
         self.assertEqual(response.getheader("Content-Type"), "text/javascript; charset=utf-8")
         info = json.loads(self.request("GET", "/api/info")[1])
-        self.assertEqual(info["payouts"], list(PAYOUTS))
+        self.assertEqual(info["payouts"][:7], list(PAYOUTS))
+        self.assertEqual(len(info["payouts"]), 51)
         self.assertIsNone(info["running"])
+
+    def test_icm_prices_the_field_mid_tournament(self):
+        table = {"stacks": [30, 12, 55, 20, 8, 41], "payouts": list(ft_server.DEFAULT_PAYOUTS)}
+        final = json.loads(self.request("POST", "/api/icm", {"spec": table})[1])["icm"]
+        self.assertAlmostEqual(sum(final), sum(ft_server.DEFAULT_PAYOUTS[:6]), places=6)
+        mtt = json.loads(self.request("POST", "/api/icm", {"spec": {
+            **table, "players_left": 60, "field_stack_bb": 31}})[1])["icm"]
+        self.assertEqual(len(mtt), 6)
+        self.assertLess(sum(mtt), sum(final))
+        response, _ = self.request("POST", "/api/icm", {"spec": {**table, "players_left": 60}})
+        self.assertEqual(response.status, 400)
 
     def test_bad_requests_are_refused_with_a_reason(self):
         response, body = self.request("POST", "/api/solve", {"spec": {"stacks": [5], "payouts": [1]}})

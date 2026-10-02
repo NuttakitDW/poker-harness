@@ -1,7 +1,10 @@
-"""Final-table ICM solves: 2-7 seats, uneven stacks, payoffs in prize equity.
+"""Final-table and mid-tournament ICM solves: 2-7 seats, uneven stacks, payoffs in prize equity.
 
 One spec is one table: every seat's stack in preflop order (UTG ... BTN, SB, BB), the
-prizes still to be paid (1st, 2nd, ...), and the ante. The all-streets game is solved with
+prizes still to be paid (1st, 2nd, ...), and the ante. Mid-tournament, ``players_left``
+counts everyone still in and ``field_stack_bb`` is the average stack at the other tables;
+those players are priced as one crowd (``pushfold.icm``) through a precomputed outcome table
+(``mtticm``). The all-streets game is solved with
 each hand scored by the change in Malmuth-Harville ICM equity instead of chips, so a chip
 won is worth less than a chip lost. The run writes ``status.json`` as it goes and
 ``result.json`` (the range explorer's format) at every export and at the end. Creating
@@ -22,7 +25,10 @@ from typing import Any
 import numba
 import numpy as np
 
-from .fullkernels import icm_equity, scratch_size, train_full
+from pushfold.icm import Payouts, PayoutError, value
+
+from . import mtticm
+from .fullkernels import icm_equity, no_outcomes, scratch_size, train_full
 from .fulltree import FullTree, FullTreeConfig
 from .solve import thread_seeds
 from .tables import HandTables, comb_table, five_card_ranks
@@ -58,6 +64,9 @@ class FinalTableSpec:
     seed: int = 1
     hero: str | None = None              # seat to open the explorer at
     hand: str | None = None              # hero's cards, e.g. "AsKsQd9c"
+    players_left: int = 0                # whole tournament; 0 or the seat count: a final table
+    field_stack_bb: float = 0.0          # average stack at the other tables
+    label: str | None = None             # name shown for the solve
 
     def __post_init__(self) -> None:
         n = len(self.stacks)
@@ -79,6 +88,25 @@ class FinalTableSpec:
             raise SpecError("minutes must be between 0.5 and 1440")
         if self.hero is not None and self.hero not in self.seat_names:
             raise SpecError(f"hero must be one of {', '.join(self.seat_names)}")
+        if self.players_left and self.players_left < n:
+            raise SpecError("players_left counts this table too, so it cannot be below the seat count")
+        if self.is_mtt:
+            if not 0.2 <= self.field_stack_bb <= 2000:
+                raise SpecError("field_stack_bb (average stack elsewhere) must be 0.2-2000bb")
+            try:
+                self.field_payouts.check(n)
+            except PayoutError as error:
+                raise SpecError(str(error)) from error
+
+    @property
+    def is_mtt(self) -> bool:
+        return self.players_left > len(self.stacks)
+
+    @property
+    def field_payouts(self) -> Payouts:
+        """Prizes for everyone still in, with the other tables as one crowd."""
+        return Payouts(prizes=self.payouts[:self.players_left], crowd=self.players_left - len(self.stacks),
+                       crowd_stack=self.field_stack_bb)
 
     @property
     def seat_names(self) -> tuple[str, ...]:
@@ -108,6 +136,9 @@ class FinalTableSpec:
                 seed=int(data.get("seed", 1)),
                 hero=data.get("hero") or None,
                 hand=data.get("hand") or None,
+                players_left=int(data.get("players_left") or 0),
+                field_stack_bb=float(data.get("field_stack_bb") or 0.0),
+                label=data.get("label") or None,
             )
         except (KeyError, TypeError, ValueError) as error:
             if isinstance(error, SpecError):
@@ -118,9 +149,13 @@ class FinalTableSpec:
         return {**dataclasses.asdict(self), "seat_names": list(self.seat_names)}
 
 
-def icm_table(stacks: tuple[float, ...], prizes: np.ndarray) -> list[float]:
-    """Each seat's prize equity for these chip counts."""
+def icm_table(stacks: tuple[float, ...], prizes: np.ndarray, field: Payouts | None = None) -> list[float]:
+    """Each seat's prize equity for these chip counts (in prize money)."""
     chips = np.asarray(stacks, dtype=np.float64)
+    if field is not None:
+        in_chips = value(chips, tuple(stacks), field)[0]
+        money = sum(field.prizes) / (chips.sum() + field.chips_away)
+        return [float(x * money) for x in in_chips]
     work = np.empty(scratch_size(chips.size))
     return [float(icm_equity(chips, chips, prizes, seat, work)) for seat in range(chips.size)]
 
@@ -146,12 +181,17 @@ def export_result(spec: FinalTableSpec, tree: FullTree, strategy_sum: np.ndarray
     nodes, blob = heads_up_tree(spec.tree_config().root(), tree.actor, tree.children, tree.action_ids,
                                 tree.action_count, rows_of, spec.seat_names)
     stacks = ", ".join(f"{name} {x:g}" for name, x in zip(spec.seat_names, spec.stacks))
+    if spec.is_mtt:
+        label = f"{spec.players_left} left · {len(spec.stacks)}-handed ICM"
+        field = f" · field avg {spec.field_stack_bb:g}bb"
+    else:
+        label, field = f"Final table {len(spec.stacks)}-handed ICM", ""
     return {
-        "name": "ft", "label": f"Final table {len(spec.stacks)}-handed ICM",
-        "detail": f"{stacks} · ante {spec.ante_bb:g}bb ({spec.ante_mode})",
+        "name": "ft", "label": spec.label or label,
+        "detail": f"{stacks}{field} · ante {spec.ante_bb:g}bb ({spec.ante_mode})",
         "stack": max(spec.stacks), "ante": spec.ante_bb, "buckets": buckets,
         "seats": list(spec.seat_names), "spec": spec.to_dict(),
-        "icm": icm_table(spec.stacks, spec.prizes), "meta": meta,
+        "icm": icm_table(spec.stacks, spec.prizes, spec.field_payouts if spec.is_mtt else None), "meta": meta,
         "nodes": nodes, "strategy": base64.b64encode(blob).decode(),
     }
 
@@ -165,7 +205,9 @@ def solve(spec: FinalTableSpec, out_dir: Path, *, epoch_deals: int = 40_000, dis
     status: dict[str, Any] = {"state": "building", "spec": spec.to_dict(), "threads": threads,
                               "budget_seconds": spec.minutes * 60, "started": time.time()}
     _write(out_dir / STATUS, status)
-    tree = FullTree.build(spec.tree_config())
+    # Real tables almost never repeat their exact stacks, so a cached tree (~250MB at six
+    # seats) would only fill the disk; rebuilding takes about 20 seconds.
+    tree = FullTree.build(spec.tree_config(), cache_dir=None)
     tables = HandTables.build()
     rank5, comb = five_card_ranks(), comb_table()
     regrets = np.zeros((tree.rows, 3), dtype=np.float32)
@@ -173,10 +215,20 @@ def solve(spec: FinalTableSpec, out_dir: Path, *, epoch_deals: int = 40_000, dis
     states = thread_seeds(spec.seed, threads)
     per_thread = max(1, epoch_deals // threads)
     numba.set_num_threads(threads)
-    prizes = spec.prizes
-    # ICM equity is in prize money; scale to about a big blind so float32 regrets stay precise.
-    scale = float(prizes[0]) / sum(spec.stacks) if prizes[0] > 0 else 1.0
-    payouts = prizes / scale
+    if spec.is_mtt:
+        # Crowd ICM priced once per terminal outcome, already in chips.
+        status.update(state="pricing")
+        _write(out_dir / STATUS, status)
+        table = mtticm.build(tree, spec.field_payouts)
+        outcomes = (table.start, table.winners, table.values)
+        payouts = np.zeros(0)
+        status["outcomes"] = int(table.values.shape[0])
+    else:
+        prizes = spec.prizes
+        # ICM equity is in prize money; scale to about a big blind so float32 regrets stay precise.
+        scale = float(prizes[0]) / sum(spec.stacks) if prizes[0] > 0 else 1.0
+        payouts = prizes / scale
+        outcomes = no_outcomes()
     solving = clock()
     status.update(state="solving", nodes=tree.node_count, decisions=tree.decision_count,
                   build_seconds=round(solving - started, 1))
@@ -188,7 +240,7 @@ def solve(spec: FinalTableSpec, out_dir: Path, *, epoch_deals: int = 40_000, dis
             per_thread, states, tables.bucket_of, rank5, comb, tree.actor, tree.street,
             tree.decision_index, tree.row_start, tree.children, tree.action_count, tree.behind,
             tree.sidepot_count, tree.sidepot_amount, tree.sidepot_eligible_mask,
-            regrets, strategy_sum, tree.start_stacks, payouts,
+            regrets, strategy_sum, tree.start_stacks, payouts, *outcomes,
         )
         epoch += 1
         if epoch <= discount_epochs:  # linear CFR: early iterations fade out
@@ -213,4 +265,5 @@ def solve(spec: FinalTableSpec, out_dir: Path, *, epoch_deals: int = 40_000, dis
 
 
 def _meta(status: dict[str, Any]) -> dict[str, Any]:
-    return {key: status.get(key) for key in ("epochs", "deals", "seconds", "threads", "nodes", "decisions")}
+    return {key: status.get(key) for key in ("epochs", "deals", "seconds", "threads", "nodes", "decisions",
+                                             "outcomes")}

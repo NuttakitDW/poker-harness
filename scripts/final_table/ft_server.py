@@ -33,6 +33,7 @@ from plo_premium_proof.finaltable import (  # noqa: E402
     STOP,
     FinalTableSpec,
     SpecError,
+    icm_table,
 )
 
 PAGE = Path(__file__).resolve().parent / "ft.html"
@@ -43,8 +44,10 @@ STATIC_TYPES = {"png": "image/png", "json": "application/json", "js": "text/java
                 "css": "text/css; charset=utf-8"}
 JOB_ID = re.compile(r"\d{8}-\d{6}")
 MAX_BODY = 14_000_000
-# The final table the page opens with: 7 seats, places 1-7 still to be paid.
-DEFAULT_PAYOUTS = (1531.94, 1136.36, 842.99, 625.36, 463.91, 344.15, 255.30)
+# The page opens with the PLO Monster Stack $25 payouts (51 paid). A final table pays the
+# top places only; mid-tournament every place counts.
+DEFAULT_PAYOUTS = ((1531.94, 1136.36, 842.99, 625.36, 463.91, 344.15, 255.30, 178.18) + (146.48,) * 2
+                   + (120.41,) * 3 + (98.99,) * 4 + (81.38,) * 7 + (66.90,) * 10 + (55.0,) * 17)
 
 
 class Jobs:
@@ -153,6 +156,10 @@ def make_handler(jobs: Jobs) -> type[BaseHTTPRequestHandler]:
                 body = self._body()
                 if path == "/api/detect":
                     self._json(200, table_reader.read(*self._image(body)))
+                elif path == "/api/icm":
+                    spec = FinalTableSpec.from_dict({**(body.get("spec") or {}), "minutes": 1})
+                    self._json(200, {"icm": icm_table(spec.stacks, spec.prizes,
+                                                      spec.field_payouts if spec.is_mtt else None)})
                 elif path == "/api/solve":
                     job = jobs.start(FinalTableSpec.from_dict(body.get("spec") or {}))
                     self._json(200, {"id": job})

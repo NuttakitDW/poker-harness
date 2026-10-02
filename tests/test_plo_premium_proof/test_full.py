@@ -7,7 +7,13 @@ import numpy as np
 
 from plo_equity.cards import parse_cards
 from plo_premium_proof.fulltree import STREET_BUCKETS, FullTree, FullTreeConfig
-from plo_premium_proof.fullkernels import _utility, evaluate_root_actions, sample_root_actions, tree_links
+from plo_premium_proof.fullkernels import (
+    _utility,
+    evaluate_root_actions,
+    no_outcomes,
+    sample_root_actions,
+    tree_links,
+)
 from plo_premium_proof.fullsolve import CHIP_EV
 from plo_premium_proof.kernels import plo_rank
 from plo_premium_proof.postflop import (
@@ -103,7 +109,7 @@ class FullTreeTest(unittest.TestCase):
         ranks = np.arange(6, dtype=np.int64)
         self.assertAlmostEqual(_utility(node, 0, tree.start_stacks, tree.behind, tree.sidepot_count,
                                         tree.sidepot_amount, tree.sidepot_eligible_mask, ranks,
-                                        CHIP_EV, SCRATCH), 1.5)
+                                        CHIP_EV, SCRATCH, *no_outcomes()), 1.5)
 
     def test_root_evaluation_against_folding_policy(self) -> None:
         tree = self.tree
@@ -117,7 +123,7 @@ class FullTreeTest(unittest.TestCase):
             tree.first_in_nodes, tables.bucket_of, five_card_ranks(), comb_table(), policy,
             tree.actor, tree.street, tree.decision_index, tree.row_start, tree.action_count,
             tree.behind, tree.sidepot_count, tree.sidepot_amount, tree.sidepot_eligible_mask,
-            parent, slot, end, 1e-9, tree.start_stacks, CHIP_EV, moments,
+            parent, slot, end, 1e-9, tree.start_stacks, CHIP_EV, moments, *no_outcomes(),
         )
         opens = moments[0, 2, 0] / moments[0, 3, 0]
         self.assertAlmostEqual(opens, 1.5)
@@ -134,7 +140,7 @@ class FullTreeTest(unittest.TestCase):
             tree.first_in_nodes, tables.bucket_of, five_card_ranks(), comb_table(), strategy_sum,
             tree.actor, tree.street, tree.decision_index, tree.row_start, tree.children,
             tree.action_count, tree.behind, tree.sidepot_count, tree.sidepot_amount,
-            tree.sidepot_eligible_mask, tree.start_stacks, CHIP_EV, moments,
+            tree.sidepot_eligible_mask, tree.start_stacks, CHIP_EV, moments, *no_outcomes(),
         )
         utg_open = moments[0, 2, 0] / moments[0, 3, 0]
         sb_fold = moments[1, 0, 0] / moments[1, 3, 0]
@@ -163,7 +169,7 @@ class AnteTreeTest(unittest.TestCase):
             node = int(tree.children[node, 0])  # everyone else folds
         ranks = np.arange(6, dtype=np.int64)
         gain = _utility(node, 0, tree.start_stacks, tree.behind, tree.sidepot_count, tree.sidepot_amount,
-                        tree.sidepot_eligible_mask, ranks, CHIP_EV, SCRATCH)
+                        tree.sidepot_eligible_mask, ranks, CHIP_EV, SCRATCH, *no_outcomes())
         self.assertAlmostEqual(gain, 1.5 + 5 * 0.116)
 
     def test_folding_first_in_loses_only_the_ante(self) -> None:
@@ -174,7 +180,7 @@ class AnteTreeTest(unittest.TestCase):
         ranks = np.arange(6, dtype=np.int64)
         self.assertAlmostEqual(_utility(node, 0, tree.start_stacks, tree.behind, tree.sidepot_count,
                                         tree.sidepot_amount, tree.sidepot_eligible_mask, ranks,
-                                        CHIP_EV, SCRATCH), -0.116)
+                                        CHIP_EV, SCRATCH, *no_outcomes()), -0.116)
 
     def test_chips_are_conserved(self) -> None:
         terminal = self.tree.actor < 0

@@ -88,12 +88,18 @@ def icm_equity(final: np.ndarray, start: np.ndarray, payouts: np.ndarray, target
 @njit(cache=True)  # pragma: no cover - compiled native code
 def _utility(node: int, target: int, stacks: np.ndarray, behind: np.ndarray, sidepot_count: np.ndarray,
              sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray, ranks: np.ndarray,
-             payouts: np.ndarray, scratch: np.ndarray) -> float:
+             payouts: np.ndarray, scratch: np.ndarray, outcome_start: np.ndarray,
+             outcome_winners: np.ndarray, outcome_values: np.ndarray) -> float:
     """``target``'s result: chips won or lost, or with ``payouts`` its ICM prize equity.
 
-    Ties split exactly. ``scratch`` needs seats + 2 * 2**seats floats when ``payouts`` is set.
+    With an outcome table (``mtticm.OutcomeTable``, non-empty ``outcome_start``) the equity is
+    looked up by each layer's winners instead. Ties split exactly. ``scratch`` needs
+    seats + 2 * 2**seats floats when ``payouts`` is set.
     """
     n = behind.shape[1]
+    if outcome_start.size:
+        return _table_utility(node, target, ranks, sidepot_count, sidepot_eligible_mask,
+                              outcome_start, outcome_winners, outcome_values)
     if payouts.size == 0:
         result = behind[node, target]
         for layer in range(sidepot_count[node]):
@@ -132,6 +138,38 @@ def _utility(node: int, target: int, stacks: np.ndarray, behind: np.ndarray, sid
             if mask & (1 << seat) and ranks[seat] == best:
                 final[seat] += share
     return icm_equity(final, stacks, payouts, target, scratch[n:])
+
+
+@njit(cache=True)  # pragma: no cover - compiled native code
+def _table_utility(node: int, target: int, ranks: np.ndarray, sidepot_count: np.ndarray,
+                   sidepot_eligible_mask: np.ndarray, outcome_start: np.ndarray,
+                   outcome_winners: np.ndarray, outcome_values: np.ndarray) -> float:
+    n = ranks.size
+    layers = sidepot_count[node]
+    for row in range(outcome_start[node], outcome_start[node + 1]):
+        match = True
+        for layer in range(layers):
+            mask = sidepot_eligible_mask[node, layer]
+            best = 1 << 30
+            winners = 0
+            for seat in range(n):
+                if mask & (1 << seat):
+                    if ranks[seat] < best:
+                        best = ranks[seat]
+                        winners = 1 << seat
+                    elif ranks[seat] == best:
+                        winners |= 1 << seat
+            if winners != outcome_winners[row, layer]:
+                match = False
+                break
+        if match:
+            return outcome_values[row, target]
+    raise ValueError("terminal outcome missing from the ICM table")
+
+
+def no_outcomes() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Empty outcome-table arguments: price terminals directly (chips or table ICM)."""
+    return np.zeros(0, dtype=np.int64), np.zeros((0, 1), dtype=np.int32), np.zeros((0, 1), dtype=np.float64)
 
 
 def scratch_size(seats: int) -> int:
@@ -185,12 +223,14 @@ def _traverse(
     row_start: np.ndarray, children: np.ndarray, action_count: np.ndarray, behind: np.ndarray,
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
     regrets: np.ndarray, strategy_sum: np.ndarray, state: np.ndarray, stacks: np.ndarray,
-    payouts: np.ndarray, scratch: np.ndarray,
+    payouts: np.ndarray, scratch: np.ndarray, outcome_start: np.ndarray,
+    outcome_winners: np.ndarray, outcome_values: np.ndarray,
 ) -> float:
     seat = actor[node]
     if seat < 0:
         return _utility(node, traverser, stacks, behind, sidepot_count, sidepot_amount,
-                        sidepot_eligible_mask, ranks, payouts, scratch)
+                        sidepot_eligible_mask, ranks, payouts, scratch, outcome_start,
+                        outcome_winners, outcome_values)
     bucket = _bucket(street[node], seat, hands, board, buckets, distributions, counts, rank5, comb)
     row = row_start[decision_index[node]] + bucket
     count = action_count[node]
@@ -200,7 +240,8 @@ def _traverse(
             children[node, 0], traverser, hands, board, buckets, distributions, counts, ranks,
             rank5, comb, actor, street, decision_index, row_start, children, action_count,
             behind, sidepot_count, sidepot_amount, sidepot_eligible_mask, regrets,
-            strategy_sum, state, stacks, payouts, scratch,
+            strategy_sum, state, stacks, payouts, scratch, outcome_start, outcome_winners,
+            outcome_values,
         )
         v1 = 0.0
         v2 = 0.0
@@ -209,14 +250,16 @@ def _traverse(
                 children[node, 1], traverser, hands, board, buckets, distributions, counts,
                 ranks, rank5, comb, actor, street, decision_index, row_start, children,
                 action_count, behind, sidepot_count, sidepot_amount, sidepot_eligible_mask,
-                regrets, strategy_sum, state, stacks, payouts, scratch,
+                regrets, strategy_sum, state, stacks, payouts, scratch, outcome_start, outcome_winners,
+            outcome_values,
             )
         if count > 2:
             v2 = _traverse(
                 children[node, 2], traverser, hands, board, buckets, distributions, counts,
                 ranks, rank5, comb, actor, street, decision_index, row_start, children,
                 action_count, behind, sidepot_count, sidepot_amount, sidepot_eligible_mask,
-                regrets, strategy_sum, state, stacks, payouts, scratch,
+                regrets, strategy_sum, state, stacks, payouts, scratch, outcome_start, outcome_winners,
+            outcome_values,
             )
         expected = p0 * v0 + p1 * v1 + p2 * v2
         regrets[row, 0] += v0 - expected
@@ -238,7 +281,7 @@ def _traverse(
         children[node, choice], traverser, hands, board, buckets, distributions, counts, ranks,
         rank5, comb, actor, street, decision_index, row_start, children, action_count, behind,
         sidepot_count, sidepot_amount, sidepot_eligible_mask, regrets, strategy_sum, state, stacks,
-        payouts, scratch,
+        payouts, scratch, outcome_start, outcome_winners, outcome_values,
     )
 
 
@@ -249,10 +292,12 @@ def train_full(
     row_start: np.ndarray, children: np.ndarray, action_count: np.ndarray, behind: np.ndarray,
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
     regrets: np.ndarray, strategy_sum: np.ndarray, stacks: np.ndarray, payouts: np.ndarray,
+    outcome_start: np.ndarray, outcome_winners: np.ndarray,
+    outcome_values: np.ndarray,
 ) -> None:
     """Hogwild MCCFR: one deal per step, traversed once for each seat.
 
-    Payoffs are chips, or ICM prize equity when ``payouts`` is non-empty.
+    Payoffs are chips, or ICM prize equity when ``payouts`` or ``outcome_start`` is non-empty.
     """
     seats = behind.shape[1]
     for thread in prange(rng_states.size):
@@ -275,7 +320,8 @@ def train_full(
                     0, traverser, hands, board, buckets, distributions, counts, ranks, rank5,
                     comb, actor, street, decision_index, row_start, children, action_count,
                     behind, sidepot_count, sidepot_amount, sidepot_eligible_mask,
-                    regrets, strategy_sum, state, stacks, payouts, scratch,
+                    regrets, strategy_sum, state, stacks, payouts, scratch, outcome_start,
+                    outcome_winners, outcome_values,
                 )
 
 
@@ -291,6 +337,8 @@ def evaluate_root_actions(
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
     parent: np.ndarray, parent_slot: np.ndarray, subtree_end: np.ndarray, prune: float,
     stacks: np.ndarray, payouts: np.ndarray, moments: np.ndarray,
+    outcome_start: np.ndarray, outcome_winners: np.ndarray,
+    outcome_values: np.ndarray,
 ) -> None:
     """One-step deviation values at hero's first-in node.
 
@@ -365,7 +413,8 @@ def evaluate_root_actions(
                         if value > prune:
                             per_sample[root_action[node], k] += value * _utility(
                                 node, hero, stacks, behind, sidepot_count, sidepot_amount,
-                                sidepot_eligible_mask, ranks[k], payouts, scratch)
+                                sidepot_eligible_mask, ranks[k], payouts, scratch, outcome_start,
+                                outcome_winners, outcome_values)
                 node += 1
             for action in range(count_root):
                 for k in range(BATCH):
@@ -407,6 +456,8 @@ def sample_root_actions(
     row_start: np.ndarray, children: np.ndarray, action_count: np.ndarray, behind: np.ndarray,
     sidepot_count: np.ndarray, sidepot_amount: np.ndarray, sidepot_eligible_mask: np.ndarray,
     stacks: np.ndarray, payouts: np.ndarray, moments: np.ndarray,
+    outcome_start: np.ndarray, outcome_winners: np.ndarray,
+    outcome_values: np.ndarray,
 ) -> None:
     """Sampled one-step deviation values at hero's first-in node (for trees too big to walk).
 
@@ -451,7 +502,8 @@ def sample_root_actions(
                                              action_count[node], state)
                     node = children[node, choice]
                 y = z * _utility(node, hero, stacks, behind, sidepot_count, sidepot_amount,
-                                 sidepot_eligible_mask, ranks, payouts, scratch)
+                                 sidepot_eligible_mask, ranks, payouts, scratch, outcome_start,
+                                 outcome_winners, outcome_values)
                 moments[task, action, 0] += y
                 moments[task, action, 1] += y * y
                 moments[task, action, 2] += y * z
