@@ -496,7 +496,13 @@ window.PloExplorer = (() => {
       render();
     });
 
-    $("reset").addEventListener("click", () => { state.path = []; state.first = null; state.second = null; render(); });
+    // Reset clears the line, the picked cells, the filters and the searched hand; the game stays.
+    $("reset").addEventListener("click", () => {
+      clearTimeout(typing);
+      Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "" });
+      $("search").value = "";
+      render();
+    });
 
     $("matrix").addEventListener("click", event => {
       const button = event.target.closest(".cell");
