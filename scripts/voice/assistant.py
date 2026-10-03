@@ -20,6 +20,7 @@ import urllib.error
 import urllib.request
 
 import costs
+import equity_question
 import keys
 import plo_advisor
 import plo_type
@@ -293,6 +294,12 @@ def answer(text: str, solve, history: tuple[Turn, ...] = (), memory=None,
     solve(query, memory=...) คือ spot_chart.reply
     """
     lang = spot.language_of(text)
+    # Equity is plain arithmetic: answer it before the model can decline (it copies its own past
+    # replies, so one old "I can't" in the history kept refusing).
+    if equity_question.parse(text) is not None:
+        direct = solve(text, memory=memory, lang=lang)
+        if direct.kind in ("equity", "equity_error"):
+            return _with_history(Crafted(ANSWERED_DIRECTLY[lang], text), direct, history, text)
     if plo_advisor.routes(text, memory):
         direct = solve(text, memory=memory, lang=lang)
         if direct.kind == "plo_advice":

@@ -8,6 +8,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "voice"))
 sys.path.insert(0, str(ROOT / "scripts" / "web"))
 
+import assistant  # noqa: E402
 import chat  # noqa: E402
 import equity_question  # noqa: E402
 import spot_chart  # noqa: E402
@@ -58,6 +59,14 @@ class ReplyTest(unittest.TestCase):
         self.assertEqual(result.kind, "equity")
         self.assertTrue(any("KsKc  53.0%" in line for line in result.lines))
         self.assertIsNone(result.chart)
+
+
+    def test_ai_mode_answers_even_when_the_model_would_decline(self):
+        refuse = lambda text, history, memory, key: assistant.Crafted("I can't run equity.", None)  # noqa: E731
+        history = (assistant.Turn("K8 vs A7 equity", '{"say": "I cannot calculate equity", "query": null}'),)
+        made = assistant.answer("K5s vs KK equity", spot_chart.reply, history, key="test", crafter=refuse)
+        self.assertEqual(made.made.kind, "equity")
+        self.assertIn("K5s", made.made.message)
 
 
 if __name__ == "__main__":
