@@ -36,11 +36,20 @@
       ]
     },
     {
-      "source": "/static/(.*)",
+      "source": "/static/(.*)\\.(png|pdf|csv)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
+      "source": "/static/(.*)\\.(js|css|json)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }
