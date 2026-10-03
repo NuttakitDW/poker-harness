@@ -167,9 +167,12 @@ class Memo:
         if not fresh:
             return
         self.load().update(fresh)
-        with self._connect() as connection:
-            connection.executemany("insert or replace into share values (?, ?)",
-                                   [(key, _encode(share)) for key, share in fresh.items()])
+        try:
+            with self._connect() as connection:
+                connection.executemany("insert or replace into share values (?, ?)",
+                                       [(key, _encode(share)) for key, share in fresh.items()])
+        except (sqlite3.OperationalError, OSError):
+            pass  # read-only disk (Vercel): the results stay in memory for this instance
 
 
 def _encode(share: Share) -> str:

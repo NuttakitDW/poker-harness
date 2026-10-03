@@ -12,6 +12,7 @@ serves local runs and tests. The website only writes; reading is for the local d
 
 from __future__ import annotations
 
+import concurrent.futures
 import datetime
 import json
 import os
@@ -188,28 +189,33 @@ def _num(value) -> float:
 
 
 def summary(store, days: int = 30, now: float | None = None) -> dict:
-    """Everything the dashboard's overview shows, for the last ``days`` days (Bangkok time)."""
+    """Everything the dashboard's overview shows, for the last ``days`` days (Bangkok time).
+
+    The queries are independent, so they run at the same time (each is one HTTPS round trip on Neon).
+    """
     now = time.time() if now is None else now
     since = day_of(now - (days - 1) * 86_400)
-    daily = store.execute(
-        "SELECT day, COUNT(DISTINCT visitor) AS visitors, SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) AS views, "
-        "COUNT(DISTINCT session) AS sessions, SUM(ms) AS ms FROM visits WHERE day >= $1 GROUP BY day ORDER BY day",
-        (since,))
-    asked = {r["day"]: int(_num(r["n"])) for r in store.execute(
-        "SELECT day, COUNT(*) AS n FROM messages WHERE day >= $1 GROUP BY day", (since,))}
-    pages = store.execute(
-        "SELECT path, SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) AS views, COUNT(DISTINCT visitor) AS visitors, "
-        "SUM(ms) AS ms FROM visits WHERE day >= $1 GROUP BY path ORDER BY views DESC LIMIT 20", (since,))
-    def top(column: str) -> list[dict]:
-        return [{"name": r["name"] or "", "visitors": int(_num(r["visitors"]))} for r in store.execute(
-            f"SELECT {column} AS name, COUNT(DISTINCT visitor) AS visitors FROM visits "  # noqa: S608 - fixed columns
-            f"WHERE day >= $1 AND kind = 'view' GROUP BY {column} ORDER BY visitors DESC LIMIT 12", (since,))]
-    totals = store.execute(
-        "SELECT COUNT(DISTINCT visitor) AS visitors, COUNT(DISTINCT session) AS sessions, SUM(ms) AS ms, "
-        "SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) AS views FROM visits WHERE day >= $1", (since,))[0]
-    kinds = store.execute("SELECT kind, COUNT(*) AS n FROM messages WHERE day >= $1 GROUP BY kind ORDER BY n DESC",
-                          (since,))
+    top = ("SELECT {c} AS name, COUNT(DISTINCT visitor) AS visitors FROM visits "
+           "WHERE day >= $1 AND kind = 'view' GROUP BY {c} ORDER BY visitors DESC LIMIT 12")
+    queries = {
+        "daily": "SELECT day, COUNT(DISTINCT visitor) AS visitors, SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) "
+                 "AS views, COUNT(DISTINCT session) AS sessions, SUM(ms) AS ms FROM visits WHERE day >= $1 "
+                 "GROUP BY day ORDER BY day",
+        "asked": "SELECT day, COUNT(*) AS n FROM messages WHERE day >= $1 GROUP BY day",
+        "pages": "SELECT path, SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) AS views, COUNT(DISTINCT visitor) "
+                 "AS visitors, SUM(ms) AS ms FROM visits WHERE day >= $1 GROUP BY path ORDER BY views DESC LIMIT 20",
+        "totals": "SELECT COUNT(DISTINCT visitor) AS visitors, COUNT(DISTINCT session) AS sessions, SUM(ms) AS ms, "
+                  "SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) AS views FROM visits WHERE day >= $1",
+        "kinds": "SELECT kind, COUNT(*) AS n FROM messages WHERE day >= $1 GROUP BY kind ORDER BY n DESC",
+        "referrer": top.format(c="referrer"), "country": top.format(c="country"), "device": top.format(c="device"),
+    }
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(queries)) as pool:
+        futures = {name: pool.submit(store.execute, sql, (since,)) for name, sql in queries.items()}
+        got = {name: future.result() for name, future in futures.items()}
+    asked = {r["day"]: int(_num(r["n"])) for r in got["asked"]}
+    totals = got["totals"][0]
     sessions = max(1, int(_num(totals["sessions"])))
+    named = lambda rows: [{"name": r["name"] or "", "visitors": int(_num(r["visitors"]))} for r in rows]  # noqa: E731
     return {
         "since": since, "days": days,
         "totals": {"visitors": int(_num(totals["visitors"])), "views": int(_num(totals["views"])),
@@ -217,11 +223,11 @@ def summary(store, days: int = 30, now: float | None = None) -> dict:
                    "messages": sum(asked.values())},
         "daily": [{"day": r["day"], "visitors": int(_num(r["visitors"])), "views": int(_num(r["views"])),
                    "avg_session_seconds": _num(r["ms"]) / 1000 / max(1, int(_num(r["sessions"]))),
-                   "messages": asked.get(r["day"], 0)} for r in daily],
+                   "messages": asked.get(r["day"], 0)} for r in got["daily"]],
         "pages": [{"path": r["path"], "views": int(_num(r["views"])), "visitors": int(_num(r["visitors"])),
-                   "avg_seconds": _num(r["ms"]) / 1000 / max(1, int(_num(r["views"])))} for r in pages],
-        "referrers": top("referrer"), "countries": top("country"), "devices": top("device"),
-        "message_kinds": [{"kind": r["kind"], "count": int(_num(r["n"]))} for r in kinds],
+                   "avg_seconds": _num(r["ms"]) / 1000 / max(1, int(_num(r["views"])))} for r in got["pages"]],
+        "referrers": named(got["referrer"]), "countries": named(got["country"]), "devices": named(got["device"]),
+        "message_kinds": [{"kind": r["kind"], "count": int(_num(r["n"]))} for r in got["kinds"]],
     }
 
 

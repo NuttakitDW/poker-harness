@@ -39,6 +39,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import assistant  # noqa: E402
 import icm_chart  # noqa: E402
 import chart_grid  # noqa: E402
+import equity_question  # noqa: E402
 import mario  # noqa: E402
 import plo_advisor  # noqa: E402
 import plo_solved  # noqa: E402
@@ -104,6 +105,11 @@ PUSH_FOLD_ONLY = {
           "หรือบอกว่า push/fold หรือ GG AoF เช่น BTN ออลอิน 10bb หรือ aof BTN",
     "EN": "Not available yet. Only tournament push/fold charts, 15bb or less or say push/fold, "
           "or GG AoF, e.g. BTN shove 10bb or aof BTN",
+}
+EQUITY_FAILED = {
+    "TH": "คิด equity ไม่ได้: {why}\nเขียนมือแบบ K8 vs A7 หรือ KsKc vs AhKh on Qh7h2c",
+    "EN": "Couldn't work out that equity: the hands or board share a card, or a hand can't be read.\n"
+          "Write hands like K8 vs A7, or KsKc vs AhKh on Qh7h2c",
 }
 HELP = "/v voice  /t text  /n new  /ai-on /ai-off  /q quit  /h help (/help en English)  /contact"
 HELP_COMMANDS = ("/help", "/h", "/?")
@@ -211,7 +217,7 @@ class Reply:
     note: str = ""              # บรรทัดสมมติฐานของ solver ใต้ชาร์ต
     # ชนิดคำตอบ ใช้ในบันทึกคำถามเพื่อหาประโยคที่ตัวอ่านยังอ่านไม่ออก
     # chart | not_found | push_fold_only | all_in_by_posting | seat_not_at_table | bad_payouts | mario
-    # | plo_type
+    # | plo_type | equity | equity_error
     kind: str = "chart"
     plo: "plo_type.Asked | None" = None  # terminal uses a larger layout; message stays ANSI-free
 
@@ -223,6 +229,14 @@ def reply(prompt: str, memory=None, lang: str | None = None) -> Reply:
     """
     if mario.asked(prompt):
         return Reply(None, kind="mario")
+    # Hold'em equity ("K8 vs A7 equity"): exact numbers from equity.py, no chart and no memory change.
+    asked = equity_question.parse(prompt)
+    if asked is not None:
+        used = lang or spot.language_of(prompt)
+        try:
+            return Reply(None, equity_question.answer(asked, used), kind="equity")
+        except equity_question.equity.EquityError as error:
+            return Reply(None, EQUITY_FAILED[used].format(why=error), kind="equity_error")
     if plo_advisor.explicit_other_variant(prompt):
         memory = None
     # Chip-EV PLO spots at a solved depth (20bb, 40bb MTT) read the precomputed CFR charts.

@@ -48,13 +48,16 @@ def make_handler(store) -> type[BaseHTTPRequestHandler]:
             return
 
         def _send(self, status: int, body: bytes, kind: str) -> None:
-            self.send_response(status)
-            for name, value in (("Content-Type", kind), ("Content-Length", str(len(body))),
-                                ("Cache-Control", "no-store"), ("X-Content-Type-Options", "nosniff"),
-                                ("Content-Security-Policy", CSP), ("Referrer-Policy", "no-referrer")):
-                self.send_header(name, value)
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.send_response(status)
+                for name, value in (("Content-Type", kind), ("Content-Length", str(len(body))),
+                                    ("Cache-Control", "no-store"), ("X-Content-Type-Options", "nosniff"),
+                                    ("Content-Security-Policy", CSP), ("Referrer-Policy", "no-referrer")):
+                    self.send_header(name, value)
+                self.end_headers()
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # the page reloaded or moved on before the answer was ready
 
         def _json(self, status: int, data) -> None:
             self._send(status, json.dumps(data, ensure_ascii=False).encode(), "application/json; charset=utf-8")
@@ -80,6 +83,8 @@ def make_handler(store) -> type[BaseHTTPRequestHandler]:
                                                                     one("q")[:100], one("kind")[:40])})
                 else:
                     self._json(404, {"error": "not found"})
+            except (BrokenPipeError, ConnectionResetError):
+                return
             except ValueError as error:
                 self._json(400, {"error": str(error)})
             except Exception as error:  # noqa: BLE001 - show the reason on the page

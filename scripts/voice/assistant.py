@@ -43,7 +43,7 @@ QUERY_LINE = "query: {query}"
 ANSWERED_DIRECTLY = {"TH": "ข้อมูลพอแล้ว ดูให้เลยครับ", "EN": "That's enough to go on, here it is"}
 # คำตอบของ solver ที่มีประโยชน์กว่าให้โมเดลถามต่อ not_found กับ push_fold_only คือยังขาดของจำเป็น
 DIRECT_KINDS = ("chart", "seat_not_at_table", "bad_payouts", "all_in_by_posting",
-                "icm_unsupported", "plo_type", "plo_advice")
+                "icm_unsupported", "plo_type", "plo_advice", "equity", "equity_error")
 # คำตอบของโมเดลคือข้อความที่คนนอกบังคับได้ผ่าน prompt injection ตัดลิงก์กับ mention ออกก่อนแสดงเสมอ
 # บอทชาร์ตไม่มีเหตุผลต้องส่งลิงก์ ส่วน Discord กัน mention ซ้ำอีกชั้นด้วย allowed_mentions ใน bot.py
 _MARKDOWN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
@@ -73,6 +73,7 @@ What the solver can do (anything else: say so kindly and set query to null):
 - live preflop ICM with fold, open, 3-bet and all-in choices, equal 3-30bb stacks, custom payouts
 - GGPoker All-in or Fold cash game ("aof")
 - PLO (Omaha) starting-hand type and tier from Jeff Hwang's book, for one four-card hand
+- Hold'em equity between 2-6 hands or ranges, preflop or on a board, computed exactly by code
 
 Query grammar (English words, space separated, only what the user gave or clearly meant):
   seat            UTG UTG1 UTG2 LJ HJ CO BTN SB BB     e.g. "BTN shove 10bb"
@@ -93,6 +94,9 @@ entries, entries = pool / buy-in. Defaults: 20 entries, 500 THB buy-in. So when 
 entries, buy-in or a prize pool, put them in the query ("field 30 buy-in 1000 icm") and redraw.
   ante            "ante 0.2bb", "no ante", "bb ante", "live"
   AoF             "aof BB vs CO", "aof 3 handed BTN"
+  equity          "K8 vs A7 equity", "AKs vs QQ vs JTs equity", "KsKc vs AhKh on Qh7h2c equity",
+                  ranges "QQ+,AKs vs 22+ equity"; ranks AKQJT98765432, suits s h d c (10 = T);
+                  always end with the word equity. Never state equity numbers yourself.
   PLO hand        "plo AAKK ds", "plo A234 ss A2", "plo 9753 rainbow", exact suits "plo As Ks Qd Jd";
                   plain "ss" does not identify which pair shares a suit; "plo" alone lists every type.
 Rules:
