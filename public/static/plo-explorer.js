@@ -29,7 +29,10 @@ window.PloExplorer = (() => {
   </section>
 
   <section class="sheet" aria-labelledby="sum-title">
-    <h2 id="sum-title" class="label">ตัวกรอง</h2>
+    <div class="line-head">
+      <h2 id="sum-title" class="label">ตัวกรอง</h2>
+      <button class="reset" id="reset-filters" type="button">Reset</button>
+    </div>
     <div class="filters" style="margin-top:.5rem">
       <div class="search">
         <input id="search" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="ค้นมือ เช่น AsKsQd9c หรือ KQJT" aria-label="ค้นมือ">
@@ -496,13 +499,16 @@ window.PloExplorer = (() => {
       render();
     });
 
-    // Reset clears the line, the picked cells, the filters and the searched hand; the game stays.
-    $("reset").addEventListener("click", () => {
+    // Both Reset buttons (action line and filters) clear the line, the picked cells, the filters and
+    // the searched hand; the game stays.
+    function resetAll() {
       clearTimeout(typing);
       Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "" });
       $("search").value = "";
       render();
-    });
+    }
+    $("reset").addEventListener("click", resetAll);
+    $("reset-filters").addEventListener("click", resetAll);
 
     $("matrix").addEventListener("click", event => {
       const button = event.target.closest(".cell");
