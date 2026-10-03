@@ -43,6 +43,9 @@ def main(argv: list[str] | None = None) -> int:
     full.add_argument("--raise-caps", default="3,2,2,2", help="max raises per street, preflop first")
     full.add_argument("--float32", action="store_true", help="single-precision tables (large trees)")
     full.add_argument("--ante", type=float, default=0.0, help="per-player ante in bb (not in preflop pot size)")
+    full.add_argument("--seats", type=int, default=6, help="players at the table, 2-6")
+    full.add_argument("--ante-on-top", action="store_true",
+                      help="--stack is the stack after posting the ante (the ante is added on top)")
     full.add_argument("--threads", type=int, default=12)
     full.add_argument("--seed", type=int, default=1)
     full.add_argument("--epoch-deals", type=int, default=200_000)
@@ -71,19 +74,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "export-chart":
-        from .fulltree import FullTreeConfig
+        from .fullsolve import meta_tree_config
         from .preflop_chart import CHART_DIR, export_chart
         import numpy as _np
         with _np.load(args.models[0]) as data:
             meta = json.loads(str(data["meta"]))
-        config = FullTreeConfig(stack_bb=meta["stack_bb"], raise_caps=tuple(meta["raise_caps"]),
-                                ante_bb=meta.get("ante_bb", 0.0))
+        config = meta_tree_config(meta)
         deals = []
         for path in args.models:
             with _np.load(path) as data:
                 deals.append(json.loads(str(data["meta"]))["deals"])
         out = export_chart(args.models, config, CHART_DIR / args.name,
-                           {"name": args.name, "deals_per_seed": deals, "game": meta.get("game", "")})
+                           {"name": args.name, "deals_per_seed": deals, "game": meta.get("game", ""),
+                            "seats": meta.get("seats", 6), "ante_on_top": meta.get("ante_on_top", False)})
         print(f"wrote chart {out}")
         return 0
 
@@ -91,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         config = FullSolveConfig(
             seconds=args.minutes * 60, stack_bb=args.stack, threads=args.threads, seed=args.seed,
             raise_caps=tuple(int(x) for x in args.raise_caps.split(",")), single_precision=args.float32,
-            ante_bb=args.ante,
+            ante_bb=args.ante, seats=args.seats, ante_on_top=args.ante_on_top,
             epoch_deals=args.epoch_deals, discount_epochs=args.discount_epochs,
             checkpoint_every=args.checkpoint_every,
         )

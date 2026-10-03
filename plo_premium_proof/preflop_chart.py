@@ -71,6 +71,7 @@ def export_chart(models: Iterable[Path], config: FullTreeConfig, out_dir: Path, 
         bucket_of=tables.bucket_of.astype(np.int16),
     )
     info = {**meta, "stack_bb": config.stack_bb, "ante_bb": config.ante_bb,
+            "start_stack_bb": float(config.seat_stacks[0]),
             "raise_caps": list(config.raise_caps), "seeds": len(models), "buckets": buckets,
             "preflop_decisions": int(pre.size), "street_buckets": list(STREET_BUCKETS)}
     (out_dir / "meta.json").write_text(json.dumps(info, indent=1))
@@ -116,6 +117,15 @@ class Chart:
     @property
     def stack(self) -> float:
         return float(self.meta["stack_bb"])
+
+    @property
+    def start_stack(self) -> float:
+        """Each seat's stack before posting anything (stack plus ante when the ante is on top)."""
+        return float(self.meta.get("start_stack_bb", self.meta["stack_bb"]))
+
+    @property
+    def seats(self) -> int:
+        return int(self.meta.get("seats", 6))
 
     @property
     def ante(self) -> float:

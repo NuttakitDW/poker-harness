@@ -30,6 +30,9 @@ GAMES = {
     "20bb": {"label": "20bb", "detail": "6-max · 20bb · no ante · chip EV"},
     "mtt40": {"label": "40bb MTT", "detail": "6-max · 40bb · ante 0.116bb each, excluded from preflop pot size · chip EV"},
 }
+# Seat names in preflop order for each table size (six-max keeps preflop_chart.SEATS).
+SEAT_NAMES = {2: ("SB", "BB"), 3: ("BTN", "SB", "BB"), 4: ("CO", "BTN", "SB", "BB"),
+              5: ("HJ", "CO", "BTN", "SB", "BB"), 6: SEATS}
 MAX_ACTIVE = 2  # the page covers heads-up lines; a third player entering ends the tree
 SHAPES = {(2, 2): "ds", (2, 1, 1): "ss", (1, 1, 1, 1): "rb", (3, 1): "3f", (4,): "mono"}
 TIERS = ("Premium", "Speculative", "Marginal", "Trash")
@@ -89,13 +92,14 @@ def heads_up_tree(root: PLOState, actor, children, action_ids, action_count, row
 
 def export_game(name: str, out_dir: Path) -> dict:
     book = chart(name)
-    root = PLOState.new((book.stack,) * 6, sb=0.5, bb=1.0, ante=book.ante, ante_mode="individual",
+    seats = SEAT_NAMES[book.seats]
+    root = PLOState.new((book.start_stack,) * book.seats, sb=0.5, bb=1.0, ante=book.ante, ante_mode="individual",
                         opening_raise_mode="pot_only")
     nodes, blob = heads_up_tree(root, book.actor, book.children, book.action_ids, book.action_count,
-                                lambda node: book.strategy[node], SEATS)
+                                lambda node: book.strategy[node], seats)
     data = {"name": name, **GAMES[name], "stack": book.stack, "ante": book.ante,
             "deals_per_seed": book.meta.get("deals_per_seed"), "seeds": book.meta.get("seeds"),
-            "buckets": int(book.strategy.shape[1]), "seats": list(SEATS), "nodes": nodes,
+            "buckets": int(book.strategy.shape[1]), "seats": list(seats), "nodes": nodes,
             "strategy": base64.b64encode(blob).decode()}
     (out_dir / f"plo-{name}.json").write_text(json.dumps(data, separators=(",", ":")))
     return data

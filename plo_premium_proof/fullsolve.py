@@ -45,10 +45,31 @@ class FullSolveConfig:
     epoch_deals: int = 200_000
     discount_epochs: int = 100
     checkpoint_every: int = 20
+    seats: int = 6
+    # True: stack_bb is what each player has after posting the ante (the ante is added on top).
+    ante_on_top: bool = False
 
     def __post_init__(self) -> None:
         if not self.seconds > 0 or self.threads < 1 or self.epoch_deals < self.threads:
             raise ValueError("invalid solve budget")
+        if not 2 <= self.seats <= 6:
+            raise ValueError("seats must be 2-6")
+
+    def tree_config(self) -> FullTreeConfig:
+        return tree_config(self.stack_bb, self.raise_caps, self.ante_bb, self.seats, self.ante_on_top)
+
+
+def tree_config(stack_bb: float, raise_caps, ante_bb: float, seats: int = 6, ante_on_top: bool = False) -> FullTreeConfig:
+    """The game tree for a symmetric table; six seats without ante_on_top keeps the old cache names."""
+    if seats == 6 and not ante_on_top:
+        return FullTreeConfig(stack_bb=stack_bb, raise_caps=tuple(raise_caps), ante_bb=ante_bb)
+    start = stack_bb + (ante_bb if ante_on_top else 0.0)
+    return FullTreeConfig(stack_bb=stack_bb, raise_caps=tuple(raise_caps), ante_bb=ante_bb, stacks=(start,) * seats)
+
+
+def meta_tree_config(meta: dict) -> FullTreeConfig:
+    return tree_config(meta["stack_bb"], meta["raise_caps"], meta.get("ante_bb", 0.0), meta.get("seats", 6),
+                       meta.get("ante_on_top", False))
 
 
 def _save(path: Path, strategy_sum: np.ndarray, meta: dict[str, Any]) -> None:
@@ -67,8 +88,7 @@ def load_full(path: Path) -> tuple[np.ndarray, dict[str, Any]]:
 
 
 def solve_full(config: FullSolveConfig, output: Path, *, log=print) -> dict[str, Any]:
-    tree = FullTree.build(FullTreeConfig(stack_bb=config.stack_bb, raise_caps=config.raise_caps,
-                                         ante_bb=config.ante_bb))
+    tree = FullTree.build(config.tree_config())
     tables = HandTables.build()
     rank5, comb = five_card_ranks(), comb_table()
     dtype = np.float32 if config.single_precision else np.float64
@@ -83,11 +103,13 @@ def solve_full(config: FullSolveConfig, output: Path, *, log=print) -> dict[str,
     def checkpoint() -> dict[str, Any]:
         meta = {
             "schema": SCHEMA, "seed": config.seed, "stack_bb": config.stack_bb, "ante_bb": config.ante_bb,
+            "seats": config.seats, "ante_on_top": config.ante_on_top,
+            "start_stack_bb": float(tree.start_stacks[0]),
             "raise_caps": list(tree.config.raise_caps), "street_buckets": list(STREET_BUCKETS),
             "epochs": epoch, "deals": epoch * per_thread * config.threads,
-            "traversals": 6 * epoch * per_thread * config.threads,
+            "traversals": config.seats * epoch * per_thread * config.threads,
             "seconds": time.perf_counter() - started, "dtype": str(np.dtype(dtype)),
-            "game": "PLO4 6-max chip EV, pot-sized bets on all streets, all-in capped",
+            "game": f"PLO4 {config.seats}-max chip EV, pot-sized bets on all streets, all-in capped",
         }
         _save(output / "model.npz", strategy_sum, meta)
         return meta
