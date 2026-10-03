@@ -37,11 +37,13 @@ import re
 import secrets
 import sys
 import threading
+import time
 import urllib.parse
 from typing import Callable
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import analytics  # noqa: E402
 import chat  # noqa: E402
 import spot_chart  # noqa: E402
 import state  # noqa: E402
@@ -63,6 +65,7 @@ WARM_UP_QUESTION = "BTN shove 10bb"
 SLOW_DOWN = "ถามถี่ไปหน่อย พักสักนาทีแล้วถามใหม่นะ"
 BUSY = "ตอนนี้คนถามเยอะมาก รอสักนาทีแล้วถามใหม่นะ"
 HEALTH_PATH = "/healthz"
+COLLECT_PER_MINUTE = 120  # page events per address; a real reader sends a few per page
 SITE_PER_MINUTE = 120  # เพดานของทั้งเว็บ กันค่า AI บานแม้มีคนปลอมที่อยู่มาหลบเพดานรายคน
 BAD_IMAGE = "ไฟล์นี้ไม่ใช่รูปที่อ่านได้ ใช้ PNG, JPEG, WebP หรือ GIF ไม่เกิน 10 MB"
 CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; "
@@ -89,6 +92,9 @@ class Config:
     codec: state.Codec
     canonical_host: str | None = None
     trust_proxy: bool = False
+    analytics: object | None = None   # analytics store; None switches visit counting off
+    collect_limit: chat.RateLimit = dataclasses.field(
+        default_factory=lambda: chat.RateLimit(per_window=COLLECT_PER_MINUTE))
 
     @classmethod
     def from_env(cls, env=os.environ) -> "Config":
@@ -99,7 +105,7 @@ class Config:
                    site_limit=chat.RateLimit(per_window=SITE_PER_MINUTE),
                    codec=state.Codec(secret.encode() if secret else secrets.token_bytes(32)),
                    canonical_host=(env.get("WEB_CANONICAL_HOST") or "").lower() or None,
-                   trust_proxy=env.get("WEB_TRUST_PROXY") == "1")
+                   trust_proxy=env.get("WEB_TRUST_PROXY") == "1", analytics=analytics.store_from_env(env))
 
 
 def result_json(result: chat.Result) -> dict:
@@ -182,6 +188,8 @@ class Exchange:
         return _json(404, {"lines": ["not found"]})
 
     def _post(self) -> Reply:
+        if self.url.path == "/api/collect":
+            return self._collect()
         routes = {"/api/ask": self._ask, "/api/image": self._image,
                   "/api/new": self._new, "/api/ai": self._ai}
         route = routes.get(self.url.path)
@@ -223,6 +231,31 @@ class Exchange:
             raise RequestError(400, "on must be true or false")
         said, after = chat.toggle_ai(session, body["on"])
         return 200, {"lines": [said]}, after
+
+    def _collect(self) -> Reply:
+        """One page event from static/beacon.js. Always 204: a page never waits on or retries it."""
+        done = Reply(204, "text/plain; charset=utf-8", b"")
+        store = self.config.analytics
+        if store is None or not self.config.collect_limit.allow(self._visitor()):
+            return done
+        if self.headers.get_content_type() not in ("application/json", "text/plain"):
+            return done
+        try:
+            length = int(self.headers.get("Content-Length") or "0")
+        except ValueError:
+            return done
+        if not 0 < length <= analytics.MAX_EVENT_BYTES:
+            return done
+        try:
+            row = analytics.parse_event(self.read(length), user_agent=self.headers.get("User-Agent", ""),
+                                        country=self.headers.get("X-Vercel-Ip-Country", ""),
+                                        host=(self.headers.get("Host") or "").split(":")[0].lower(), now=time.time())
+            analytics.save_visit(store, row)
+        except analytics.EventError:
+            pass
+        except Exception as error:  # noqa: BLE001 - counting must never break the site
+            print(f"เก็บการเข้าชมไม่ได้: {error}", flush=True)
+        return done
 
     # ---------- plumbing ----------
 
@@ -339,13 +372,13 @@ def bind(config: Config) -> type[Handler]:
 def make_server(host: str, port: int, tools: chat.Tools | None = None,
                 limit: chat.RateLimit | None = None, site_limit: chat.RateLimit | None = None,
                 canonical_host: str | None = None, trust_proxy: bool = False,
-                secret: bytes | None = None) -> http.server.ThreadingHTTPServer:
+                secret: bytes | None = None, analytics_store=None) -> http.server.ThreadingHTTPServer:
     """เซิร์ฟเวอร์ที่ยังไม่เริ่ม test ส่งของปลอมเข้ามาแทน solver กับ AI ได้"""
     config = Config(tools=tools or chat.Tools(), limit=limit or chat.RateLimit(),
                     site_limit=site_limit or chat.RateLimit(per_window=SITE_PER_MINUTE),
                     codec=state.Codec(secret or secrets.token_bytes(32)),
                     canonical_host=canonical_host.lower() if canonical_host else None,
-                    trust_proxy=trust_proxy)
+                    trust_proxy=trust_proxy, analytics=analytics_store)
     app = http.server.ThreadingHTTPServer((host, port), bind(config))
     app.daemon_threads = True
     return app

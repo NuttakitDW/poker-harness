@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย Dashboard</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: dark stage header, then a summary row, a daily chart, breakdown lists and the message feed. Same CI as the local solver page. */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C; --bar: #1B2A4A; --bar-soft: #C9CFDC; --good: #2F6B3F;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 2px; }
+  h1, h2 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .column { max-width: 1180px; margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) 1.6rem; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246,242,230,.13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: #FFF8E6; padding: 2px; }
+  .local { font: 500 .75rem/1 var(--font-mono); color: var(--on-puppet-3); border: 1px solid var(--puppet-edge); border-radius: var(--cut); padding: .35rem .55rem; }
+  .headline { font-size: clamp(1.5rem, 3.4vw, 2.2rem); margin-top: .8rem; }
+  .controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .9rem; }
+  .chip { min-height: 34px; padding: 0 .8rem; border: 1px solid var(--puppet-edge); border-radius: var(--cut); background: transparent; color: var(--on-puppet-2); font: 500 .8rem/1 var(--font-mono); cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--on-puppet); color: var(--puppet); border-color: var(--on-puppet); }
+  .updated { font: 400 .75rem/1 var(--font-mono); color: var(--on-puppet-3); margin-left: auto; }
+
+  main { padding: 1.4rem var(--gutter) 0; }
+  .grid { display: grid; gap: 1rem; }
+  .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kpi { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: .9rem 1rem; display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+  .kpi span { font-size: .8rem; color: var(--bronze-txt); font-weight: 600; }
+  .kpi b { font: 600 clamp(1.5rem, 3vw, 2rem)/1.15 var(--font-mono); color: var(--ink); }
+  .kpi small { font: 400 .75rem/1.3 var(--font-mono); color: var(--ash); }
+  .sheet { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: 1rem 1.1rem; min-width: 0; }
+  .sheet h2 { font-size: 1.1rem; color: var(--blue); margin-bottom: .6rem; }
+  .two { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .chart-wrap { overflow-x: auto; }
+  svg.daily { display: block; width: 100%; min-width: 560px; height: auto; }
+  svg text { font-family: var(--font-mono); font-size: 10px; fill: var(--ash); }
+  .legend { display: flex; flex-wrap: wrap; gap: .4rem 1rem; font: 400 .75rem/1 var(--font-mono); color: var(--ash); margin-top: .5rem; }
+  .legend i { display: inline-block; width: 10px; height: 10px; margin-right: .35rem; vertical-align: -1px; border-radius: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th { text-align: left; font: 600 .72rem/1.2 var(--font-body); color: var(--bronze-txt); padding: .35rem .4rem; border-bottom: 1px solid var(--edge); }
+  td { padding: .35rem .4rem; border-bottom: 1px solid var(--ground); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.path { font-family: var(--font-mono); overflow-wrap: anywhere; }
+  .rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; font-size: .85rem; }
+  .rank li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
+  .rank .name { overflow-wrap: anywhere; }
+  .rank .bar { grid-column: 1 / -1; height: 4px; background: var(--ground); border-radius: 2px; overflow: hidden; }
+  .rank .bar i { display: block; height: 100%; background: var(--bar); }
+  .empty { color: var(--ash); font-size: .85rem; }
+
+  .feed-head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: .6rem; }
+  .feed-head input, .feed-head select { min-height: 36px; padding: .2rem .55rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--ground); font-family: var(--font-mono); font-size: .85rem; }
+  .feed-head input { flex: 1 1 14rem; min-width: 0; }
+  .feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .msg { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr) auto; gap: .3rem .8rem; padding: .55rem .2rem; border-bottom: 1px solid var(--ground); }
+  .msg time { font: 400 .75rem/1.5 var(--font-mono); color: var(--ash); }
+  .msg .q { overflow-wrap: anywhere; white-space: pre-wrap; }
+  .msg .meta { font: 400 .72rem/1.4 var(--font-mono); color: var(--ash-2); grid-column: 2 / 3; }
+  .tag { font: 500 .7rem/1 var(--font-mono); padding: .3rem .45rem; border-radius: var(--cut); border: 1px solid var(--edge); color: var(--ash); white-space: nowrap; align-self: start; }
+  .tag.ok { border-color: var(--good); color: var(--good); }
+  .tag.miss { border-color: var(--red-edge); color: var(--red-edge); }
+  .error { color: var(--red-edge); font-size: .9rem; }
+  .error:empty { display: none; }
+
+  footer { margin-top: 2.2rem; padding: 1.1rem var(--gutter) 1.6rem; border-top: 1px solid var(--ink); font-size: .8rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+
+  @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two, .three { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 520px) { .msg { grid-template-columns: minmax(0, 1fr) auto; } .msg time { grid-column: 1 / -1; } .msg .meta { grid-column: 1 / -1; } }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <span class="brand"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</span>
+      <span class="local">local only · 127.0.0.1</span>
+    </nav>
+    <h1 class="headline">คนเข้าเว็บและข้อความที่ส่งมา</h1>
+    <div class="controls" role="group" aria-label="ช่วงเวลา">
+      <button class="chip" type="button" data-days="1">วันนี้</button>
+      <button class="chip" type="button" data-days="7">7 วัน</button>
+      <button class="chip" type="button" data-days="30" aria-pressed="true">30 วัน</button>
+      <button class="chip" type="button" data-days="90">90 วัน</button>
+      <span class="updated mono" id="updated">-</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="column grid">
+    <p class="error" id="error"></p>
+    <section class="grid kpis" aria-label="สรุป">
+      <div class="kpi"><span>คนเข้า (ไม่ซ้ำ)</span><b id="k-visitors">-</b><small id="k-visitors-note">-</small></div>
+      <div class="kpi"><span>เปิดหน้า</span><b id="k-views">-</b><small id="k-views-note">-</small></div>
+      <div class="kpi"><span>อยู่บนเว็บเฉลี่ย</span><b id="k-time">-</b><small>ต่อการเข้าหนึ่งครั้ง นับเฉพาะตอนหน้าเปิดอยู่</small></div>
+      <div class="kpi"><span>ข้อความที่ถาม</span><b id="k-messages">-</b><small id="k-messages-note">-</small></div>
+    </section>
+
+    <section class="sheet" aria-labelledby="daily-title">
+      <h2 id="daily-title">รายวัน</h2>
+      <div class="chart-wrap"><svg class="daily" id="daily" viewBox="0 0 900 240" role="img" aria-label="คนเข้าและข้อความรายวัน"></svg></div>
+      <div class="legend"><span><i style="background:var(--bar)"></i>คนเข้า</span><span><i style="background:var(--bar-soft)"></i>เปิดหน้า</span><span><i style="background:var(--red)"></i>ข้อความ</span></div>
+    </section>
+
+    <div class="grid two">
+      <section class="sheet" aria-labelledby="pages-title">
+        <h2 id="pages-title">หน้าที่คนเปิด</h2>
+        <table>
+          <thead><tr><th>หน้า</th><th class="num">เปิด</th><th class="num">คน</th><th class="num">เวลาเฉลี่ย</th></tr></thead>
+          <tbody id="pages"></tbody>
+        </table>
+      </section>
+      <section class="sheet" aria-labelledby="kinds-title">
+        <h2 id="kinds-title">ชนิดคำตอบ</h2>
+        <ul class="rank" id="kinds"></ul>
+      </section>
+    </div>
+
+    <div class="grid three">
+      <section class="sheet" aria-labelledby="ref-title"><h2 id="ref-title">มาจากไหน</h2><ul class="rank" id="referrers"></ul></section>
+      <section class="sheet" aria-labelledby="country-title"><h2 id="country-title">ประเทศ</h2><ul class="rank" id="countries"></ul></section>
+      <section class="sheet" aria-labelledby="device-title"><h2 id="device-title">อุปกรณ์</h2><ul class="rank" id="devices"></ul></section>
+    </div>
+
+    <section class="sheet" aria-labelledby="feed-title">
+      <div class="feed-head">
+        <h2 id="feed-title">ข้อความล่าสุด</h2>
+        <input id="search" type="search" placeholder="ค้นข้อความ" aria-label="ค้นข้อความ" autocomplete="off">
+        <select id="kind" aria-label="ชนิดคำตอบ"><option value="">ทุกชนิด</option></select>
+      </div>
+      <ul class="feed" id="feed"></ul>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>Dashboard ของตามควาย ใช้ในเครื่องนี้เท่านั้น ไม่มีข้อมูลที่ระบุตัวคน</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const fmt = n => Number(n || 0).toLocaleString("en-US");
+  const dur = s => { s = Math.round(s || 0); return s >= 60 ? `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s` : `${s}s`; };
+  const when = ts => new Date(ts * 1000).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  const api = async path => {
+    const response = await fetch(path);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `${path}: ${response.status}`);
+    return data;
+  };
+  // Answer kinds that gave the visitor what they asked for; everything else is worth a look.
+  const ANSWERED = new Set(["chart", "plo", "plo_advice", "plo_type", "mario"]);
+  let days = 30;
+  const kindsSeen = new Set();
+
+  // Every value from the store is user-supplied text in the end: build nodes, never HTML strings.
+  const el = (tag, attrs = {}, text) => {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const NS = "http://www.w3.org/2000/svg";
+  const svgEl = (tag, attrs, text) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+
+  function rank(id, rows, label) {
+    const list = $(id);
+    list.replaceChildren();
+    if (!rows.length) { list.append(el("li", { class: "empty" }, "ยังไม่มีข้อมูล")); return; }
+    const top = Math.max(...rows.map(r => r.value), 1);
+    for (const r of rows) {
+      const li = el("li");
+      li.append(el("span", { class: "name" }, label(r)), el("span", { class: "mono" }, fmt(r.value)));
+      const bar = el("span", { class: "bar" }); const fill = el("i"); fill.style.width = `${(r.value / top * 100).toFixed(1)}%`;
+      bar.append(fill); li.append(bar); list.append(li);
+    }
+  }
+
+  function daily(rows, since) {
+    const svg = $("daily");
+    svg.replaceChildren();
+    const byDay = new Map(rows.map(r => [r.day, r]));
+    const list = [];
+    const start = new Date(`${since}T00:00:00+07:00`);
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start.getTime() + i * 86400000).toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
+      list.push(byDay.get(d) || { day: d, visitors: 0, views: 0, messages: 0 });
+    }
+    const W = 900, H = 240, L = 40, R = 10, T = 12, B = 34;
+    const top = Math.max(1, ...list.map(r => Math.max(r.views, r.messages)));
+    const raw = top / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const tick = [1, 2, 2.5, 5, 10].map(f => f * mag).find(t => t >= raw) || 10 * mag;
+    const max = Math.max(4, Math.ceil(tick) * 4);
+    const y = v => T + (1 - v / max) * (H - T - B);
+    const slot = (W - L - R) / list.length, w = Math.max(2, slot * .38);
+    for (let k = 0; k <= 4; k++) {
+      const v = max * k / 4;
+      svg.append(svgEl("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--edge)", "stroke-width": 1 }));
+      svg.append(svgEl("text", { x: L - 6, y: y(v) + 3, "text-anchor": "end" }, fmt(Math.round(v))));
+    }
+    const every = Math.ceil(list.length / 10);
+    list.forEach((r, i) => {
+      const x = L + slot * i + slot / 2;
+      svg.append(svgEl("rect", { x: x - w, y: y(r.views), width: w, height: y(0) - y(r.views), fill: "var(--bar-soft)" }));
+      svg.append(svgEl("rect", { x, y: y(r.visitors), width: w, height: y(0) - y(r.visitors), fill: "var(--bar)" }));
+      if (r.messages) svg.append(svgEl("circle", { cx: x, cy: y(r.messages), r: 3.2, fill: "var(--red)" }));
+      if (i % every === 0 || i === list.length - 1) svg.append(svgEl("text", { x, y: H - 12, "text-anchor": "middle" }, r.day.slice(5)));
+    });
+  }
+
+  async function loadSummary() {
+    const s = await api(`/api/summary?days=${days}`);
+    const t = s.totals;
+    $("k-visitors").textContent = fmt(t.visitors);
+    $("k-visitors-note").textContent = `${fmt(t.sessions)} ครั้งที่เข้า`;
+    $("k-views").textContent = fmt(t.views);
+    $("k-views-note").textContent = t.sessions ? `${(t.views / t.sessions).toFixed(1)} หน้าต่อครั้ง` : "-";
+    $("k-time").textContent = dur(t.avg_session_seconds);
+    $("k-messages").textContent = fmt(t.messages);
+    const answered = s.message_kinds.filter(k => ANSWERED.has(k.kind)).reduce((a, k) => a + k.count, 0);
+    $("k-messages-note").textContent = t.messages ? `ได้คำตอบ ${Math.round(answered / t.messages * 100)}%` : "-";
+    daily(s.daily, s.since);
+    const pages = $("pages");
+    pages.replaceChildren();
+    if (!s.pages.length) { const tr = el("tr"); tr.append(el("td", { colspan: 4, class: "empty" }, "ยังไม่มีข้อมูล")); pages.append(tr); }
+    for (const p of s.pages) {
+      const tr = el("tr");
+      tr.append(el("td", { class: "path" }, p.path), el("td", { class: "num" }, fmt(p.views)),
+        el("td", { class: "num" }, fmt(p.visitors)), el("td", { class: "num" }, dur(p.avg_seconds)));
+      pages.append(tr);
+    }
+    rank("referrers", s.referrers.map(r => ({ name: r.name, value: r.visitors })), r => r.name || "เข้าตรง / ไม่บอกที่มา");
+    rank("countries", s.countries.map(r => ({ name: r.name, value: r.visitors })), r => r.name || "ไม่ทราบ");
+    rank("devices", s.devices.map(r => ({ name: r.name, value: r.visitors })), r => r.name === "phone" ? "มือถือ" : "คอมพิวเตอร์");
+    rank("kinds", s.message_kinds.map(k => ({ name: k.kind, value: k.count })), r => r.name || "-");
+    for (const k of s.message_kinds) {
+      if (!kindsSeen.has(k.kind)) { kindsSeen.add(k.kind); $("kind").append(el("option", { value: k.kind }, k.kind)); }
+    }
+  }
+
+  async function loadMessages() {
+    const q = encodeURIComponent($("search").value.trim());
+    const kind = encodeURIComponent($("kind").value);
+    const { messages } = await api(`/api/messages?limit=150&q=${q}&kind=${kind}`);
+    const feed = $("feed");
+    feed.replaceChildren();
+    if (!messages.length) { feed.append(el("li", { class: "empty" }, "ยังไม่มีข้อความ")); return; }
+    for (const m of messages) {
+      const li = el("li", { class: "msg" });
+      li.append(el("time", {}, when(m.ts)), el("span", { class: "q" }, m.question),
+        el("span", { class: `tag ${ANSWERED.has(m.kind) ? "ok" : "miss"}` }, m.kind || "-"));
+      const meta = [m.channel, m.source, m.detail && m.detail.ai_query ? `AI: ${m.detail.ai_query}` : ""].filter(Boolean).join(" · ");
+      li.append(el("span", { class: "meta" }, meta));
+      feed.append(li);
+    }
+  }
+
+  async function refresh() {
+    try {
+      $("error").textContent = "";
+      await Promise.all([loadSummary(), loadMessages()]);
+      $("updated").textContent = `อัปเดต ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
+    } catch (error) {
+      $("error").textContent = error.message;
+    }
+  }
+
+  document.querySelectorAll("[data-days]").forEach(b => b.addEventListener("click", () => {
+    days = Number(b.dataset.days);
+    document.querySelectorAll("[data-days]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    refresh();
+  }));
+  let timer = null;
+  $("search").addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => loadMessages().catch(e => { $("error").textContent = e.message; }), 300); });
+  $("kind").addEventListener("change", () => loadMessages().catch(e => { $("error").textContent = e.message; }));
+  refresh();
+  setInterval(refresh, 30000);
+})();
+</script>
+</body>
+</html>

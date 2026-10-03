@@ -9,6 +9,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import datetime
+import functools
 import json
 import os
 import pathlib
@@ -22,6 +23,7 @@ SCRIPTS = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS / "voice"))
 sys.path.insert(0, str(SCRIPTS / "discord_bot"))
 
+import analytics  # noqa: E402
 import assistant  # noqa: E402
 import chart_image  # noqa: E402
 import keys  # noqa: E402
@@ -68,9 +70,27 @@ class Result:
     plo_fallback: str | None = None
 
 
+@functools.cache
+def _message_store():
+    return analytics.store_from_env()
+
+
+def _store_message(entry: dict) -> None:
+    """เก็บคำถามลงฐานข้อมูลของหน้า dashboard ด้วย (ถ้าตั้ง DATABASE_URL หรือ ANALYTICS_DB) พังก็ไม่กระทบคำตอบ"""
+    store = _message_store()
+    if store is None:
+        return
+    try:
+        analytics.save_message(store, analytics.message_row(entry, channel=str(entry.get("server") or "web"),
+                                                            now=time.time()))
+    except Exception as error:  # noqa: BLE001 - the answer matters more than the record
+        print(f"เก็บคำถามลงฐานข้อมูลไม่ได้: {error}", flush=True)
+
+
 def _record(line: dict) -> None:
     """จดลงไฟล์เหมือนบอท Discord บน Vercel ดิสก์เขียนไม่ได้ ตั้ง WEB_LOG=stdout ให้ไปอยู่ใน log ของ Vercel"""
     entry = question_log.entry(**line)
+    _store_message(entry)
     if os.environ.get("WEB_LOG") == "stdout":
         at = datetime.datetime.now().isoformat(timespec="seconds")
         print(json.dumps({"at": at, **entry}, ensure_ascii=False, default=str), flush=True)

@@ -13,6 +13,8 @@ web:
 	.venv/bin/python scripts/web/server.py
 ft: 
 	.venv/bin/python scripts/final_table/ft_server.py
+admin: 
+	.venv/bin/python scripts/admin/admin_server.py
 web-watch: 
 	.venv/bin/python scripts/web/watch.py
 web-review: 
