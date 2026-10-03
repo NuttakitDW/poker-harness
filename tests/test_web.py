@@ -321,7 +321,8 @@ class ServerTests(unittest.TestCase):
         response, body = self.request("GET", "/research")
         self.assertEqual(response.status, 200)
         self.assertIn(b"Copyright", body)
-        for pdf in ("/static/open-limp-fold-20bb.pdf", "/static/open-limp-fold-20bb-th.pdf"):
+        for pdf in ("/static/open-limp-fold-20bb.pdf", "/static/open-limp-fold-20bb-th.pdf",
+                    "/static/plo-open-size-icm.pdf"):
             with self.subTest(pdf=pdf):
                 self.assertIn(pdf.encode(), body)
                 response, content = self.request("GET", pdf)

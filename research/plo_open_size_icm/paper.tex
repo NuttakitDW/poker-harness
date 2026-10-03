@@ -1,0 +1,232 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{tikz}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\definecolor{sizetwo}{HTML}{9A2E22}
+\definecolor{sizetwofive}{HTML}{7A5A26}
+\definecolor{sizethree}{HTML}{16408F}
+\definecolor{noise}{HTML}{DDE2EC}
+\captionsetup{font=small,labelfont=bf}
+\input{generated/macros.tex}
+
+\title{Open Pot: Preflop Raise Sizes in Pot-Limit Omaha Tournaments\\
+When Results Are Scored by ICM}
+\author{Nuttakit Kundum}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A solver tree needs one answer to how big a preflop raise is, and every extra size multiplies the
+tree. We ask which first-in open size, and which 3-bet size, earns the most in a six-handed
+pot-limit Omaha tournament once each hand is scored in prize money by the Independent Chip Model
+(ICM) rather than in chips. At the bubble of a real 374-entry, 51-paid event we solve the same
+table once per size (2x, 2.5x, 3x and a pot-sized open of 3.5 big blinds), with the full game played
+to the river, and measure hand by hand what each size earns the player who chooses it. With equal
+30-big-blind stacks the four sizes are within run-to-run noise of each other: the largest
+difference at any seat is \EqLargest\ units of prize equity (about \$\EqLargestDollars). With
+uneven stacks the pot-sized open earns the most in all four tables we built, a deep or a 12-big-blind
+opener, under the gun or on the button, by $0.025$ to $0.085$ units, two to ten times the gap
+between independent runs. Half-pot and three-quarter-pot 3-bets are not better than a pot 3-bet on
+average. The mechanism is pot-limit itself: no stack above 3.5 big blinds can open all-in, so the
+open size works only through how cheaply the other stacks can call, and the pot open makes calling
+most expensive. We therefore keep a single pot-sized open and pot-sized 3-bet for later work.
+\end{abstract}
+
+\section{Question}
+No-limit Hold'em tournaments settled on small opening raises long ago. Pot-limit Omaha (PLO) is a
+different game. The largest legal first raise is a pot raise, preflop equities run close, and with
+four hole cards most of a hand's value is decided after the flop. The no-limit answer cannot simply
+be copied.
+
+The question matters for a practical reason. We plan to train a neural network on hundreds of solved
+tournament spots, and each extra raise size makes every solve slower and every tree larger. Before
+building that library we want the smallest set of sizes that loses nothing. That splits into two
+questions: which size should the first player in use, and when a player 3-bets, should the raise be
+pot-sized or smaller?
+
+\section{Setup}
+\subsection{Tournament and payouts}
+The payouts are the real GGPoker ``PLO Monster Stack \$25'' structure: 374 entries, an \$8{,}602
+prize pool and 51 paid places, from \$1{,}531.94 for first to \$55 for 35th to 51st. Every spot is
+placed at 60 players left, nine from the money, with $60 \times 30 = 1{,}800$ big blinds in play.
+Every player posts a 0.12 big-blind ante, as in hand histories from the same event. Following GG's
+rule, antes are excluded from the preflop pot limit, so a pot-sized open is 3.5 big blinds and a
+pot 3-bet over it reaches about 12.
+
+\subsection{Scoring in prize money}
+As in earlier work on tournament equilibria \cite{ganzfried}, payoffs are prize equity rather than
+chips. Each terminal outcome of a hand is scored by Malmuth--Harville ICM \cite{harville} over the
+whole field: the six players at the table, plus the 54 players at other tables, who are treated as one
+crowd sharing the remaining chips at their average stack. Because the crowd's members are
+interchangeable, the recursion tracks only how many of them have been placed, which keeps the
+computation exact. Every outcome of every terminal node, chopped pots included, is priced once before
+solving (about eight million outcomes in about 25 seconds) and looked up during training. With equal
+30-big-blind stacks the bubble factor between any two players is 1.58, so calling an all-in without
+pot odds needs about 61\% equity instead of 50\%. Values are reported in chips of prize equity:
+prizes are scaled to the chips in play, so one unit is \$\DollarsPerUnit\ and $0.1$ units is roughly
+a tenth of a big blind.
+
+\subsection{Solver}
+We use external-sampling Monte Carlo counterfactual regret minimisation \cite{lanctot} with linear
+discounting over the full game: pot-sized bets and raises on every street, up to four raises preflop
+and one per street afterwards, exact side pots and Omaha's two-plus-three showdown rule. Preflop hands
+are grouped into 780 buckets; the flop, turn and river use 120, 120 and 10 buckets. Six-player
+MCCFR carries no convergence guarantee, but it is the method behind the strongest multiplayer poker
+agents \cite{pluribus}.
+
+The engine allows one raise size per decision. Instead of offering a menu of sizes, we solve
+\emph{the same table once per size}, changing only the preflop rule through a subclass of the game
+state. The production engine is not modified. A 2x open builds a larger tree than a pot open
+(\NodesTwoX\ million against \NodesTwo\ million nodes for equal stacks), so every run receives the
+same 25 million deals rather than the same time.
+
+\subsection{How a size is scored}
+A size is judged by what it earns the player who chooses it, at the decision where it is chosen. For
+the open, this is each seat's value at its first-in decision, with every earlier player folded. For
+the 3-bet, it is the value of the player facing a single open with everyone between folded. We draw
+6{,}000 random hands for that player and deal each one 64 times. Every other player follows the
+solved average strategy, and their earlier actions weight each deal by how likely they were with the
+cards they were dealt. The player's own action mix comes from the solved strategy for their bucket.
+
+\subsection{Noise}
+Every arm runs twice with different random seeds. A difference counts only when it is larger than the
+gap between the two runs. The sampling error of each value is between 0.005 and 0.011 units.
+
+\section{Equal stacks: size barely matters}
+All six players hold 30 big blinds. Figure~\ref{fig:equal} and Table~\ref{tab:equal} compare each
+size with a pot open at every seat.
+
+\begin{figure}[H]
+\centering
+\input{generated/fig_equal.tex}
+\caption{First-in value relative to a pot open, equal 30bb stacks at 60 left. Dots are the mean of two
+runs and the faint lines join the two runs. Red: 2x. Brown: 2.5x. Blue: 3x. The black line is the pot
+open.}
+\label{fig:equal}
+\end{figure}
+
+\begin{table}[H]
+\centering\small
+\caption{Equal stacks: first-in value relative to a pot open, the largest two-run gap at that seat,
+and the raise / limp frequency with a 2x and a pot open.}
+\label{tab:equal}
+\input{generated/equal_table.tex}
+\end{table}
+
+Every difference is at most \EqLargest\ units. Early seats lean slightly toward pot or 3x and the
+button and small blind slightly toward 2x, but no difference clearly exceeds the largest run gap at
+its seat, and none is worth more than \$\EqLargestDollars\ per decision. Averaged over the five seats, 2x, 2.5x and 3x differ
+from pot by \EqAvgTwo, \EqAvgTwoFive\ and \EqAvgThree\ units. The strategy changes more than the
+value: a small open turns into a limping strategy. The button limps 34\% of hands with 2x and 21\%
+with pot, and the small blind limps 54\% to 69\% whatever the size.
+
+\section{Uneven stacks: the pot open wins every table}
+Real tables are rarely even, and pot-limit should matter most when stack sizes differ. We built four
+bubble tables: a deep 60-big-blind stack opening into 12-big-blind stacks, and a 12-big-blind stack
+opening into deep ones, each from under the gun and from the button. The 3-bet stays pot-sized.
+
+\begin{figure}[H]
+\centering
+\input{generated/fig_uneven.tex}
+\caption{Opener value with a 2x (red) or 2.5x (brown) open, relative to a pot open, in four uneven
+tables at 60 left. Bars to the left mean the pot open earned more. Grey bands show the largest
+two-run gap for that table. Stacks are listed UTG / HJ / CO / BTN / SB / BB.}
+\label{fig:uneven}
+\end{figure}
+
+\begin{table}[H]
+\centering\small
+\caption{Uneven stacks: opener value relative to a pot open, the two-run gap, the opener's raise,
+limp and fold frequency, and how often the players facing the open call.}
+\label{tab:uneven}
+\input{generated/uneven_table.tex}
+\end{table}
+
+The pot open earns the most in all four tables, each time beyond the run gap. The largest effect is
+the deep button against short blinds, where a 2x open earns \TwoATwo\ units relative to pot, about \$0.40 per
+decision, against a run gap of \GapATwo. With a pot open the short blinds call 20\% of the time; facing
+2x they call 46\%. The deep stack wants to isolate a short stack or take the blinds, and only the
+largest legal open achieves that.
+
+The short opener shows the same mechanism from the other side. At 12 big blinds under the gun the
+solver folds 84\% to 87\% of hands whatever the size, because it can never move all-in first. When it
+does play, the pot open is best and cuts the deep stacks' calls from 25\% to 11\%.
+
+\section{3-bet size}
+On the equal-stack table, with a \ThreeOpen\ open, we compared 3-bets of half and three-quarters of a
+pot raise with a pot 3-bet for all fifteen opener--defender pairs (Table~\ref{tab:three}).
+
+\begin{table}[H]
+\centering\small
+\caption{3-bet size, equal stacks: value of the player facing one open relative to a pot 3-bet,
+over fifteen opener--defender pairs.}
+\label{tab:three}
+\input{generated/three_table.tex}
+\end{table}
+
+Averaged over the pairs, both smaller sizes are within $0.005$ units of pot. One pair showed a
+smaller size ahead by more than the run gap: \ThreeHalfBeyond, a half-pot 3-bet. Against every
+under-the-gun open, pot was best for every defender. A pot 3-bet is sufficient.
+
+\section{Why pot-limit changes the picture}
+In a no-limit tournament a 12-big-blind stack moves all-in first, and the big stacks must fold under
+ICM pressure. That fold equity is the short stack's main weapon, and small opens from deeper stacks
+are cheap because the all-in reply has a fixed price. Pot-limit removes this.
+\begin{itemize}
+\item A first-in raise is capped at 3.5 big blinds, so only stacks of 3.5 or less can open all-in.
+A pot 3-bet reaches about 12 big blinds and a pot 4-bet about 37, which is all-in at 30.
+\item Stacks of 15 to 30 big blinds can never jam first in. They raise, and the next player decides
+at a price the opener chose.
+\item Preflop equities run close, with most matchups near 60/40, so a small open is called wide and
+the hand is decided after the flop, where ICM pressure is applied.
+\item The open size therefore acts through one lever: how cheaply the other stacks see a flop. The
+pot open is the most expensive legal price. The solver uses it to stop limping (about 2\% limps with a
+pot open against 11\% to 34\% with 2x) and to roughly halve the calls it faces.
+\item With equal stacks every pair of players faces the same ICM pressure and the same stack-to-pot
+ratio, and the lever is close to neutral. Uneven stacks create someone to isolate or someone to keep
+out, and the larger price pays.
+\end{itemize}
+
+\section{Conclusion}
+For six-handed PLO tournaments scored by ICM, a single pot-sized open and a pot-sized 3-bet are the
+right preflop sizes for our solver library. Choosing pot everywhere costs at most about
+\EqLargest\ units at equal stacks and is the best size in every uneven table we tested. This also
+means the existing engine, which already uses pot-sized raises, needs no change.
+
+\section{Limitations}
+\begin{itemize}
+\item One stage only: 60 left, just before the bubble. Early in the money and the final table are untested.
+\item Each solve allowed one raise size per decision. A tree offering 2x and pot together could mix the
+two and might find a small gain for some hands that this design cannot see.
+\item Hands are grouped into 780 preflop buckets, so hands within a bucket share one strategy.
+\item The 3-bet comparison used equal stacks only.
+\item A chip-EV control ran one seed per size at equal stacks and showed no consistent pattern, so we
+cannot yet separate the effect of ICM from the effect of stack depth in the uneven tables.
+\item Two seeds agreeing is evidence of stability, not proof of equilibrium.
+\item ICM is itself a model; field data suggests it slightly undervalues big stacks \cite{kim}.
+\end{itemize}
+
+\section*{Reproducibility}
+The experiment is \texttt{research/plo\_sizing/sizing.py} in the poker-harness repository; this paper's
+numbers, tables and figures are generated by \texttt{research/plo\_open\_size\_icm/build\_paper.py}
+from the saved run summaries. \Solves\ solves were run on a 14-core Apple M4 Pro, about 9 to 19 minutes
+each.
+
+\begin{thebibliography}{9}
+\bibitem{pluribus} N.~Brown and T.~Sandholm. Superhuman AI for multiplayer poker. \emph{Science}, 365(6456):885--890, 2019.
+\bibitem{ganzfried} S.~Ganzfried and T.~Sandholm. Computing equilibria in multiplayer stochastic games of imperfect information. In \emph{IJCAI}, 2009.
+\bibitem{harville} D.~A.~Harville. Assigning probabilities to the outcomes of multi-entry competitions. \emph{Journal of the American Statistical Association}, 68(342):312--316, 1973.
+\bibitem{kim} J.~Kim. Empirical validation of the Independent Chip Model. In \emph{IEEE Conference on Games}, 2025.
+\bibitem{lanctot} M.~Lanctot, K.~Waugh, M.~Zinkevich and M.~Bowling. Monte Carlo sampling for regret minimization in extensive games. In \emph{NeurIPS}, 2009.
+\end{thebibliography}
+
+\end{document}
