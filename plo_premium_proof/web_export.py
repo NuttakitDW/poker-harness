@@ -26,6 +26,7 @@ from plo_icm.game import Action, PLOState
 from .preflop_chart import ACTION_NAMES, SEATS, chart
 
 GAMES = {
+    "mtt100": {"label": "100bb MTT", "detail": "6-max · 100bb · ante 0.12bb each, excluded from preflop pot size · chip EV"},
     "20bb": {"label": "20bb", "detail": "6-max · 20bb · no ante · chip EV"},
     "mtt40": {"label": "40bb MTT", "detail": "6-max · 40bb · ante 0.116bb each, excluded from preflop pot size · chip EV"},
 }
