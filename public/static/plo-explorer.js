@@ -1,8 +1,10 @@
 /* PLO range explorer, shared by /plo and the local final-table page.
    PloExplorer.mount(container, {games, gamesEl, load, initial, hash, classesUrl}) draws the
    action line, the two-step hand matrix, filters and hand list into ``container``.
-   ``games`` [{id, label, detail}] with ``load(id)`` fetch solved games; without games, call
-   the returned ``show(data)`` with a solved game and ``focus({seat, hand})`` to jump to a spot. */
+   ``games`` [{id, label, detail}] with ``load(id)`` fetch solved games; games that all carry
+   ``seats`` and ``stack`` get a table-size row and a stack row instead of one button each.
+   Without games, call the returned ``show(data)`` with a solved game and ``focus({seat, hand})``
+   to jump to a spot. */
 window.PloExplorer = (() => {
   "use strict";
   const MARKUP = `
@@ -269,8 +271,26 @@ window.PloExplorer = (() => {
 
     function renderGames() {
       if (!options.gamesEl) return;
-      options.gamesEl.innerHTML = games.map(game =>
+      const grid = games.length && games.every(game => game.seats && game.stack);
+      options.gamesEl.innerHTML = grid ? gameAxes() : games.map(game =>
         `<button class="game" type="button" data-game="${game.id}" aria-pressed="${state.game === game.id}"><b>${game.label}</b><span>${game.detail}</span></button>`).join("");
+    }
+
+    // Two rows (players, stack): each button points at the game that keeps the other row's choice.
+    function gameAxes() {
+      const current = games.find(game => game.id === state.game) || games[0];
+      const pick = (seats, stack) => games.find(game => game.seats === seats && game.stack === stack);
+      const values = key => [...new Set(games.map(game => game[key]))].sort((a, b) => b - a);
+      const row = (title, key, text) => `<div class="game-axis" role="group" aria-label="${title}"><span class="game-axis-name">${title}</span>`
+        + values(key).map(value => {
+          const target = key === "seats" ? pick(value, current.stack) : pick(current.seats, value);
+          const on = current[key] === value;
+          return target
+            ? `<button class="game" type="button" data-game="${target.id}" aria-pressed="${on}"><b>${text(value)}</b></button>`
+            : `<button class="game" type="button" disabled><b>${text(value)}</b></button>`;
+        }).join("") + "</div>";
+      return row("ผู้เล่น", "seats", n => `${n}-max`) + row("Stack", "stack", bb => `${bb}bb`)
+        + `<p class="game-detail">${current.detail}</p>`;
     }
 
     function seatName(node) {

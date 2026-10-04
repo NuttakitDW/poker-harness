@@ -7,7 +7,7 @@ strategy as base64 uint8 (probability x 255). It also writes <out>/plo-classes.j
 suit-isomorphism class of four-card hands (16,432) with its combos, bucket and Hwang tier,
 which the page aggregates into the rank matrix.
 
-Usage: python -m plo_premium_proof.web_export --out public/static
+Usage: python -m plo_premium_proof.web_export --out public/static [--only 6max-100bb]
 """
 
 from __future__ import annotations
@@ -25,10 +25,15 @@ from plo_icm.game import Action, PLOState
 
 from .preflop_chart import ACTION_NAMES, SEATS, chart
 
+TABLE_SIZES = (6, 5, 4, 3, 2)
+STACKS = (100, 40, 20)
+# Every chart from scripts/final_table/chart_batch.py: each seat has the stack behind after
+# posting the ante, and the ante stays out of the preflop pot-limit size.
 GAMES = {
-    "mtt100": {"label": "100bb MTT", "detail": "6-max · 100bb · ante 0.12bb each, excluded from preflop pot size · chip EV"},
-    "20bb": {"label": "20bb", "detail": "6-max · 20bb · no ante · chip EV"},
-    "mtt40": {"label": "40bb MTT", "detail": "6-max · 40bb · ante 0.116bb each, excluded from preflop pot size · chip EV"},
+    f"{seats}max-{stack}bb": {"label": f"{seats}-max · {stack}bb", "seats": seats, "stack_label": stack,
+                              "detail": f"{seats}-max · {stack}bb behind after a 0.116bb ante each · "
+                                        "ante not in the preflop pot size · chip EV"}
+    for seats in TABLE_SIZES for stack in STACKS
 }
 # Seat names in preflop order for each table size (six-max keeps preflop_chart.SEATS).
 SEAT_NAMES = {2: ("SB", "BB"), 3: ("BTN", "SB", "BB"), 4: ("CO", "BTN", "SB", "BB"),
@@ -97,7 +102,10 @@ def export_game(name: str, out_dir: Path) -> dict:
                         opening_raise_mode="pot_only")
     nodes, blob = heads_up_tree(root, book.actor, book.children, book.action_ids, book.action_count,
                                 lambda node: book.strategy[node], seats)
-    data = {"name": name, **GAMES[name], "stack": book.stack, "ante": book.ante,
+    game = GAMES[name]
+    if book.seats != game["seats"] or book.stack != game["stack_label"]:
+        raise ValueError(f"chart {name} holds {book.seats} seats at {book.stack:g}bb")
+    data = {"name": name, "label": game["label"], "detail": game["detail"], "stack": book.stack, "ante": book.ante,
             "deals_per_seed": book.meta.get("deals_per_seed"), "seeds": book.meta.get("seeds"),
             "buckets": int(book.strategy.shape[1]), "seats": list(seats), "nodes": nodes,
             "strategy": base64.b64encode(blob).decode()}
@@ -125,9 +133,14 @@ def export_classes(out_dir: Path) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--only", nargs="+", help="export just these charts, e.g. 6max-100bb")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    for name in GAMES:
+    names = args.only or list(GAMES)
+    unknown = sorted(set(names) - set(GAMES))
+    if unknown:
+        parser.error(f"unknown charts: {unknown}")
+    for name in names:
         data = export_game(name, args.out)
         print(f"plo-{name}.json: {len(data['nodes'])} nodes, "
               f"{(args.out / f'plo-{name}.json').stat().st_size / 1e6:.2f} MB")

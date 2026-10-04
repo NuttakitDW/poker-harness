@@ -57,6 +57,13 @@
   .game b { display: block; font: 600 1rem/1.2 var(--font-display); color: var(--on-puppet); }
   .game span { font: 400 .75rem/1.3 var(--font-mono); }
   .game[aria-pressed="true"] { border-color: var(--on-puppet); background: rgba(246, 242, 230, .08); box-shadow: inset 0 -3px 0 var(--red); }
+  .game:disabled { opacity: .4; cursor: not-allowed; }
+  .games:has(.game-axis) { flex-direction: column; gap: .6rem; }
+  .game-axis { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .game-axis-name { min-width: 4.5rem; font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); }
+  .game-axis .game { min-width: 4.5rem; text-align: center; }
+  .game-axis .game b { font-family: var(--font-mono); }
+  .game-detail { font: 400 .75rem/1.4 var(--font-mono); color: var(--on-puppet-2); }
 
   main { padding: clamp(1.25rem, 3vw, 2rem) var(--gutter) 0; }
 
@@ -80,7 +87,7 @@
       <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
       <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo" aria-current="page">PLO range</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a></div>
     </nav>
-    <p class="eyebrow rise">PLO4 · 6-max · Preflop</p>
+    <p class="eyebrow rise">PLO4 · 2-6 max · Preflop</p>
     <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>เปิดดู range preflop ของ PLO ทุกมือ</h1>
     <p class="lede rise d2">ไล่ action ทีละที่นั่ง แล้วเลือกไพ่สองใบแรกใน matrix ตามด้วยอีกสองใบ ตัวเลขทุกตัวมาจาก solver ของตามควายที่เล่นถึง river</p>
     <div class="games rise d3" id="games" role="group" aria-label="เกม"></div>
@@ -106,14 +113,13 @@
   </div>
 </footer>
 
-<script src="/static/plo-explorer.js?v=3e1407ed"></script>
+<script src="/static/plo-explorer.js?v=e030b82b"></script>
 <script>
   PloExplorer.mount(document.getElementById("explorer"), {
-    games: [
-      { id: "mtt100", label: "100bb MTT", detail: "ante 0.12bb · chip EV" },
-      { id: "mtt40", label: "40bb MTT", detail: "ante 0.116bb · chip EV" },
-      { id: "20bb", label: "20bb", detail: "no ante · chip EV" },
-    ],
+    games: [6, 5, 4, 3, 2].flatMap(seats => [100, 40, 20].map(stack => ({
+      id: `${seats}max-${stack}bb`, label: `${seats}-max · ${stack}bb`, seats, stack,
+      detail: `${seats}-max · ${stack}bb หลังจ่าย ante 0.116bb · ante ไม่นับใน pot preflop · chip EV`,
+    }))),
     gamesEl: document.getElementById("games"),
     load: name => fetch(`/static/plo-${name}.json`).then(r => {
       if (!r.ok) throw new Error(`${name}: ${r.status}`);
