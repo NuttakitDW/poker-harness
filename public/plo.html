@@ -67,8 +67,6 @@
 
   main { padding: clamp(1.25rem, 3vw, 2rem) var(--gutter) 0; }
 
-  .notes { margin-top: 1.25rem; max-width: 80ch; font-size: .875rem; color: var(--ash); display: flex; flex-direction: column; gap: .4rem; }
-  .notes a { color: var(--blue); }
 
   footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
   footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
@@ -97,12 +95,6 @@
 <main>
   <div class="column">
     <div id="explorer"></div>
-
-    <div class="notes">
-      <p>สีในแต่ละช่องคือความถี่เฉลี่ยของทุกมือที่มีไพ่สองใบนั้น ถ่วงด้วยจำนวน combo จริง ช่องบนขวาของเส้นทแยงคือสองใบดอกเดียวกัน (s) ช่องล่างซ้ายคือต่างดอก (o) เส้นทแยงคือคู่</p>
-      <p>แต่ละแถวในตารางคือมือหนึ่งแบบที่สลับดอกได้ เช่น T♦9♦9♥8♣ ใช้แทน T♥9♥9♣8♠ และทุกมือที่ T9 ดอกเดียวกัน ส่วน 9 กับ 8 อีกใบเป็นดอกอื่นที่ต่างกัน combos คือจำนวนมือจริงในแถวนั้น ค้นด้วยไพ่ครบสี่ใบเพื่อดูในดอกของคุณเอง</p>
-      <p>หน้านี้ครอบคลุมเส้นที่มีผู้เล่นใส่ชิปไม่เกินสองคน ถ้าคนที่สามเข้ามาจะหยุดที่ตรงนั้น solver ใช้ bucket ตามลักษณะมือและ Hwang tier ทำให้มือที่คล้ายกันมากได้ความถี่เดียวกัน อ่านวิธีคิดได้ที่ <a href="/research">งานวิจัย</a></p>
-    </div>
   </div>
 </main>
 
