@@ -18,6 +18,7 @@ import numpy as np
 from .buckets import Abstraction
 from .cards import card_ids
 from .game import Rules
+from .pool import DealPool
 from .trainer import Trainer
 from .tree import PublicTree
 
@@ -31,11 +32,14 @@ SPOTS = (
 )
 
 
-def _load(run: Path, cap: int, abstraction_path: Path = ABSTRACTION) -> tuple[Trainer, Abstraction]:
+def _load(run: Path, cap: int, abstraction_path: Path = ABSTRACTION,
+          pool_path: Path | None = None) -> tuple[Trainer, Abstraction]:
     abstraction = Abstraction.cached(abstraction_path)
+    pool = DealPool.load(pool_path) if pool_path else None
     tree = PublicTree.build(Rules(cap=cap))
     checkpoint = run / "checkpoint.npz"
-    trainer = Trainer.load(checkpoint, tree, abstraction) if checkpoint.exists() else Trainer(tree, abstraction)
+    trainer = (Trainer.load(checkpoint, tree, abstraction, pool) if checkpoint.exists()
+               else Trainer(tree, abstraction, pool))
     return trainer, abstraction
 
 
@@ -63,7 +67,7 @@ def summary(trainer: Trainer, abstraction: Abstraction) -> dict[str, dict[str, f
 def train(args: argparse.Namespace) -> None:
     run = Path(args.run)
     run.mkdir(parents=True, exist_ok=True)
-    trainer, abstraction = _load(run, args.cap, Path(args.abstraction))
+    trainer, abstraction = _load(run, args.cap, Path(args.abstraction), args.pool)
     target = trainer.iterations + args.iterations
     previous = None
     # Trainer.run rounds each chunk down to a multiple of the thread count; stop once less than that is left.
@@ -82,7 +86,7 @@ def train(args: argparse.Namespace) -> None:
 
 
 def chart(args: argparse.Namespace) -> None:
-    trainer, abstraction = _load(Path(args.run), args.cap, Path(args.abstraction))
+    trainer, abstraction = _load(Path(args.run), args.cap, Path(args.abstraction), args.pool)
     table = spot_table(trainer, abstraction)
     out = Path(args.out or Path(args.run) / "preflop.csv")
     with open(out, "w", newline="") as f:
@@ -98,7 +102,7 @@ def chart(args: argparse.Namespace) -> None:
 
 
 def query(args: argparse.Namespace) -> None:
-    trainer, abstraction = _load(Path(args.run), args.cap, Path(args.abstraction))
+    trainer, abstraction = _load(Path(args.run), args.cap, Path(args.abstraction), args.pool)
     cls = abstraction.preflop_class(card_ids(args.hand))
     table = spot_table(trainer, abstraction)
     result = {"hand": abstraction.preflop_names[cls], "iterations": trainer.iterations}
@@ -112,6 +116,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--run", default="tmp/o8_fl/run1")
     parser.add_argument("--cap", type=int, default=5)
     parser.add_argument("--abstraction", default=str(ABSTRACTION))
+    parser.add_argument("--pool", type=Path, help="train on a DealPool (equity buckets), e.g. tmp/o8_fl/pool.npz")
     sub = parser.add_subparsers(dest="command", required=True)
     t = sub.add_parser("train")
     t.add_argument("--iterations", type=int, required=True)

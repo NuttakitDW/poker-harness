@@ -21,6 +21,7 @@ import numpy as np
 from .buckets import Abstraction
 from .cli import ABSTRACTION
 from .game import BettingState, Rules
+from .pool import DealPool
 from .trainer import Trainer
 from .tree import DECISION, PublicTree
 
@@ -111,9 +112,11 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--out", type=Path, default=Path("public/static"))
     parser.add_argument("--cap", type=int, default=5)
     parser.add_argument("--abstraction", type=Path, default=ABSTRACTION)
+    parser.add_argument("--pool", type=Path, help="the DealPool the run was trained on, if any")
     args = parser.parse_args(argv)
     abstraction = Abstraction.cached(args.abstraction)
-    trainer = Trainer.load(args.run / "checkpoint.npz", PublicTree.build(Rules(cap=args.cap)), abstraction)
+    pool = DealPool.load(args.pool) if args.pool else None
+    trainer = Trainer.load(args.run / "checkpoint.npz", PublicTree.build(Rules(cap=args.cap)), abstraction, pool)
     data = export(trainer, abstraction, args.out)
     print(json.dumps({"iterations": data["iterations"], "nodes": len(data["nodes"]), "out": str(args.out)}))
 

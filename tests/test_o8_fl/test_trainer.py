@@ -61,6 +61,26 @@ class TrainerTest(unittest.TestCase):
                 seats = {traverser_for(0, i, thread, threads) for i in range(4)}
                 self.assertEqual(seats, {0, 1})
 
+    def test_pool_training_uses_equity_buckets_and_is_deterministic(self) -> None:
+        from o8_fl.pool import DealPool
+        rng = np.random.default_rng(0)
+        n = 300
+        cards = np.array([rng.permutation(52)[:13] for _ in range(n)], dtype=np.uint8)
+        buckets = rng.integers(0, [7, 9, 11], size=(n, 2, 3)).astype(np.uint16)
+        centroids = tuple(np.zeros((k, 3), dtype=np.float32) for k in (7, 9, 11))
+        deal_pool = DealPool(cards, buckets, centroids)
+        a = Trainer(self.tree, self.abstraction, deal_pool)
+        b = Trainer(self.tree, self.abstraction, deal_pool)
+        offsets, size = layout(self.tree, (self.abstraction.bucket_counts[0], 7, 9, 11))
+        self.assertEqual(a.regret.size, size)
+        a.run(2000, threads=1, seed=5)
+        b.run(2000, threads=1, seed=5)
+        np.testing.assert_array_equal(a.strategy_sum, b.strategy_sum)
+        river = self.tree.history_to_node["ck" + "kk" * 2]  # first river decision
+        self.assertGreater(sum(a.visits(river, k) for k in range(11)), 0)
+        with self.assertRaises(ValueError):
+            a.average_policy(river, 11)
+
     def test_checkpoint_round_trip(self) -> None:
         a = Trainer(self.tree, self.abstraction)
         a.run(500, threads=1, seed=1)

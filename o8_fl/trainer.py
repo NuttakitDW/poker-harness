@@ -20,6 +20,7 @@ import numpy as np
 from numba import njit, prange
 
 from .buckets import Abstraction
+from .pool import DealPool
 from .evaluator import omaha_high, omaha_low
 from .features import early_key, river_key
 from .showdown import showdown_net
@@ -139,6 +140,40 @@ def _walk(node: int, traverser: int, kind: np.ndarray, actor: np.ndarray, street
                  offsets, buckets, values, regret, strategy_sum, weight)
 
 
+@njit(cache=True)
+def _deal_from_pool(index: int, pool_cards: np.ndarray, pool_buckets: np.ndarray, preflop: np.ndarray,
+                    deck: np.ndarray, buckets: np.ndarray, values: np.ndarray) -> None:
+    for i in range(13):
+        deck[i] = pool_cards[index, i]
+    board = deck[8:13]
+    for p in range(2):
+        hole = deck[4 * p:4 * p + 4]
+        buckets[p, 0] = preflop[combo_index_native(hole)]
+        for s in range(3):
+            buckets[p, s + 1] = pool_buckets[index, p, s]
+        values[p] = omaha_high(hole, board)
+        values[2 + p] = omaha_low(hole, board)
+
+
+@njit(parallel=True)
+def _run_pool(iterations: int, start: int, seed: int, threads: int, kind: np.ndarray, actor: np.ndarray,
+              street: np.ndarray, children: np.ndarray, committed: np.ndarray, folder: np.ndarray,
+              offsets: np.ndarray, preflop: np.ndarray, pool_cards: np.ndarray, pool_buckets: np.ndarray,
+              regret: np.ndarray, strategy_sum: np.ndarray) -> None:
+    per_thread = iterations // threads
+    n = pool_cards.shape[0]
+    for thread in prange(threads):
+        np.random.seed(seed * 1_000_003 + thread)
+        deck = np.empty(13, dtype=np.int64)
+        buckets = np.empty((2, 4), dtype=np.int64)
+        values = np.empty(4, dtype=np.int64)
+        for i in range(per_thread):
+            t = start + i * threads + thread + 1
+            _deal_from_pool(np.random.randint(n), pool_cards, pool_buckets, preflop, deck, buckets, values)
+            _walk(0, traverser_for(start, i, thread, threads), kind, actor, street, children, committed, folder,
+                  offsets, buckets, values, regret, strategy_sum, float(t))
+
+
 @njit(parallel=True)
 def _run(iterations: int, start: int, seed: int, threads: int, kind: np.ndarray, actor: np.ndarray,
          street: np.ndarray, children: np.ndarray, committed: np.ndarray, folder: np.ndarray,
@@ -158,10 +193,16 @@ def _run(iterations: int, start: int, seed: int, threads: int, kind: np.ndarray,
 
 
 class Trainer:
-    def __init__(self, tree: PublicTree, abstraction: Abstraction):
+    """With a DealPool, deals and flop/turn/river equity buckets come from the pool; without one,
+    deals are fresh and postflop buckets are the feature keys of the Abstraction."""
+
+    def __init__(self, tree: PublicTree, abstraction: Abstraction, pool: DealPool | None = None):
         self.tree = tree
         self.abstraction = abstraction
-        self.offsets, size = layout(tree, abstraction.bucket_counts)
+        self.pool = pool
+        self.bucket_counts = (abstraction.bucket_counts if pool is None
+                              else (abstraction.bucket_counts[0], *pool.counts))
+        self.offsets, size = layout(tree, self.bucket_counts)
         self.regret = np.zeros(size)
         self.strategy_sum = np.zeros(size)
         self.iterations = 0
@@ -172,9 +213,14 @@ class Trainer:
             raise ValueError("need iterations >= threads >= 1")
         t = self.tree
         started = time.perf_counter()
-        _run(iterations, self.iterations, seed, threads, t.kind, t.actor, t.street, t.children, t.committed,
-             t.folder, self.offsets, self.abstraction.preflop, self.abstraction.flop_map,
-             self.abstraction.turn_map, self.regret, self.strategy_sum)
+        if self.pool is None:
+            _run(iterations, self.iterations, seed, threads, t.kind, t.actor, t.street, t.children, t.committed,
+                 t.folder, self.offsets, self.abstraction.preflop, self.abstraction.flop_map,
+                 self.abstraction.turn_map, self.regret, self.strategy_sum)
+        else:
+            _run_pool(iterations, self.iterations, seed, threads, t.kind, t.actor, t.street, t.children,
+                      t.committed, t.folder, self.offsets, self.abstraction.preflop, self.pool.cards,
+                      self.pool.buckets, self.regret, self.strategy_sum)
         done = iterations // threads * threads
         self.iterations += done
         return done / max(time.perf_counter() - started, 1e-9)
@@ -182,6 +228,8 @@ class Trainer:
     def _row(self, node: int, bucket: int) -> tuple[int, np.ndarray]:
         if self.tree.kind[node] != DECISION:
             raise ValueError("node is not a decision")
+        if not 0 <= bucket < self.bucket_counts[self.tree.street[node]]:
+            raise ValueError(f"bucket {bucket} out of range on street {self.tree.street[node]}")
         return int(self.offsets[node]) + SLOTS * bucket, self.tree.children[node] >= 0
 
     def average_policy(self, node: int, bucket: int) -> np.ndarray:
@@ -202,11 +250,11 @@ class Trainer:
         tmp.replace(path)
 
     @classmethod
-    def load(cls, path: Path, tree: PublicTree, abstraction: Abstraction) -> Trainer:
+    def load(cls, path: Path, tree: PublicTree, abstraction: Abstraction, pool: DealPool | None = None) -> Trainer:
         data = np.load(path)
         if int(data["cap"]) != tree.rules.cap:
             raise ValueError("checkpoint was trained with a different cap")
-        trainer = cls(tree, abstraction)
+        trainer = cls(tree, abstraction, pool)
         if data["regret"].shape != trainer.regret.shape:
             raise ValueError("checkpoint does not match this abstraction")
         trainer.regret = data["regret"]
