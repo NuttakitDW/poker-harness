@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย 2-7 Triple Draw</title>
+<meta name="description" content="จั่วไปหาไพ่ต่ำแค่ไหนใน 2-7 triple draw: เราดูการตัดสินใจ pat, break และทิ้งไพ่ของบอทที่เก่งที่สุดกว่า 70,000 ครั้ง แล้วสรุปเป็นสมมติฐานให้ solver">
+<link rel="alternate" hreflang="en" href="https://tamkwai.com/static/27td-how-low-to-aim.pdf">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Same CI tokens and section layout as research-mtt40.html */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --lamp: #FFF8E6; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C;
+    --pat: #3A62B0; --pat-track: #E6E0CC;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 1000px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.75 var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-size: .92em; }
+  .column { max-width: var(--column); margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) clamp(2rem, 5vw, 3rem); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage :focus-visible { outline-color: var(--on-puppet); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: var(--lamp); padding: 2px; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: .5rem clamp(1rem, 3vw, 2rem); }
+  .nav-links a { text-decoration: none; color: var(--on-puppet-2); }
+  .nav-links a[aria-current="page"] { color: var(--on-puppet); text-decoration: underline dotted; text-underline-offset: .35em; }
+  .eyebrow { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin: clamp(1rem, 4vw, 2.5rem) 0 1rem; }
+  .headline { font-size: clamp(1.7rem, 4.2vw, 2.8rem); line-height: 1.25; font-weight: 700; max-width: 24ch; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: 1rem; max-width: 62ch; color: var(--on-puppet-2); font-size: 1.0625rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 2rem; }
+  .stat { border: 1px solid var(--puppet-edge); border-radius: var(--cut); padding: 1rem 1.1rem; }
+  .stat b { display: block; font: 600 clamp(1.5rem, 3.4vw, 2.1rem)/1.1 var(--font-mono); color: var(--on-puppet); }
+  .stat > span { display: block; margin-top: .4rem; font-size: .875rem; color: var(--on-puppet-3); }
+
+  main { padding: clamp(2rem, 5vw, 3.5rem) var(--gutter) 0; }
+  section { padding-block: clamp(1.75rem, 4vw, 2.75rem); }
+  section + section { border-top: 1px solid var(--edge); }
+  .tag { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); margin-bottom: .6rem; }
+  h2 { font-size: clamp(1.35rem, 2.6vw, 1.75rem); color: var(--blue); margin-bottom: .75rem; }
+  h3 { font-size: 1.05rem; color: var(--blue); margin: 1.4rem 0 .4rem; }
+  .prose p { max-width: 68ch; }
+  .prose p + p { margin-top: .75rem; }
+  .muted { color: var(--ash); }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: .9rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--edge); vertical-align: middle; }
+  thead th { font: 600 .75rem/1.3 var(--font-body); color: var(--ash-2); border-bottom: 1px solid var(--ink); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+  tr.group th { padding-top: 1rem; color: var(--blue); font: 600 .9rem/1.4 var(--font-body); border-bottom: 1px solid var(--ink); }
+  .table-wrap { overflow-x: auto; }
+  .cap { margin-top: .6rem; font-size: .8125rem; color: var(--ash); max-width: 70ch; }
+  .bar { position: relative; display: block; height: 22px; min-width: 64px; background: var(--pat-track); border-radius: 2px; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: var(--pat); }
+  .bar b { position: relative; display: block; padding: 0 .35rem; font: 600 .75rem/22px var(--font-mono); color: var(--ink); }
+  .bar.hi b { color: var(--paper); }
+  .finding { margin-top: 1.25rem; padding: 1rem 1.1rem; background: var(--paper); border-left: 3px solid var(--blue); border-radius: 0 3px 3px 0; }
+  .finding h3 { margin-top: 0; }
+  .finding p { max-width: 70ch; }
+  .shift { counter-reset: shift; list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-direction: column; gap: .8rem; max-width: 72ch; }
+  .shift li { counter-increment: shift; position: relative; padding-left: 2.6rem; }
+  .shift li::before { content: "H" counter(shift); position: absolute; left: 0; top: .1rem; width: 2.1rem; height: 1.6rem; border-radius: var(--cut); background: var(--blue); color: var(--paper); font: 600 .8rem/1.6rem var(--font-mono); text-align: center; }
+  .limits { padding-left: 1.2rem; max-width: 70ch; display: flex; flex-direction: column; gap: .4rem; color: var(--ash); }
+  .ctas { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.25rem; }
+  .cta { display: inline-flex; align-items: center; min-height: 52px; padding: 0 1.5rem; background: var(--red); color: var(--on-puppet); border: 2px solid var(--red-edge); border-radius: var(--cut); font: 600 1.0625rem/1 var(--font-display); text-decoration: none; }
+  .cta:hover { background: #B02C25; }
+  .cta--alt { background: transparent; color: var(--blue); border-color: var(--blue); }
+  .cta--alt:hover { background: var(--blue); color: var(--on-puppet); }
+  .cards { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+  @media (max-width: 720px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; } .d3 { animation-delay: .28s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a><a href="/static/27td-how-low-to-aim.pdf" hreflang="en" lang="en">EN</a></div>
+    </nav>
+    <p class="eyebrow rise">งานวิจัย · 2-7 Triple Draw</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>2-7 triple draw ควรจั่วไปหาไพ่ต่ำแค่ไหน</h1>
+    <p class="lede rise d2">เรากำลังสร้างคลัง solution ของ 2-7 triple draw ก่อนจะออกแบบส่วนการจั่ว เราไปดูว่าบอทที่เก่งที่สุดในสนาม MixedSolver Arena ตัดสินใจ pat, break และทิ้งไพ่อย่างไร จากการตัดสินใจจริง <span class="mono">70,136</span> ครั้ง</p>
+    <div class="stats rise d3">
+      <div class="stat"><b>8 หรือดีกว่า</b><span>เป้าที่บอทจั่วไปหา จั่ว 1 ใบโดยถือ 9 เป็นใบสูงสุดแค่ <span class="mono">7.6%</span> (heads-up)</span></div>
+      <div class="stat"><b>99%+</b><span>ของการทิ้งไพ่ ตรงกับกฎเดียว: เก็บไพ่ต่างแต้มที่ต่ำที่สุด</span></div>
+      <div class="stat"><b>100% vs 9%</b><span>ถือ T ที่จั่วรอบสุดท้าย บอท pat เมื่อคู่แข่งจั่ว 1 ใบ เทียบกับเมื่อคู่แข่ง pat</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <section class="prose">
+      <p class="tag">คำถาม</p>
+      <h2>ทำไมการจั่วต้องมีคำตอบแยก</h2>
+      <p>2-7 triple draw แบบ fixed limit มีการเดิมพัน 4 รอบ cap ที่ 5 bet และก่อน 3 รอบหลังทุกคนได้เปลี่ยนไพ่กี่ใบก็ได้ มือต่ำสุดชนะ A นับเป็นไพ่สูง ส่วน straight และ flush นับเป็นผลเสีย มือที่ดีที่สุดคือ <span class="cards">7-5-4-3-2</span> ไม่ดอกเดียวกัน</p>
+      <p>ส่วนการเดิมพันมีขนาดเล็ก ใช้ CFR แก้ได้ไม่ยาก ที่ยากคือการจั่ว: ไพ่ 5 ใบเลือกเก็บได้ <span class="mono">32</span> แบบ และคำตอบที่ถูกขึ้นกับ range ของคู่แข่ง จำนวนใบที่คู่แข่งเพิ่งจั่ว และไพ่ที่ออกจากกองไปแล้ว แผนของเราคือให้ CFR ตัดสินว่าจะ pat หรือจั่ว แล้วใช้กฎเลือกว่าจะทิ้งใบไหน งานนี้ตอบว่าแผนนี้ใช้ได้ไหม และตอบคำถามหลักว่า <strong>ควรจั่วไปหาไพ่ต่ำแค่ไหน</strong> เช่น ถือ T ที่ทำมือแล้ว ควร pat หรือ break ไปจั่วหา 8</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ข้อมูล</p>
+      <h2>เราดูอะไร</h2>
+      <p><a href="https://arena.sorawit.dev/competitions" rel="noopener">MixedSolver Arena</a> เป็นสนามแข่งบอทโป๊กเกอร์ที่เปิดเผยประวัติมือ ทุกมือเห็นไพ่ทุกใบ ทุก action ไพ่ที่ทิ้ง และไพ่ที่จั่วได้ มี match 2-7 triple draw ที่จบแล้ว <span class="mono">1,049</span> match ส่วนใหญ่ยาว 10,000 ถึง 300,000 มือ แต่ละ match เปิดให้ดูราว 100 มือแรก (สุ่มไม่ลำเอียง) และราว 100 pot ที่ใหญ่ที่สุด</p>
+      <p>เราจัดอันดับบอทจากอัตราชนะเมื่อเจอบอทจริงจัง แล้วเลือกกลุ่มบนสุดเป็น elite: heads-up คือ <span class="mono">paul-gandalf200-4bit</span>, <span class="mono">2-7-spinel-1</span>, <span class="mono">swit-27td-5.1-i048</span> และกลุ่ม tourmaline ส่วน 6-max คือ <span class="mono">swit-27td-ring3</span> (ชนะทุกตัว <span class="mono">+1.79</span> BB/100) และตระกูล <span class="mono">paul-sauron</span> เราโหลดมาทั้งหมด <span class="mono">18,558</span> มือจาก <span class="mono">93</span> match และนับเฉพาะการตัดสินใจของบอท elite</p>
+      <p class="muted">เราเขียนตัวคำนวณมือ 2-7 เอง และตรวจกับผลที่สนามตัดสินไว้: เลือกผู้ชนะตรงกันทั้ง <span class="mono">12,431</span> showdown</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ผลข้อ 1</p>
+      <h2>ทิ้งใบไหน: ใช้กฎเดียวได้เกือบทุกครั้ง</h2>
+      <p>ถ้ารู้แล้วว่าจะจั่วกี่ใบ กฎ “เก็บไพ่ที่แต้มไม่ซ้ำกันและต่ำที่สุด” ตรงกับที่บอท elite ทำ <span class="mono">99.0–100%</span> จากการจั่ว <span class="mono">50,447</span> ครั้ง</p>
+      <p>จุดเดียวที่ไม่ตรงคือตอนได้ straight มาแล้วต้องทุบทิ้ง 1 ใบ เช่น <span class="cards">7-6-5-4-3</span> กฎจะทิ้งใบสูงสุดเหลือ <span class="cards">6-5-4-3</span> ซึ่งถ้าได้ 7 หรือ 2 ก็กลับเป็น straight อีก บอททำแบบนี้ <span class="mono">64%</span> อีก <span class="mono">36%</span> ทิ้งใบกลางแทน เหลือ <span class="cards">7-5-4-3</span> ไม่มีโอกาสเป็น straight แต่ไพ่สูงกว่า จุดนี้จึงเป็นการเลือกผสม ไม่ใช่กฎตายตัว</p>
+      <div class="finding">
+        <h3>แปลว่าอะไรสำหรับ solver</h3>
+        <p>“ทิ้งใบไหน” ใช้กฎได้ ไม่ต้องให้ CFR เลือกทั้ง 32 แบบ แต่ “จั่วกี่ใบ” เป็นการตัดสินใจเชิงกลยุทธ์ ไม่ใช่แค่ pat หรือจั่ว เช่น ถือ <span class="cards">8-7-4-2</span> + ไพ่ขยะในรอบจั่วแรก บอทจั่ว 1 ใบ <span class="mono">86%</span> และทุบ 8 ทิ้งไปจั่ว 2 ใบ <span class="mono">10%</span></p>
+      </div>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ผลข้อ 2</p>
+      <h2>จั่วไปหา 8 หรือดีกว่า ส่วน 9 เป็นมือที่ยืนได้ ไม่ใช่มือที่ควรไล่</h2>
+      <p>เมื่อจั่ว 1 ใบ ไพ่สูงสุดที่บอทเก็บไว้เป็น 8 หรือต่ำกว่า <span class="mono">91%</span> ใน heads-up และ <span class="mono">98%</span> ใน 6-max เก็บ 9 ไว้เป็นใบสูงสุดแค่ <span class="mono">7.6%</span> และ <span class="mono">1.4%</span> เมื่อจั่ว 2 ใบ ไพ่ที่เก็บเป็น 8 หรือต่ำกว่า <span class="mono">98%</span> ใน heads-up</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ผลข้อ 3</p>
+      <h2>เมื่อไหร่ควร pat: เส้นลดลงทุกรอบจั่ว</h2>
+      <p>ตารางนี้คือความถี่ที่บอท elite ยืน (pat) เมื่อทำมือได้แล้ว แยกตามไพ่สูงสุดของมือ มือ 8 ทุกแบบยืนตั้งแต่รอบจั่วที่ 2 เป็นต้นไป ส่วน 9, T, J เริ่มยืนบ่อยขึ้นเรื่อยๆ เมื่อเหลือรอบจั่วน้อยลง 6-max เข้มกว่า heads-up อยู่หนึ่งขั้น</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">รอบจั่ว</th><th scope="col">8-7</th><th scope="col">9</th><th scope="col">T</th><th scope="col">J</th><th scope="col">Q</th></tr></thead>
+          <tbody>
+            <tr class="group"><th colspan="6" scope="rowgroup">Heads-up</th></tr>
+            <tr><th scope="row">จั่วรอบ 1</th><td><span class="bar hi"><i style="width:96%"></i><b>96%</b></span></td><td><span class="bar"><i style="width:14%"></i><b>14%</b></span></td><td><span class="bar"><i style="width:4%"></i><b>4%</b></span></td><td><span class="bar"><i style="width:2%"></i><b>2%</b></span></td><td><span class="bar"><i style="width:0%"></i><b>0%</b></span></td></tr>
+            <tr><th scope="row">จั่วรอบ 2</th><td><span class="bar hi"><i style="width:100%"></i><b>100%</b></span></td><td><span class="bar hi"><i style="width:52%"></i><b>52%</b></span></td><td><span class="bar"><i style="width:18%"></i><b>18%</b></span></td><td><span class="bar"><i style="width:6%"></i><b>6%</b></span></td><td><span class="bar"><i style="width:1%"></i><b>1%</b></span></td></tr>
+            <tr><th scope="row">จั่วรอบ 3</th><td><span class="bar hi"><i style="width:100%"></i><b>100%</b></span></td><td><span class="bar hi"><i style="width:88%"></i><b>88%</b></span></td><td><span class="bar"><i style="width:48%"></i><b>48%</b></span></td><td><span class="bar"><i style="width:26%"></i><b>26%</b></span></td><td><span class="bar"><i style="width:8%"></i><b>8%</b></span></td></tr>
+            <tr class="group"><th colspan="6" scope="rowgroup">6-max</th></tr>
+            <tr><th scope="row">จั่วรอบ 1</th><td><span class="bar hi"><i style="width:54%"></i><b>54%</b></span></td><td><span class="bar"><i style="width:13%"></i><b>13%</b></span></td><td><span class="bar"><i style="width:1%"></i><b>1%</b></span></td><td><span class="bar"><i style="width:1%"></i><b>1%</b></span></td><td><span class="bar"><i style="width:0%"></i><b>0%</b></span></td></tr>
+            <tr><th scope="row">จั่วรอบ 2</th><td><span class="bar hi"><i style="width:96%"></i><b>96%</b></span></td><td><span class="bar"><i style="width:30%"></i><b>30%</b></span></td><td><span class="bar"><i style="width:8%"></i><b>8%</b></span></td><td><span class="bar"><i style="width:3%"></i><b>3%</b></span></td><td><span class="bar"><i style="width:2%"></i><b>2%</b></span></td></tr>
+            <tr><th scope="row">จั่วรอบ 3</th><td><span class="bar hi"><i style="width:98%"></i><b>98%</b></span></td><td><span class="bar hi"><i style="width:62%"></i><b>62%</b></span></td><td><span class="bar"><i style="width:25%"></i><b>25%</b></span></td><td><span class="bar"><i style="width:9%"></i><b>9%</b></span></td><td><span class="bar"><i style="width:4%"></i><b>4%</b></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">“9” คือมือที่ทำได้แล้วและมี 9 เป็นไพ่สูงสุด เช่น <span class="cards">9-7-5-3-2</span> ส่วน 8-7 คือมือ 8 ที่มี 7 เป็นใบที่สอง</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ผลข้อ 4</p>
+      <h2>คู่แข่งจั่วกี่ใบ เปลี่ยนเป้าได้ถึงสองขั้น</h2>
+      <p>ใน heads-up คนที่มีตำแหน่งจั่วทีหลังจึงเห็นว่าคู่แข่งจั่วไปกี่ใบ ในรอบจั่วสุดท้าย ถ้าคู่แข่งจั่ว 1 ใบ บอทยืนด้วย T ทุกครั้ง ยืนด้วย J ครึ่งหนึ่ง แต่ถ้าคู่แข่ง pat มาแล้ว บอทยืนด้วย T แค่ <span class="mono">9%</span> และแม้แต่ 9 ก็ยืนแค่ <span class="mono">64%</span> ที่เหลือทุบทิ้งเพื่อจั่วไปหามือที่ชนะ pat ของคู่แข่งได้</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">รอบจั่ว 3 คู่แข่ง…</th><th scope="col">9</th><th scope="col">T</th><th scope="col">J</th><th scope="col">Q</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">pat มาแล้ว</th><td><span class="bar hi"><i style="width:64%"></i><b>64%</b></span></td><td><span class="bar"><i style="width:9%"></i><b>9%</b></span></td><td><span class="bar"><i style="width:4%"></i><b>4%</b></span></td><td><span class="bar"><i style="width:2%"></i><b>2%</b></span></td></tr>
+            <tr><th scope="row">จั่ว 1 ใบ</th><td><span class="bar hi"><i style="width:100%"></i><b>100%</b></span></td><td><span class="bar hi"><i style="width:100%"></i><b>100%</b></span></td><td><span class="bar"><i style="width:49%"></i><b>49%</b></span></td><td><span class="bar"><i style="width:10%"></i><b>10%</b></span></td></tr>
+            <tr><th scope="row">จั่ว 2 ใบ</th><td><span class="bar hi"><i style="width:100%"></i><b>100%</b></span></td><td><span class="bar"><i style="width:0%"></i><b>–</b></span></td><td><span class="bar hi"><i style="width:100%"></i><b>100%</b></span></td><td><span class="bar hi"><i style="width:57%"></i><b>57%</b></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">ความถี่ที่ยืน (pat) ของคนที่จั่วทีหลังใน heads-up ช่อง “–” มีน้อยกว่า 10 ครั้ง</p>
+      <div class="finding">
+        <h3>คำตอบของ “ต่ำแค่ไหน” ไม่ใช่ตัวเลขเดียว</h3>
+        <p>เป้าถูกกำหนดโดยมือที่คู่แข่งน่าจะเอามาโชว์ เจอคนจั่ว 1 ใบ มือ T ก็พอ เจอคนที่ pat มาแล้ว T ไม่พอ</p>
+      </div>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ผลข้อ 5 · blocker</p>
+      <h2>ไพ่ที่เหลือหลัง break สำคัญพอๆ กับมือที่ถืออยู่</h2>
+      <p>ความถี่ที่ยืนไม่ได้ลดลงตามใบที่สองแบบเส้นตรง ใน heads-up รอบจั่วที่ 2 มือ <span class="cards">T-9</span> ยืน <span class="mono">72%</span> แต่ <span class="cards">T-8</span> ยืนแค่ <span class="mono">8%</span> รอบจั่วที่ 3 มือ <span class="cards">J-9</span> ยืน <span class="mono">86%</span> แต่ <span class="cards">J-8</span> ยืน <span class="mono">12%</span> เหตุผลคือ ทุบ <span class="cards">T-8-x-x-x</span> แล้วเหลือ draw ไป 8 แต่ทุบ <span class="cards">T-9-x-x-x</span> แล้วเหลือแค่ draw ไป 9 ซึ่งบอทไม่อยากไล่</p>
+      <p>เรานับ <strong>outs ที่ยังเหลือในกองหลัง break</strong> คือไพ่ที่ยังไม่เห็น ที่จะทำให้ไพ่ 4 ใบต่ำสุดกลายเป็นมือ 8 หรือดีกว่า โดยหักไพ่ในมือตัวเอง ไพ่ที่ตัวเองทิ้งไปแล้ว และแต้มที่จะทำให้เป็น straight ในมือกลุ่มเดียวกัน บอท break บ่อยกว่ามากเมื่อ outs เยอะ: <span class="cards">T-8</span> ในรอบจั่วที่ 2 ที่มี outs 9 ใบขึ้นไปยืนแค่ <span class="mono">1%</span> ถ้ามี 7–8 ใบยืน <span class="mono">67%</span> นี่คือผลของ card removal จากไพ่ในมือตัวเอง และบอทใช้มันชัดเจน</p>
+      <p class="muted">สองคำถามเรื่อง blocker ที่ข้อมูลนี้ตอบไม่ได้: (1) ไพ่ที่เราทิ้งไปเองก่อนหน้าเปลี่ยนการตัดสินใจไหม มีกรณีแค่ 30 ครั้งเพราะคนไม่ค่อยทิ้งไพ่ที่จะเป็น outs ของตัวเอง (2) ไพ่ต่ำในมือเราบล็อกมือดีของคู่แข่ง ประวัติมือแยกสิ่งนี้ออกจากความแข็งของมือไม่ได้ เพราะเป็นไพ่ชุดเดียวกัน solver ที่เก็บไพ่ทุกใบตามจริง ไม่จัดมือเป็นกลุ่ม จะได้ผลทั้งสองอย่างเองโดยไม่ต้องเขียนเพิ่ม</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ผลข้อ 6</p>
+      <h2>showdown ชนะกันด้วยมือแค่ไหน</h2>
+      <p>นับเฉพาะ 100 มือแรกของแต่ละ match และ showdown ระหว่าง 2 คน: ใน heads-up pot ที่ชนะด้วย 8-7 หรือดีกว่ามี <span class="mono">45%</span> ด้วย 9 หรือดีกว่า <span class="mono">66%</span> ใน 6-max ชนะด้วย 8-7 หรือดีกว่า <span class="mono">56%</span> ถือ 9 ไปถึง showdown ใน heads-up ชนะ <span class="mono">52%</span> ถือ T ชนะ <span class="mono">54%</span> J ชนะ <span class="mono">48%</span> แต่ J ใน 6-max ชนะแค่ <span class="mono">30%</span></p>
+      <p>ตัวเลขนี้นับเฉพาะมือที่ไปถึง showdown มือที่อ่อนแล้วยังไปถึงจึงมีทั้งการ call จับ bluff และการ snow (ยืนด้วยคู่เพื่อ bluff) ที่ถูก call แต่สอดคล้องกับเส้น pat ข้างบน: ใน heads-up มือ 9 หรือ T สูสีที่ showdown มือ 8 แข็ง และ 6-max ต้องต่ำกว่าอีกขั้น บอท elite snow ในรอบจั่วสุดท้าย <span class="mono">5.8%</span> (heads-up) และ <span class="mono">7.1%</span> (6-max) ของครั้งที่ถือคู่</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">สรุป</p>
+      <h2>สมมติฐาน 7 ข้อที่ solver ของเราต้องทดสอบ</h2>
+      <ol class="shift">
+        <li><strong>จั่วไปหา 8 หรือดีกว่า</strong> การจั่ว 1 ใบไปหา 9 แทบไม่ถูกใน heads-up และเกือบไม่เคยถูกใน 6-max</li>
+        <li><strong>เส้น pat ลดลงทุกรอบจั่ว</strong> 8 ยืนตั้งแต่รอบแรก 9 ผสมในรอบที่ 2 (heads-up) และยืนเกือบตลอดในรอบที่ 3 ส่วน T และ J ผสมในรอบที่ 3</li>
+        <li><strong>จำนวนใบที่คู่แข่งจั่วกำหนดเป้า</strong> รอบสุดท้าย เจอคนจั่ว 1 ใบ T ยืนแน่นอน J ผสม เจอคนที่ pat แม้ T ก็ break</li>
+        <li><strong>เทียบกับ draw ที่จะเหลือหลัง break</strong> break เมื่อไพ่ 4 ใบที่เหลือเป็น draw ไป 8 ที่มี outs เยอะ เก็บ T-9 และ J-9 ไว้ดีกว่าทุบไปเหลือ draw ไป 9</li>
+        <li><strong>showdown ใน heads-up ชนะกันราวๆ 9</strong> มือ 9 หรือ T ใกล้เคียงครึ่งต่อครึ่ง และ J อ่อนใน 6-max</li>
+        <li><strong>snow มีแต่น้อย</strong> ไม่กี่เปอร์เซ็นต์ของมือที่ถือคู่ในรอบสุดท้าย และแทบไม่มีในรอบก่อนๆ</li>
+        <li><strong>6-max เข้มกว่า heads-up หนึ่งขั้น</strong> คำถามที่ยังเปิดคือ 8-7 ในรอบจั่วแรก: บอท swit ยืนทุกครั้ง บอท sauron ยืนราวครึ่งเดียว</li>
+      </ol>
+      <div class="finding">
+        <h3>การออกแบบ solver ที่ได้</h3>
+        <p>ให้ CFR เลือก “จั่วกี่ใบ” (ในทางปฏิบัติคือ pat, จั่วจำนวนปกติ หรือ break เพิ่มอีกใบ) แล้วใช้กฎเลือกว่าเก็บใบไหน ยกเว้นตอนทุบ straight ที่ต้องเปิดไว้ทั้งสองทาง และต้องเก็บไพ่ทุกใบตามจริงรวมถึงไพ่ที่แต่ละคนทิ้งไปแล้ว เพราะการตัดสินใจ break ขึ้นกับ outs ที่เหลือจริง</p>
+      </div>
+    </section>
+
+    <section class="prose">
+      <p class="tag">ข้อจำกัด</p>
+      <h2>สิ่งที่งานนี้ยังไม่ได้พิสูจน์</h2>
+      <ul class="limits">
+        <li>บอทเหล่านี้เก่ง แต่ไม่ได้พิสูจน์ว่าเป็น equilibrium การที่บอทเก่งหลายตัวทำเหมือนกันเป็นหลักฐาน ไม่ใช่ข้อพิสูจน์</li>
+        <li>แต่ละ match เปิดให้ดูแค่ราว 200 มือ ช่องที่ห่างจากเส้นหลักจึงมีตัวอย่างน้อย</li>
+        <li>ชุด pot ใหญ่สุดลำเอียงไปทาง pot ใหญ่ ส่วน showdown จึงใช้แค่ 100 มือแรก</li>
+        <li>บางการตัดสินใจใน 6-max เกิดตอนเจอบอทที่อ่อนกว่ากลุ่ม elite</li>
+      </ul>
+      <div class="ctas">
+        <a class="cta" href="/static/27td-how-low-to-aim.pdf" target="_blank" rel="noopener" hreflang="en" lang="en">Read the full paper (English PDF)</a>
+        <a class="cta cta--alt" href="/research">กลับไปหน้างานวิจัย</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>ข้อมูลจาก MixedSolver Arena ดาวน์โหลดวันที่ 4 ตุลาคม 2026</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+<script src="/static/beacon.js" defer></script>
+</body>
+</html>

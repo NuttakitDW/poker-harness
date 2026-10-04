@@ -322,7 +322,7 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(response.status, 200)
         self.assertIn(b"Copyright", body)
         for pdf in ("/static/open-limp-fold-20bb.pdf", "/static/open-limp-fold-20bb-th.pdf",
-                    "/static/plo-open-size-icm.pdf"):
+                    "/static/plo-open-size-icm.pdf", "/static/27td-how-low-to-aim.pdf"):
             with self.subTest(pdf=pdf):
                 self.assertIn(pdf.encode(), body)
                 response, content = self.request("GET", pdf)
@@ -338,6 +338,14 @@ class ServerTests(unittest.TestCase):
         _, listing = self.request("GET", "/research")
         self.assertIn(b'href="/research-mtt40"', listing)
         self.assertIn(b'href="/research-mtt40-en"', listing)
+
+    def test_the_triple_draw_thai_page_is_served_and_links_the_english_paper(self):
+        response, body = self.request("GET", "/research-27td")
+        self.assertEqual(response.status, 200)
+        self.assertIn(b"Copyright", body)
+        self.assertIn(b'href="/static/27td-how-low-to-aim.pdf"', body)
+        _, listing = self.request("GET", "/research")
+        self.assertIn(b'href="/research-27td"', listing)
 
     def test_the_mtt40_pages_link_to_their_other_language(self):
         pairs = (("/research-mtt40", "/research-mtt40-en"), ("/research-mtt40-range", "/research-mtt40-range-en"))

@@ -1,0 +1,348 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{tikz}
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\definecolor{streetone}{HTML}{B08D4F}
+\definecolor{streettwo}{HTML}{4C8DFF}
+\definecolor{streetthree}{HTML}{16408F}
+\definecolor{noise}{HTML}{DDE2EC}
+\captionsetup{font=small,labelfont=bf}
+\input{generated/macros.tex}
+\makeatletter\let\tabinput\@@input\makeatother
+
+\title{How Low to Aim in 2-7 Triple Draw:\\
+Pat, Break and Discard Decisions of the Strongest Arena Bots}
+\author{Nuttakit Kundum}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We are building a precomputed solution library for fixed-limit 2-7 triple draw. The betting is
+small enough for counterfactual regret minimization (CFR), but each draw adds a second decision:
+stand pat or draw, and if drawing, which cards to throw. Before fixing the solver's draw abstraction
+we asked how the strongest available programs make that decision. We downloaded \NHands\ hands from
+\NMatchesUsed\ matches on the MixedSolver Arena, where every hole card, discard and drawn card is
+published, and studied the \NElite\ draw decisions made by the top heads-up and six-max bots.
+Four regularities stand out. First, once the number of cards to draw is fixed, the cards to keep
+follow one rule (keep the lowest distinct ranks) in at least \RuleLow\% of \RuleN\ draws; the one
+real exception is breaking a dealt straight. Second, the drawing target is an eight or better: a one-card draw keeps
+a nine as its top card in only \KeptNineHU\% of heads-up and \KeptNineSix\% of six-max draws. Third,
+the worst hand they stand pat with falls from an eight on the first draw to a nine or ten on the
+last, and moves by two full ranks with the number of cards the opponent just drew: heads-up on the
+last draw they always stand pat with a ten against a one-card draw but stand pat with it only
+\PatTenVsPat\% of the time against a pat hand. Fourth, the decision to break a made nine, ten or
+jack depends on what is left after breaking: T-9 stands pat \PatTNineTwo\% of the time on the second
+draw, T-8 only \PatTEightTwo\%, and T-8 with many live outs almost never. We turn these into seven
+testable hypotheses for the solver and a concrete draw abstraction: CFR chooses how many cards to
+draw, and a rule chooses which.
+\end{abstract}
+
+\section{Why the draw needs its own answer}
+
+In fixed-limit 2-7 triple draw each player is dealt five cards, there are four betting rounds with
+a cap of five bets, and before each of the last three rounds every live player may exchange any
+number of cards. The lowest hand wins: aces are high, straights and flushes count against you, and
+the best hand is 7-5-4-3-2 offsuit. The betting tree alone is small. The draws are what make the
+game hard to solve: a player holding five cards can keep any of $2^5=32$ subsets, and the right
+choice depends on the opponent's range, how many cards the opponent drew, and which cards are
+already out of the deck.
+
+Our plan is to let CFR handle the betting and the decision to stand pat or draw, and to choose the
+discards by rule. That plan only works if the rule loses little, and it leaves open the question
+this paper is mainly about: \emph{how low should a draw aim}? Should a player with a made ten stand
+pat or break it to draw to an eight? Is a nine-low draw worth keeping? We do not answer these by
+solving here. We look at what strong programs do and write down what a solver should be able to
+reproduce.
+
+\section{Data}
+
+The MixedSolver Arena (\url{https://arena.sorawit.dev/competitions}) runs reproducible bot
+matches. It holds \NMatchesAll\ completed 2-7 triple draw matches, most of them 10{,}000 to
+300{,}000 hands in duplicate mode. For each match the public API exposes about 100 \emph{sample}
+hands, which are the first hands of the match and so an unbiased draw, and about 100
+\emph{biggest} pots. Every exposed hand shows all hole cards, every action, each player's discards
+and the cards drawn.
+
+\paragraph{Choosing the bots.} We ranked every bot by its hand-weighted win rate in matches without
+baseline bots (random, always-call and similar). Table~\ref{tab:ranking} lists the top of each
+format. We call the heads-up bots from \texttt{paul-gandalf200-4bit} down to
+\texttt{2-7-tourmaline-1} and the six-max \texttt{swit-27td-ring*} and \texttt{paul-sauron*}
+families \emph{elite}. We kept up to 12 recent matches for each set of elite bots that met, as long
+as no baseline bot was seated, and downloaded every exposed hand: \NHands\ hands, of which
+\NSampleHands\ are sample hands. Only decisions made by elite bots are counted below
+(\NEliteHU\ heads-up, \NEliteSix\ six-max); their opponents in some six-max matches are weaker
+bots.
+
+\begin{table}[H]
+\centering\small
+\caption{Strongest triple draw bots on the arena, win rate in BB/100 as reported by the arena,
+weighted by hands, against non-baseline opponents only.}
+\label{tab:ranking}
+\begin{tabular}{lrrr}
+\toprule
+Bot & BB/100 & Matches & Hands\\
+\midrule
+\tabinput generated/ranking.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Parsing.} For each player we replay the hand: start from the dealt cards, and at each
+draw record the hand before the draw, the cards kept, the number drawn, how many cards each opponent
+who drew earlier on the same round took, and the player's own earlier discards. We wrote our own
+2-7 evaluator and checked it against the arena's awarded pots: it picks the same winner in all
+\NShowdowns\ showdowns.
+
+\paragraph{Hand classes.} A made hand is five distinct ranks with no straight and no flush. We name
+it by its top card (9, T, J) and, for sevens and eights, by its top two cards (7-6, 8-7). So
+``a made ten'' is any T-x-x-x-x low.
+
+\section{Which cards to throw}
+
+Given the number of cards drawn, we tested one rule: keep the cards of distinct rank with the lowest
+ranks, compared from the top card down, and on a tie keep more suits. Table~\ref{tab:rule} shows
+how often the elite bots' kept cards match it.
+
+\begin{table}[H]
+\centering\small
+\caption{Share of elite draws (\%) whose kept ranks equal the rule ``keep the lowest distinct
+ranks'', by number of cards drawn. Counts in brackets.}
+\label{tab:rule}
+\begin{tabular}{lll}
+\toprule
+Cards drawn & Heads-up & Six-max\\
+\midrule
+\tabinput generated/rule.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\StraightMissShare\% of the misses are one decision: breaking a dealt straight such as 7-6-5-4-3
+or 8-7-6-5-4 by one card. The rule drops the top card and keeps a four-card run (6-5-4-3), which a
+7 or a 2 fills back into a straight. The bots do that in \StraightTop\% of the \StraightN\ cases
+and in the other \StraightInside\% drop an inside card instead (keeping 7-5-4-3), which has no
+straight risk but a higher top card. So this is a mixed choice between two one-card draws, not a
+fixed rule. With any other hand, four-card runs are kept as the rule says. Apart from that one
+spot, the question of \emph{which} cards to keep is settled by a rule. The strategic question is
+\emph{how many}.
+
+\section{How many cards, and how low to aim}
+
+\paragraph{Draw targets.} When the elite bots draw one card, the highest card they keep is eight or
+lower in \KeptEightHU\% of heads-up and \KeptEightSix\% of six-max draws. A nine is the top kept
+card in only \KeptNineHU\% (heads-up) and \KeptNineSix\% (six-max) of one-card draws, and when
+they draw two, the kept cards are eight or lower in \KeptEightTwoHU\% of heads-up draws. The
+bots draw to eights and better; a nine is a hand they may keep, not a draw they chase.
+
+\paragraph{Smoothing a rough eight.} With exactly four distinct cards of eight or lower plus junk on
+the first draw, the bots draw one to the four-card low almost always. The exception is 8-7 on top
+(for example 8-7-4-2): they break the eight and draw two \BreakEightSevenTwo\% of the time.
+
+\paragraph{When to stand pat.} Figure~\ref{fig:pat} and Table~\ref{tab:pat} show how often a made
+hand stands pat. Every made eight stands pat from the second draw on. On the first draw heads-up
+bots stand pat with 8-7 \PatEightSevenHU\% of the time but six-max bots only \PatEightSevenSix\%.
+A nine stands pat \PatNineDrawTwoHU\% of the time on the second draw heads-up and
+\PatNineDrawThreeHU\% on the third; a ten \PatTenDrawThreeHU\% and a jack \PatJackDrawThreeHU\% on
+the third. Six-max bots are a step tighter: on the second draw they stand pat with a nine only
+\PatNineDrawTwoSix\% of the time.
+
+\begin{figure}[H]
+\centering
+\input{generated/patfig.tex}
+\caption{Share of made hands that stand pat, by the hand's top cards and the draw. Solid lines and
+dots: heads-up; dashed: six-max.}
+\label{fig:pat}
+\end{figure}
+
+\begin{table}[H]
+\centering\small
+\caption{Stand-pat frequency (\%) of elite bots by made hand. ``--'' means fewer than 20 cases.}
+\label{tab:pat}
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{llrrrrrrrrrrr}
+\toprule
+& & 7-5 & 7-6 & 8-5 & 8-6 & 8-7 & 9 & T & J & Q & K & A\\
+\midrule
+\tabinput generated/pat.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The opponent's draw moves the line.} Heads-up, the player in position draws second and
+sees how many cards the opponent took. Table~\ref{tab:vsdraw} splits the stand-pat frequency by
+that number. On the last draw, a ten stands pat \PatTenVsOne\% of the time when the opponent drew
+one card, a jack \PatJackVsOne\% and a queen \PatQueenVsOne\%. When the opponent stood pat, the same
+ten stands pat only \PatTenVsPat\% of the time and even a nine only \PatNineVsPat\%: against a pat
+hand the bots break and draw to beat it. There is no fixed answer to how low to aim; the target is
+set by the hand the opponent is likely to show down.
+
+\begin{table}[H]
+\centering\small
+\caption{Heads-up, second player to draw: stand-pat frequency (\%) by made hand and by how many
+cards the opponent just drew. ``--'' means fewer than 10 cases.}
+\label{tab:vsdraw}
+\begin{tabular}{llrrrrr}
+\toprule
+Draw & Opponent & 9 & T & J & Q & K\\
+\midrule
+\tabinput generated/vsdraw.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{What is left after breaking matters as much as the hand.} The stand-pat frequency is not
+monotone in the second card (Table~\ref{tab:second}). Heads-up on the second draw, T-9 stands pat
+\PatTNineTwo\% of the time while T-8 stands pat \PatTEightTwo\%; on the third draw J-9 stands pat
+\PatJNineThree\% and J-8 \PatJEightThree\%. Breaking T-8-x-x-x leaves an eight draw; breaking
+T-9-x-x-x leaves only a nine draw, which (as above) the bots do not want to chase. A made hand is
+compared with the draw it would become, not with a fixed threshold.
+
+\begin{table}[H]
+\centering\small
+\caption{Stand-pat frequency (\%) by the top two cards of a made nine, ten or jack.}
+\label{tab:second}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrrrrrrrrr}
+\toprule
+& & 9-6 & 9-7 & 9-8 & T-6 & T-7 & T-8 & T-9 & J-7 & J-8 & J-9 & J-T\\
+\midrule
+\tabinput generated/second.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Card removal and blockers}
+
+\paragraph{Live outs.} We counted, for each made hand, the \emph{live outs after breaking}: unseen
+cards that turn the four lowest cards into a no-pair eight or better, removing cards in the
+player's own hand and own earlier discards, and removing ranks that would fill a straight. Within
+the same hand class, the bots break far more often when those outs are many
+(Table~\ref{tab:outs}). On the second draw, T-8 with nine or more live outs stands pat
+\OutsTEightManyTwo\% of the time; with seven or eight it stands pat \OutsTEightFewTwo\%. This is card
+removal from the player's own hand, and the bots clearly use it.
+
+\begin{table}[H]
+\centering\small
+\caption{Heads-up stand-pat frequency (\%) for made nines and tens by live outs after breaking.
+Counts in brackets; ``--'' means fewer than 10 cases.}
+\label{tab:outs}
+\begin{tabular}{llrrr}
+\toprule
+Draw & Hand & $\le 6$ outs & 7--8 outs & 9+ outs\\
+\midrule
+\tabinput generated/outs.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Own discards.} A separate question is whether cards a player threw earlier, and so knows
+are not in the deck, change the decision. We could not test it: players rarely throw cards that
+would later be their outs, so only \DeadSomeN\ made nines and tens on the second or third draw had
+any. \paragraph{Opponent blockers.} Holding a low card also lowers the chance that the opponent
+makes a strong hand. Hand histories cannot separate this from hand strength, because the cards
+that block the opponent are the same cards that make one's own hand good. A solver that tracks
+exact cards, rather than grouping hands into buckets, gets both effects without special handling.
+
+\section{What wins at showdown}
+
+Table~\ref{tab:showdown} uses only sample hands and only showdowns between two players. Heads-up,
+\SdCumEightSevenHU\% of pots are won by 8-7 or better and \SdCumNineHU\% by a nine or better; in
+six-max, \SdCumEightSevenSix\% are won by 8-7 or better. Holding a nine at a heads-up showdown wins
+\SdWinNineHU\% of the time, a ten \SdWinTenHU\% and a jack \SdWinJackHU\%; in six-max a jack wins only
+\SdWinJackSix\%. These are conditional on reaching showdown, so weak hands that get there are
+partly bluff-catchers and partly snows called down, but they agree with the stand-pat lines: a
+heads-up nine or ten is close to an even showdown hand, an eight is a strong one, and six-max pots
+need a step lower. Elite bots also snow (stand pat with a pair to bluff) on the last draw
+\SnowThreeHU\% of the time heads-up and \SnowThreeSix\% six-max when they hold a pair.
+
+\begin{table}[H]
+\centering\small
+\caption{Two-player showdowns in sample hands (\SdNHU\ heads-up, \SdNSix\ six-max): cumulative share
+of pots won by this hand or better, and the win rate of a player holding it.}
+\label{tab:showdown}
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{llrrrrrrrrr}
+\toprule
+& & 7-6 & 8-6 & 8-7 & 9 & T & J & Q & K & A\\
+\midrule
+\tabinput generated/showdown.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Do the strong bots agree?}
+
+Table~\ref{tab:bots} gives the hardest cells bot by bot. Heads-up, the elite bots differ by about
+twenty points on the nine at the second draw (46--66\%) and by fifteen on the ten at the last draw
+(41--55\%), and agree more closely on the jack (21--30\%). Six-max is less settled: on the first draw the two \texttt{swit} bots always stand
+pat with a made eight while the \texttt{sauron} bots do so about half the time. That is the cell in
+which a solver's answer would be most informative.
+
+\begin{table}[H]
+\centering\small
+\caption{Stand-pat frequency (\%) of each elite bot with at least 15 cases per cell. D2~9 means a
+made nine at the second draw.}
+\label{tab:bots}
+\begin{tabular}{lrrr}
+\toprule
+\tabinput generated/bots.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Hypotheses for the solver}
+
+\begin{enumerate}
+\item[H1] \textbf{Aim at eight or better.} Drawing hands should keep eight-or-better cards; a
+one-card draw to a nine is rarely right heads-up and almost never six-max.
+\item[H2] \textbf{The pat line falls by draw.} Stand pat with an eight from the first draw; a nine
+becomes a mixed decision on the second draw heads-up and mostly a pat on the third; a ten and a
+jack are mixed on the third.
+\item[H3] \textbf{The opponent's draw count sets the target.} On the last draw, against a one-card
+draw a ten is a pure pat and a jack is mixed; against a pat hand even a ten breaks.
+\item[H4] \textbf{Compare with the draw left after breaking.} Break when the remaining four cards
+are an eight-or-better draw with many live outs; keep T-9 and J-9 rather than break into a nine
+draw.
+\item[H5] \textbf{Heads-up showdowns are won around a nine.} A nine or ten is close to an even
+showdown hand heads-up and a jack is weak in six-max pots.
+\item[H6] \textbf{Snows exist but are rare,} a few percent of paired hands on the last draw and
+almost none earlier.
+\item[H7] \textbf{Six-max plays a step tighter than heads-up,} with the first-draw 8-7 pat as the
+open question.
+\end{enumerate}
+
+\section{What this means for the solver design}
+
+The draw decision splits cleanly in two. \emph{Which} cards to keep, given how many, follows a rule
+the strong bots break less than one time in a hundred, so the solver can fix it and save the
+$2^5$ discard branches. The one place to keep both options open is breaking a dealt straight,
+where the top card and an inside card are both played. \emph{How many} cards to draw is strategic, and not only pat against draw:
+breaking a rough 8-7 to draw two on the first draw, or breaking a made ten instead of standing pat,
+are real choices with mixed frequencies. We therefore let CFR choose the number of cards (in
+practice: stand pat, draw the natural number, or break one more card), with the kept cards set by
+the rule. Because H4 depends on exact live outs, the solver should carry exact cards, including
+each player's own discards, rather than bucket hands by strength.
+
+\section{Limits}
+
+These bots are strong, not proven equilibria; agreement between them is evidence, not proof. Only
+about 200 hands per match are published, so cells far from the main line have small counts. The
+``biggest'' hands over-represent large pots, which is why the showdown section uses sample hands
+only. Showdown win rates are conditional on reaching showdown. Some six-max decisions were made
+against weaker opponents than the elite set. Hypotheses H1--H7 are what we will test against our own
+solver once it is built.
+
+\paragraph{Reproducing.} \texttt{research/td27\_arena/collect.py} downloads the hands,
+\texttt{analyze.py} produces every number, and \texttt{build\_paper.py} writes the tables. Data were
+downloaded on 4 October 2026.
+
+\end{document}

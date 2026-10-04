@@ -53,7 +53,7 @@ PUBLIC = pathlib.Path(__file__).resolve().parents[2] / "public"
 PAGE = PUBLIC / "index.html"
 METHOD = PUBLIC / "method.html"  # สร้างด้วย make method
 RESEARCH_PAGES = {"/research", "/research-mtt40", "/research-mtt40-range", "/research-mtt40-en",
-                  "/research-mtt40-range-en", "/plo"}
+                  "/research-mtt40-range-en", "/research-27td", "/plo"}
 STATIC = PUBLIC / "static"
 # ชื่อไฟล์ที่เปิดให้โหลดได้ ตัวพิมพ์เล็ก ตัวเลข ขีด นามสกุลตามนี้เท่านั้น ออกนอกโฟลเดอร์ไม่ได้
 STATIC_NAME = re.compile(r"[a-z0-9-]+\.(png|pdf|csv|json|js|css)")
