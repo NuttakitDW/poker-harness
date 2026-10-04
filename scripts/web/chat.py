@@ -157,35 +157,54 @@ def _log(tools: Tools, question: str, source: str, kind: str, request=None, **fi
         print(f"จดบันทึกคำถามไม่ได้: {error}", flush=True)
 
 
+MAX_REPLY_LOG_CHARS = 2_000
+
+
+def reply_text(result: Result) -> str:
+    """What the visitor saw, as plain text for the log: the AI's words, the answer lines, and a
+    marker for a chart image."""
+    parts = list(result.lines)
+    if result.plo_fallback and result.plo_fallback not in parts:
+        parts.append(result.plo_fallback)
+    if result.chart:
+        parts.append("[chart image]")
+    return "\n".join(parts)[:MAX_REPLY_LOG_CHARS]
+
+
 def ask(question: str, session: Session, tools: Tools, ai: bool = True,
         heard: str | None = None, source: str = "text") -> tuple[Result, Session]:
     """ตอบคำถามหนึ่งข้อ คืนคำตอบกับความจำใหม่ พังตรงไหนก็ได้คำขอโทษและความจำเดิม"""
     try:
         made, said, after, logged = _think(question, session, tools, ai)
-        lines = tuple(filter(None, (heard, *said)))
-        if made is None:
-            _log(tools, question, source, "talk", **logged)
-            return Result(lines, "talk"), after
-        _log(tools, question, source, made.kind, made.found.request if made.found else None, **logged)
-        if made.found is not None:
-            after = dataclasses.replace(after, memory=made.found.request)
-        if made.kind == "mario":
-            return Result(lines, made.kind, tools.mario()), after
-        if made.kind == "plo_type" and getattr(made, "plo", None) and made.plo.hand:
-            lang = "TH" if any("\u0e00" <= char <= "\u0e7f" for char in (made.message or "")) else "EN"
-            fallback = made.message or plo_type.render(made.plo.hand, lang)
-            return Result((*lines, fallback), made.kind,
-                          plo=plo_type.presentation(made.plo.hand, lang),
-                          plo_fallback=fallback), after
-        if made.message is not None:
-            return Result((*lines, made.message), made.kind), after
-        found = made.found
-        png = tools.render(found.book, found.chart, found.hands, found.lang, (made.note,))
-        return Result(lines, made.kind, png), after
+        result, after = _present(made, tuple(filter(None, (heard, *said))), after, tools)
+        request = made.found.request if made is not None and made.found else None
+        _log(tools, question, source, result.kind, request, reply=reply_text(result), **logged)
+        return result, after
     except Exception as error:  # noqa: BLE001 เว็บต้องไม่ตายเพราะคำถามเดียว
         traceback.print_exc()
-        _log(tools, question, source, "error", error=repr(error))
+        _log(tools, question, source, "error", error=repr(error), reply=FAILED)
         return Result((FAILED,), "error"), session
+
+
+def _present(made, lines: tuple[str, ...], after: Session, tools: Tools) -> tuple[Result, Session]:
+    """The visitor's answer for one solver reply (None: the AI only talked)."""
+    if made is None:
+        return Result(lines, "talk"), after
+    if made.found is not None:
+        after = dataclasses.replace(after, memory=made.found.request)
+    if made.kind == "mario":
+        return Result(lines, made.kind, tools.mario()), after
+    if made.kind == "plo_type" and getattr(made, "plo", None) and made.plo.hand:
+        lang = "TH" if any("\u0e00" <= char <= "\u0e7f" for char in (made.message or "")) else "EN"
+        fallback = made.message or plo_type.render(made.plo.hand, lang)
+        return Result((*lines, fallback), made.kind,
+                      plo=plo_type.presentation(made.plo.hand, lang),
+                      plo_fallback=fallback), after
+    if made.message is not None:
+        return Result((*lines, made.message), made.kind), after
+    found = made.found
+    png = tools.render(found.book, found.chart, found.hands, found.lang, (made.note,))
+    return Result(lines, made.kind, png), after
 
 
 def ask_image(data: bytes, mime: str, extra: str | None, session: Session,

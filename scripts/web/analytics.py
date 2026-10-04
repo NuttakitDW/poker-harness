@@ -235,6 +235,7 @@ def messages(store, limit: int = 100, search: str = "", kind: str = "") -> list[
     limit = max(1, min(500, int(limit)))
     rows = store.execute(
         "SELECT ts, channel, source, question, kind, detail FROM messages "
-        "WHERE ($1 = '' OR LOWER(question) LIKE $2) AND ($3 = '' OR kind = $4) ORDER BY ts DESC LIMIT $5",
-        (search, f"%{search.lower()}%", kind, kind, limit))
+        "WHERE ($1 = '' OR LOWER(question) LIKE $2 OR LOWER(detail) LIKE $3) AND ($4 = '' OR kind = $5) "
+        "ORDER BY ts DESC LIMIT $6",
+        (search, f"%{search.lower()}%", f"%{search.lower()}%", kind, kind, limit))
     return [{**r, "ts": _num(r["ts"]), "detail": json.loads(r["detail"] or "{}")} for r in rows]

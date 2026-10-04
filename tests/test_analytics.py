@@ -169,6 +169,22 @@ class MessageRecordTest(unittest.TestCase):
             rows = analytics.messages(store)
             self.assertEqual((rows[0]["question"], rows[0]["kind"], rows[0]["channel"]), ("CO open 25bb", "chart", "web"))
 
+    def test_the_reply_the_visitor_saw_is_stored_and_searchable(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = analytics.SqliteStore(str(pathlib.Path(folder) / "a.db"))
+            talk = lambda text, solve, history, memory: type("A", (), {  # noqa: E731 - AI that only talks
+                "say": "Hi! Tell me your seat and stack.", "query": None, "made": None, "history": ()})()
+            tools = chat.Tools(answer=talk)
+            with mock.patch.object(chat, "_message_store", lambda: store), mock.patch("builtins.print"), \
+                    mock.patch.object(chat.question_log, "record", lambda *a, **k: None):
+                chat.ask("hello there", chat.Session(), tools)
+                chat.ask("K8 vs A7 equity", chat.Session(ai=False), tools)
+            rows = analytics.messages(store)
+            self.assertEqual(rows[1]["detail"]["reply"], "Hi! Tell me your seat and stack.")
+            self.assertIn("A7  60.3%", rows[0]["detail"]["reply"])
+            self.assertEqual([m["question"] for m in analytics.messages(store, search="seat and stack")],
+                             ["hello there"])
+
 
 class AdminServerTest(unittest.TestCase):
     def setUp(self):

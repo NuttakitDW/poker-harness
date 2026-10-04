@@ -84,6 +84,11 @@
   .msg time { font: 400 .75rem/1.5 var(--font-mono); color: var(--ash); }
   .msg .q { overflow-wrap: anywhere; white-space: pre-wrap; }
   .msg .meta { font: 400 .72rem/1.4 var(--font-mono); color: var(--ash-2); grid-column: 2 / 3; }
+  .msg .reply { grid-column: 2 / 3; margin: .15rem 0 0; padding: .35rem .6rem; border-left: 2px solid var(--bronze); background: var(--ground);
+    font-size: .85rem; line-height: 1.5; color: var(--ash); white-space: pre-wrap; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  .msg .reply[data-open="true"] { -webkit-line-clamp: unset; display: block; }
+  .msg .reply:focus-visible { outline: 2px dotted var(--blue); }
   .tag { font: 500 .7rem/1 var(--font-mono); padding: .3rem .45rem; border-radius: var(--cut); border: 1px solid var(--edge); color: var(--ash); white-space: nowrap; align-self: start; }
   .tag.ok { border-color: var(--good); color: var(--good); }
   .tag.miss { border-color: var(--red-edge); color: var(--red-edge); }
@@ -94,7 +99,7 @@
   footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
 
   @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two, .three { grid-template-columns: minmax(0, 1fr); } }
-  @media (max-width: 520px) { .msg { grid-template-columns: minmax(0, 1fr) auto; } .msg time { grid-column: 1 / -1; } .msg .meta { grid-column: 1 / -1; } }
+  @media (max-width: 520px) { .msg { grid-template-columns: minmax(0, 1fr) auto; } .msg time { grid-column: 1 / -1; } .msg .meta, .msg .reply { grid-column: 1 / -1; } }
 </style>
 </head>
 <body>
@@ -154,7 +159,7 @@
     <section class="sheet" aria-labelledby="feed-title">
       <div class="feed-head">
         <h2 id="feed-title">ข้อความล่าสุด</h2>
-        <input id="search" type="search" placeholder="ค้นข้อความ" aria-label="ค้นข้อความ" autocomplete="off">
+        <input id="search" type="search" placeholder="ค้นคำถามหรือคำตอบ" aria-label="ค้นคำถามหรือคำตอบ" autocomplete="off">
         <select id="kind" aria-label="ชนิดคำตอบ"><option value="">ทุกชนิด</option></select>
       </div>
       <ul class="feed" id="feed"></ul>
@@ -290,6 +295,14 @@
         el("span", { class: `tag ${ANSWERED.has(m.kind) ? "ok" : "miss"}` }, m.kind || "-"));
       const meta = [m.channel, m.source, m.detail && m.detail.ai_query ? `AI: ${m.detail.ai_query}` : ""].filter(Boolean).join(" · ");
       li.append(el("span", { class: "meta" }, meta));
+      if (m.detail && m.detail.reply) {
+        // The bot's (and DeepSeek's) answer as plain text; click to show all of it.
+        const reply = el("p", { class: "reply", tabindex: "0", title: "คลิกเพื่อดูทั้งหมด", "aria-label": "คำตอบของตามควาย" }, m.detail.reply);
+        const toggle = () => { reply.dataset.open = String(reply.dataset.open !== "true"); };
+        reply.addEventListener("click", toggle);
+        reply.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+        li.append(reply);
+      }
       feed.append(li);
     }
   }
