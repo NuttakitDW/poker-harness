@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ตามควาย PLO Range</title>
-<meta name="description" content="เปิดดู range preflop ของ PLO 6-max จาก solver ของตามควาย เลือกตำแหน่ง ไล่ action แล้วกรองมือด้วย matrix สองขั้น">
+<title>ตามควาย O8 Range</title>
+<meta name="description" content="เปิดดู range preflop ของ Omaha 8-or-better แบบ fixed limit heads-up จาก solver ของตามควาย ไล่ action แล้วกรองมือด้วย matrix สองขั้น">
 <meta name="theme-color" content="#171512">
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -83,11 +83,11 @@
   <div class="column">
     <nav class="nav" aria-label="Main">
       <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
-      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo" aria-current="page">PLO range</a><a href="/o8">O8 range</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a></div>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/o8" aria-current="page">O8 range</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a></div>
     </nav>
-    <p class="eyebrow rise">PLO4 · 2-6 max · Preflop</p>
-    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>เปิดดู range preflop ของ PLO ทุกมือ</h1>
-    <p class="lede rise d2">ไล่ action ทีละที่นั่ง แล้วเลือกไพ่สองใบแรกใน matrix ตามด้วยอีกสองใบ ตัวเลขทุกตัวมาจาก solver ของตามควายที่เล่นถึง river</p>
+    <p class="eyebrow rise">O8 · Fixed limit · Heads-up · Preflop</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>เปิดดู range preflop ของ Omaha 8-or-better ทุกมือ</h1>
+    <p class="lede rise d2">Fixed limit heads-up cap 5 bet ไล่ action ของ button กับ big blind แล้วเลือกไพ่สองใบแรกใน matrix ตามด้วยอีกสองใบ ตัวเลขมาจาก solver ของตามควายที่เล่นถึง river ทั้งฝั่ง high และ low ใน limit stack ไม่เปลี่ยน strategy จึงไม่มีให้เลือก</p>
     <div class="games rise d3" id="games" role="group" aria-label="เกม"></div>
   </div>
 </header>
@@ -100,7 +100,7 @@
 
 <footer>
   <div class="column">
-    <span>PLO range จาก solver ของตามควาย</span>
+    <span>O8 range จาก solver ของตามควาย</span>
     <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
   </div>
 </footer>
@@ -108,16 +108,17 @@
 <script src="/static/plo-explorer.js?v=44d34f5d"></script>
 <script>
   PloExplorer.mount(document.getElementById("explorer"), {
-    games: [6, 5, 4, 3, 2].flatMap(seats => [100, 40, 20].map(stack => ({
-      id: `${seats}max-${stack}bb`, label: `${seats}-max · ${stack}bb`, seats, stack,
-      detail: `${seats}-max · ${stack}bb หลังจ่าย ante 0.116bb · ante ไม่นับใน pot preflop · chip EV`,
-    }))),
-    initial: "6max-40bb",
+    games: [{ id: "hu", label: "Heads-up · cap 5",
+              detail: "Heads-up · fixed limit · blinds 0.5/1 · bet 1bb preflop และ flop, 2bb turn และ river · cap 5 bet · chip EV" }],
+    initial: "hu",
     gamesEl: document.getElementById("games"),
-    load: name => fetch(`/static/plo-${name}.json`).then(r => {
+    load: name => fetch(`/static/o8-${name}.json`).then(r => {
       if (!r.ok) throw new Error(`${name}: ${r.status}`);
       return r.json();
     }),
+    classesUrl: "/static/o8-classes.json",
+    tierLabel: "ไพ่ต่ำ",
+    showStack: false,
     hash: true,
   });
 </script>

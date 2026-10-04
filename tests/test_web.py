@@ -339,6 +339,21 @@ class ServerTests(unittest.TestCase):
         self.assertIn(b'href="/research-mtt40"', listing)
         self.assertIn(b'href="/research-mtt40-en"', listing)
 
+    def test_the_o8_range_page_and_its_data_are_served(self):
+        response, body = self.request("GET", "/o8")
+        self.assertEqual(response.status, 200)
+        self.assertIn(b"Copyright", body)
+        self.assertIn(b"/static/o8-classes.json", body)
+        self.assertIn(b"showStack: false", body)
+        for name in ("o8-hu.json", "o8-classes.json"):
+            with self.subTest(name=name):
+                response, content = self.request("GET", f"/static/{name}")
+                self.assertEqual(response.status, 200)
+                self.assertTrue(content.startswith(b"{"))
+        for page in ("/", "/plo", "/research"):
+            with self.subTest(page=page):
+                self.assertIn(b'href="/o8"', self.request("GET", page)[1])
+
     def test_the_triple_draw_thai_page_is_served_and_links_the_english_paper(self):
         response, body = self.request("GET", "/research-27td")
         self.assertEqual(response.status, 200)

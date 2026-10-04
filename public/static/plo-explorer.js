@@ -1,10 +1,11 @@
 /* PLO range explorer, shared by /plo and the local final-table page.
-   PloExplorer.mount(container, {games, gamesEl, load, initial, hash, classesUrl}) draws the
+   PloExplorer.mount(container, {games, gamesEl, load, initial, hash, classesUrl, tierLabel, showStack}) draws the
    action line, the two-step hand matrix, filters and hand list into ``container``.
    ``games`` [{id, label, detail}] with ``load(id)`` fetch solved games; games that all carry
    ``seats`` and ``stack`` get a table-size row and a stack row instead of one button each.
    Without games, call the returned ``show(data)`` with a solved game and ``focus({seat, hand})``
-   to jump to a spot. */
+   to jump to a spot. ``tierLabel`` names the class-group filter (default "Hwang"); ``showStack: false``
+   hides stack sizes, for limit games where the stack does not change the strategy. */
 window.PloExplorer = (() => {
   "use strict";
   const MARKUP = `
@@ -70,16 +71,21 @@ window.PloExplorer = (() => {
     }
     const RANKS = "AKQJT98765432";
     const SUIT_GLYPH = { s: "♠", h: "♥", d: "♦", c: "♣" };
-    const ACTION_COLOR = { pot: "var(--act-raise)", call: "var(--act-call)", check: "var(--act-call)", fold: "var(--act-fold)" };
-    const ACTION_ORDER = { pot: 0, call: 1, check: 1, fold: 2 };
+    const ACTION_COLOR = { pot: "var(--act-raise)", raise: "var(--act-raise)", call: "var(--act-call)", check: "var(--act-call)", fold: "var(--act-fold)" };
+    const ACTION_ORDER = { pot: 0, raise: 0, call: 1, check: 1, fold: 2 };
+    const TIER_LABEL = options.tierLabel || "Hwang";
+    const SHOW_STACK = options.showStack !== false;
     const SHAPES = [["all", "ทั้งหมด"], ["ds", "ds"], ["ss", "ss"], ["rb", "rainbow"], ["3f", "3 ดอก"], ["mono", "4 ดอก"]];
     const LIST_LIMIT = 300;
+    // A picked action tile keeps hands that take it at least this often; smaller shares are mostly
+    // solver noise (an average strategy is never exactly zero).
+    const ACTION_MIN = 0.05;
     const END_TEXT = { multiway: "คนที่สามเข้า", flop: "ไป flop", "hand over": "จบมือ" };
     const PAIRS = [[0, 1, 2, 3], [0, 2, 1, 3], [0, 3, 1, 2], [1, 2, 0, 3], [1, 3, 0, 2], [2, 3, 0, 1]];
 
     const $ = id => document.getElementById(id);
     const games = options.games || [];
-    const state = { game: options.initial || (games[0] && games[0].id), path: [], first: null, second: null, shape: "all", tier: -1, query: "" };
+    const state = { game: options.initial || (games[0] && games[0].id), path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null };
     const cache = {};
     let classes = null;
     let data = null;
@@ -223,7 +229,13 @@ window.PloExplorer = (() => {
       return true;
     }
 
+    // The action tile picked at this decision ({node, slot}), or null.
+    function pickedAction() {
+      return state.action && state.action.node === currentNode() ? state.action.slot : null;
+    }
+
     function aggregate(probs, n) {
+      const picked = pickedAction();
       const cells = Array.from({ length: 169 }, () => ({ combos: 0, freq: new Float64Array(n) }));
       const total = { combos: 0, freq: new Float64Array(n) };
       const rows = [];
@@ -246,7 +258,7 @@ window.PloExplorer = (() => {
         if (state.second !== null && !keys.includes(state.second)) continue;
         total.combos += c.combos;
         for (let k = 0; k < n; k++) total.freq[k] += c.combos * p[k];
-        rows.push({ c, p, cards: query && query.sig ? query.cards : c.cards });  // searched hands keep their own suits
+        if (picked === null || p[picked] >= ACTION_MIN) rows.push({ c, p, cards: query && query.sig ? query.cards : c.cards });  // searched hands keep their own suits
       }
       return { cells, total, rows };
     }
@@ -262,8 +274,9 @@ window.PloExplorer = (() => {
       return node.options.map((o, k) => k).sort((p, q) => ACTION_ORDER[node.options[p].action] - ACTION_ORDER[node.options[q].action]);
     }
 
-    function barHTML(freq, node, weight) {
-      return orderedSlots(node).map(k => {
+    // ``only``: draw just that action's share and leave the rest of the bar empty.
+    function barHTML(freq, node, weight, only = null) {
+      return orderedSlots(node).filter(k => only === null || k === only).map(k => {
         const share = weight > 0 ? freq[k] / weight : 0;
         return share > 0.0005 ? `<i style="width:${(share * 100).toFixed(2)}%;background:${ACTION_COLOR[node.options[k].action]}"></i>` : "";
       }).join("");
@@ -314,7 +327,7 @@ window.PloExplorer = (() => {
             + `<span class="sw" style="background:${ACTION_COLOR[option.action]}"></span>${label.name}${end}`
             + `<span class="amt">${label.amount}</span></button>`;
         }).join("");
-        const head = `<span>${seatName(node)}</span><span class="mono">${fmt(node.behind[node.actor])}bb</span>`;
+        const head = `<span>${seatName(node)}</span>` + (SHOW_STACK ? `<span class="mono">${fmt(node.behind[node.actor])}bb</span>` : "");
         steps.push(slot === null
           ? `<div class="step now"><div class="step-seat">${head}</div><div class="step-opts">${opts}</div></div>`
           : `<div class="step"><button class="step-seat" type="button" data-back="${depth}" title="กลับไปที่ decision นี้">${head}</button><div class="step-opts">${opts}</div></div>`);
@@ -326,7 +339,7 @@ window.PloExplorer = (() => {
         index = data.nodes[index].options[fold].child;
         const node = data.nodes[index];
         steps.push(`<button class="step ahead" type="button" data-ahead="${folds}" title="ทุกคนก่อนหน้า fold แล้วไปที่ ${data.seats[node.actor]}">`
-          + `<span class="step-seat"><span>${seatName(node)}</span><span class="mono">${fmt(node.behind[node.actor])}bb</span></span></button>`);
+          + `<span class="step-seat"><span>${seatName(node)}</span>${SHOW_STACK ? `<span class="mono">${fmt(node.behind[node.actor])}bb</span>` : ""}</span></button>`);
       }
       const line = $("line");
       line.innerHTML = steps.join("");
@@ -351,7 +364,8 @@ window.PloExplorer = (() => {
       const words = lineWords();
       $("spot-title").textContent = words.length ? `${seat} · หลัง ${words.join(", ")}` : `${seat} · ได้เป็นคนแรก (first in)`;
       const toCall = node.to_call > 0 ? ` · ต้องจ่าย ${fmt(node.to_call)}bb` : "";
-      $("spot-meta").textContent = `${data.label} · pot ${fmt(node.pot)}bb${toCall} · stack ${fmt(node.behind[node.actor])}bb`;
+      const stack = SHOW_STACK ? ` · stack ${fmt(node.behind[node.actor])}bb` : "";
+      $("spot-meta").textContent = `${data.label} · pot ${fmt(node.pot)}bb${toCall}${stack}`;
     }
 
     function renderMatrix(cells, node) {
@@ -362,7 +376,7 @@ window.PloExplorer = (() => {
         const empty = cell.combos === 0;
         const selected = state.second === key;
         html.push(`<button class="cell${row === col ? " pair" : ""}${empty ? " empty" : ""}${selected ? " sel" : ""}" type="button" role="gridcell" data-key="${key}" ${empty ? 'aria-disabled="true"' : ""} aria-label="${cellName(key)}">`
-          + `<span class="name">${cellName(key)}</span><span class="bars">${empty ? "" : barHTML(cell.freq, node, cell.combos)}</span></button>`);
+          + `<span class="name">${cellName(key)}</span><span class="bars">${empty ? "" : barHTML(cell.freq, node, cell.combos, pickedAction())}</span></button>`);
       }
       $("matrix").innerHTML = html.join("");
       $("pick1-v").textContent = state.first === null ? "เลือก" : cellName(state.first);
@@ -382,11 +396,14 @@ window.PloExplorer = (() => {
     }
 
     function renderSummary(total, node) {
+      const picked = pickedAction();
       const tiles = orderedSlots(node).map(k => {
         const option = node.options[k], label = optionLabel(node, option);
         const share = total.combos ? total.freq[k] / total.combos : 0;
-        return `<div class="tile" style="--c:${ACTION_COLOR[option.action]}"><span>${label.name}${label.amount ? " " + label.amount : ""}</span>`
-          + `<b>${pct(share)}</b><small>${Math.round(total.freq[k]).toLocaleString("en-US")} combos</small></div>`;
+        const name = `${label.name}${label.amount ? " " + label.amount : ""}`;
+        return `<button class="tile tile-action" type="button" data-action="${k}" aria-pressed="${picked === k}" `
+          + `title="${picked === k ? "กดอีกครั้งเพื่อดูทุกมือ" : `ดูเฉพาะมือที่มี ${name}`}" style="--c:${ACTION_COLOR[option.action]}"><span>${name}</span>`
+          + `<b>${pct(share)}</b><small>${Math.round(total.freq[k]).toLocaleString("en-US")} combos</small></button>`;
       });
       tiles.push(`<div class="tile"><span>มือที่ตรงตัวกรอง</span><b>${pct(total.combos / 270725)}</b><small>${total.combos.toLocaleString("en-US")} / 270,725</small></div>`);
       $("tiles").innerHTML = tiles.join("");
@@ -399,9 +416,10 @@ window.PloExplorer = (() => {
 
     function renderList(rows, node) {
       const slots = orderedSlots(node);
-      $("list-head").innerHTML = `<tr><th>มือ</th><th class="hide-sm">ทรง</th><th class="hide-sm">Hwang</th><th class="num hide-sm">combos</th><th>สัดส่วน</th>`
+      $("list-head").innerHTML = `<tr><th>มือ</th><th class="hide-sm">ทรง</th><th class="hide-sm">${TIER_LABEL}</th><th class="num hide-sm">combos</th><th>สัดส่วน</th>`
         + slots.map(k => `<th class="num">${optionLabel(node, node.options[k]).name}</th>`).join("") + "</tr>";
-      const aggressive = slots[0];
+      const picked = pickedAction();
+      const aggressive = picked === null ? slots[0] : picked;
       rows.sort((p, q) => q.p[aggressive] - p.p[aggressive] || q.c.combos - p.c.combos);
       const shown = rows.slice(0, LIST_LIMIT);
       $("list").innerHTML = shown.map(({ c, p, cards }) => `<tr><td class="cards">${cardsHTML(cards)}</td>`
@@ -411,14 +429,16 @@ window.PloExplorer = (() => {
       $("list-count").textContent = `${rows.length.toLocaleString("en-US")} แบบ · ดอกเป็นตัวอย่าง สลับดอกได้`;
       $("more").hidden = rows.length <= LIST_LIMIT;
       $("more").textContent = `แสดง ${LIST_LIMIT} แบบแรกตามความถี่ ${optionLabel(node, node.options[aggressive]).name} ใช้ matrix หรือช่องค้นเพื่อกรองให้แคบลง`;
-      const title = state.first === null ? "มือทั้งหมด" : `มือที่มี ${cellName(state.first)}${state.second === null ? "" : " + " + cellName(state.second)}`;
+      const base = state.first === null ? "มือทั้งหมด" : `มือที่มี ${cellName(state.first)}${state.second === null ? "" : " + " + cellName(state.second)}`;
+      const title = picked === null ? base : `${base} · ที่ ${optionLabel(node, node.options[picked]).name} อย่างน้อย ${ACTION_MIN * 100}%`;
       $("list-title").textContent = title;
     }
 
     function renderFilters() {
       $("shapes").innerHTML = '<span class="label">ทรงดอก</span>' + SHAPES.map(([key, text]) =>
         `<button class="chip" type="button" data-shape="${key}" aria-pressed="${state.shape === key}">${text}</button>`).join("");
-      $("tiers").innerHTML = '<span class="label">Hwang</span>' + [["-1", "ทั้งหมด"], ...classes.tiers.map((t, i) => [String(i), t])].map(([key, text]) =>
+      $("tiers").setAttribute("aria-label", TIER_LABEL);
+      $("tiers").innerHTML = `<span class="label">${TIER_LABEL}</span>` + [["-1", "ทั้งหมด"], ...classes.tiers.map((t, i) => [String(i), t])].map(([key, text]) =>
         `<button class="chip" type="button" data-tier="${key}" aria-pressed="${String(state.tier) === key}">${text}</button>`).join("");
     }
 
@@ -523,7 +543,7 @@ window.PloExplorer = (() => {
     // the searched hand; the game stays.
     function resetAll() {
       clearTimeout(typing);
-      Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "" });
+      Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null });
       $("search").value = "";
       render();
     }
@@ -549,6 +569,14 @@ window.PloExplorer = (() => {
 
     $("pick1").addEventListener("click", () => { state.first = null; state.second = null; render(); });
     $("pick2").addEventListener("click", () => { state.second = null; render(); });
+
+    $("tiles").addEventListener("click", event => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      const slot = Number(button.dataset.action);
+      state.action = pickedAction() === slot ? null : { node: currentNode(), slot };
+      render();
+    });
 
     $("shapes").addEventListener("click", event => {
       const button = event.target.closest("[data-shape]");

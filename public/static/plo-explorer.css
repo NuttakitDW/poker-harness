@@ -74,6 +74,9 @@ button.step-seat:hover > span:first-child { text-decoration: underline dotted; t
 .tile span { display: block; font-size: .75rem; color: var(--ash); }
 .tile b { display: block; font: 600 1.35rem/1.2 var(--font-mono); color: var(--ink); }
 .tile small { font: 400 .72rem/1.2 var(--font-mono); color: var(--ash); }
+button.tile { font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
+button.tile:hover { border-color: var(--c); }
+button.tile[aria-pressed="true"] { border-color: var(--c); background: var(--paper); box-shadow: inset 0 0 0 1px var(--c); }
 .bigbar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; gap: 2px; background: var(--paper); }
 .bigbar i { display: block; height: 100%; }
 
