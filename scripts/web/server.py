@@ -57,6 +57,10 @@ RESEARCH_PAGES = {"/research", "/research-mtt40", "/research-mtt40-range", "/res
 STATIC = PUBLIC / "static"
 # ชื่อไฟล์ที่เปิดให้โหลดได้ ตัวพิมพ์เล็ก ตัวเลข ขีด นามสกุลตามนี้เท่านั้น ออกนอกโฟลเดอร์ไม่ได้
 STATIC_NAME = re.compile(r"[a-z0-9-]+\.(png|pdf|csv|json|js|css|bin)")
+# ไฟล์ flop ของ O8 ครบ 1,755 ไฟล์อยู่นอก public/ (บนเว็บจริง vercel.json ส่งต่อไปที่ object storage)
+# ในเครื่องเสิร์ฟจากผลที่คำนวณไว้ใน tmp/
+O8_FLOPS = PUBLIC.parent / "tmp" / "o8_fl" / "flops_v2"
+O8_FLOP_NAME = re.compile(r"o8/v2/flop-([0-9]{4})\.bin")
 STATIC_TYPES = {"png": "image/png", "pdf": "application/pdf", "csv": "text/csv; charset=utf-8",
                 "json": "application/json", "js": "text/javascript; charset=utf-8", "css": "text/css; charset=utf-8",
                 "bin": "application/octet-stream"}
@@ -263,6 +267,12 @@ class Exchange:
     # ---------- plumbing ----------
 
     def _static(self, name: str) -> Reply:
+        flop = O8_FLOP_NAME.fullmatch(name)
+        if flop is not None:
+            path = O8_FLOPS / f"o8-flop-{flop.group(1)}.bin"
+            if not path.is_file():
+                return _json(404, {"lines": ["not found"]})
+            return Reply(200, STATIC_TYPES["bin"], path.read_bytes(), cache=STATIC_CACHE)
         match = STATIC_NAME.fullmatch(name)
         path = STATIC / name
         if match is None or not path.is_file():

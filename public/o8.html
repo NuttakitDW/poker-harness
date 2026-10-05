@@ -122,7 +122,7 @@
     postflop: {
       strategyUrl: "/static/o8-hu-flop.json",
       flopsUrl: "/static/o8-flops.json",
-      flopUrl: id => `/static/o8-flop-${id}.bin`,
+      flopUrl: id => `/static/o8/v2/flop-${id}.bin`,  // all 1,755 flops, served from object storage
     },
     hash: true,
   });

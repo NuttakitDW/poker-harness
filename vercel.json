@@ -15,6 +15,10 @@
     {
       "source": "/healthz",
       "destination": "/api/index"
+    },
+    {
+      "source": "/static/o8/v2/:file",
+      "destination": "https://data.tamkwai.com/o8/v2/:file"
     }
   ],
   "headers": [

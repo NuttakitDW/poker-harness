@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import sys
+import tempfile
 import threading
 from types import SimpleNamespace
 import unittest
@@ -433,6 +434,16 @@ class ServerTests(unittest.TestCase):
         for name in ("mtt100", "mtt40", "20bb"):
             with self.subTest(removed=name):
                 self.assertEqual(self.request("GET", f"/static/plo-{name}.json")[0].status, 404)
+
+    def test_o8_flop_files_are_served_from_the_local_library(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(server, "O8_FLOPS", Path(d)):
+            (Path(d) / "o8-flop-0042.bin").write_bytes(b"\x1f\x8b data")
+            response, body = self.request("GET", "/static/o8/v2/flop-0042.bin")
+            self.assertEqual((response.status, body), (200, b"\x1f\x8b data"))
+            self.assertEqual(response.getheader("Content-Type"), "application/octet-stream")
+            for path in ("/static/o8/v2/flop-0043.bin", "/static/o8/v2/flop-42.bin", "/static/o8/v2/../o8-hu.json"):
+                with self.subTest(path=path):
+                    self.assertEqual(self.request("GET", path)[0].status, 404)
 
     def test_static_files_cannot_leave_the_folder(self):
         for path in ("/static/../server.py", "/static/%2e%2e/server.py", "/static/index.html", "/static/"):

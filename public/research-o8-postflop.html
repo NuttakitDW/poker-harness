@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ตามควาย O8 Postflop</title>
-<meta name="description" content="ทำไม postflop ของ Omaha 8-or-better ถึงยาก: แก้ทั้งเกมด้วย CFR กับการจัดกลุ่มมือ เทียบกับแก้ทีละ flop ทำไมต้องมี 1,755 flop และขั้นต่อไปของ solver ตามควาย พร้อมงานวิจัยอ้างอิง">
+<meta name="description" content="ทำไม postflop ของ Omaha 8-or-better ถึงยาก: แก้ทั้งเกมด้วย CFR กับการจัดกลุ่มมือ เทียบกับแก้ทีละ flop คะแนนมือที่วัดกับทั้งมือสุ่มและ range 3-bet ครบทั้ง 1,755 flop พร้อมผลแข่งกับ solution เดิมและงานวิจัยอ้างอิง">
 <meta name="theme-color" content="#171512">
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -120,8 +120,8 @@
     <p class="lede rise d2">เราอยากให้หน้า O8 range ดูได้ถึง flop, turn และ river หน้านี้อธิบายว่าทำไมการหา strategy หลัง flop ของ Omaha 8-or-better แบบ heads-up fixed limit ถึงแพง เราเลือกวิธีไหน แลกอะไรไป และขั้นต่อไปคืออะไร พร้อมงานวิจัยที่อยู่เบื้องหลังแต่ละขั้น</p>
     <div class="stats rise d3">
       <div class="stat"><b>1 รอบ</b><span>ฝึกครั้งเดียวได้ strategy ทุก street ทุก line: <span class="mono">2,800</span> ล้านรอบ ราว 5 ชั่วโมง</span></div>
-      <div class="stat"><b>1,755</b><span>flop ที่ต่างกันจริง เมื่อนับ flop ที่สลับดอกแล้วเหมือนกันเป็นอันเดียว</span></div>
-      <div class="stat"><b>13.5%</b><span>ของ flop ที่แจกจริง ที่หน้าเว็บตอบได้ตรงตัววันนี้ จากคลัง <span class="mono">200</span> flop</span></div>
+      <div class="stat"><b>1,755</b><span>flop ครบทุกแบบบนหน้าเว็บ ทุก flop ที่แจกจริงได้คำตอบตรงตัว</span></div>
+      <div class="stat"><b>+8.6</b><span>mbb ต่อมือ ที่ solution ใหม่ชนะ solution เดิม จาก <span class="mono">1</span> ล้านดีลที่ไม่ได้ใช้ฝึก</span></div>
     </div>
   </div>
 </header>
@@ -163,7 +163,7 @@
       <h2>CFR: เล่นกับตัวเองแล้วเรียนจากความเสียดาย</h2>
       <p>เราใช้ Monte Carlo CFR ซึ่งเป็นตระกูลเดียวกับที่ใช้แก้ heads-up limit hold'em <a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-2">[2]</a><a class="ref" href="#ref-6">[6]</a> แต่ละรอบทำแบบนี้</p>
       <ol class="steps-list">
-        <li>แจกไพ่สุ่มหนึ่งมือ: ไพ่ 4 ใบของทั้งสองคนและ board ครบ 5 ใบ จากคลัง <span class="mono">10</span> ล้านดีลที่คำนวณคะแนนมือไว้แล้ว</li>
+        <li>แจกไพ่สุ่มหนึ่งมือ: ไพ่ 4 ใบของทั้งสองคนและ board ครบ 5 ใบ จากคลัง <span class="mono">16</span> ล้านดีลที่คำนวณคะแนนมือไว้แล้ว</li>
         <li>เล่นมือนั้นจนจบ โดยให้ผู้เล่นคนหนึ่งลองทุก action ส่วนอีกคนเล่นตาม strategy ปัจจุบันของตัวเอง (external sampling <a class="ref" href="#ref-2">[2]</a>) ทำให้แต่ละรอบเร็ว</li>
         <li>วัดความเสียดาย (regret) ของแต่ละ action: ถ้าเลือก action นี้ตลอดจะได้มากกว่าหรือน้อยกว่าที่เล่นอยู่เท่าไร</li>
         <li>รอบหน้าเลือก action ตามสัดส่วนของ regret ที่เป็นบวก เช่น regret ของ raise <span class="mono">6</span>, call <span class="mono">2</span>, fold <span class="mono">0</span> ได้ raise <span class="mono">75%</span> call <span class="mono">25%</span> และไม่ให้ regret ติดลบ (regret matching+ <a class="ref" href="#ref-6">[6]</a>) ทำให้เรียนเร็วขึ้น</li>
@@ -174,14 +174,19 @@
 
     <section class="prose">
       <p class="tag">การจัดกลุ่มมือ</p>
-      <h2>คะแนนของมือ: แยก high กับ low</h2>
-      <p>ก่อน flop เราไม่ย่ออะไรเลย มือที่สลับดอกแล้วเหมือนกันนับเป็นแบบเดียว เหลือ <span class="mono">16,432</span> แบบ ซึ่งไม่เสียความแม่น หลัง flop เราให้คะแนนมือด้วยสามตัวเลข คำนวณเทียบกับมือสุ่มหนึ่งมือ</p>
+      <h2>คะแนนของมือ: แยก high กับ low และวัดกับสอง range</h2>
+      <p>ก่อน flop เราไม่ย่ออะไรเลย มือที่สลับดอกแล้วเหมือนกันนับเป็นแบบเดียว เหลือ <span class="mono">16,432</span> แบบ ซึ่งไม่เสียความแม่น หลัง flop เราให้คะแนนมือด้วยห้าตัวเลข สามตัวแรกวัดกับมือสุ่มหนึ่งมือ</p>
       <ul class="limits" style="color:var(--ink)">
         <li><strong>ส่วน high:</strong> สัดส่วนของ pot ที่คาดว่าจะได้จากฝั่ง high</li>
         <li><strong>ส่วน low:</strong> สัดส่วนที่คาดว่าจะได้จากฝั่ง low ใน O8 ต้องแยกกัน เพราะมือที่ได้ pot ครึ่งหนึ่งจาก high กับมือที่ได้ครึ่งหนึ่งจาก nut low เล่นต่างกันมาก โดยเฉพาะเมื่อเสี่ยงโดนแบ่ง low (quarter)</li>
         <li><strong>ความผันผวน:</strong> ผลสุดท้ายยังแกว่งได้แค่ไหน แยกมือ draw ออกจากมือที่ทำได้แล้ว</li>
       </ul>
-      <p>จากนั้นใช้ k-means จัดเป็น <span class="mono">1,000</span> กลุ่มบน flop และ <span class="mono">2,000</span> กลุ่มบน turn และ river คะแนนพวกนี้คำนวณช้าเกินจะทำระหว่างฝึก เราจึงคำนวณไว้ก่อนกับคลัง <span class="mono">10</span> ล้านดีล</p>
+      <p>อีกสองตัววัดส่วน high และส่วน low ซ้ำ แต่คู่ต่อสู้ถือมือจาก <strong>range 3-bet</strong> แทนมือสุ่ม คือมือที่ big blind 3-bet เมื่อ button raise ตาม solution ก่อนหน้า ราว <span class="mono">33%</span> ของมือ เพราะใน pot ที่ 3-bet หรือ 4-bet คู่ต่อสู้ไม่ได้ถือมือสุ่ม งานเปรียบเทียบวิธีจัดกลุ่มมือพบว่าการวัด equity กับ range หลายแบบช่วยแยกมือได้ดีกว่าวัดกับมือสุ่มอย่างเดียว <a class="ref" href="#ref-4">[4]</a></p>
+      <div class="finding">
+        <h3>ตัวอย่าง: สองมือที่มือสุ่มแยกไม่ค่อยออก</h3>
+        <p>บน K♥7♦2♣ มือ <span class="cards">A♠A♣4♦3♦</span> กับ <span class="cards">K♣6♦4♠3♥</span> มี equity เทียบกับมือสุ่ม <span class="mono">76.4%</span> กับ <span class="mono">69.5%</span> ห่างกัน <span class="mono">6.9</span> จุด แต่เมื่อเจอ range 3-bet AA ยังได้ <span class="mono">76.3%</span> เท่าเดิม ขณะที่ top pair kicker เล็กตกเหลือ <span class="mono">63.6%</span> ห่างกัน <span class="mono">12.7</span> จุด เกือบสองเท่า คะแนนแบบเดิมเห็นแค่ตัวเลขแรก จึงจัดมือแบบนี้ไว้ใกล้กันกว่าที่ควร</p>
+      </div>
+      <p>จากนั้นใช้ k-means กับห้าตัวเลขนี้ จัดเป็น <span class="mono">1,000</span> กลุ่มบน flop และ <span class="mono">2,000</span> กลุ่มบน turn และ river คะแนนพวกนี้คำนวณช้าเกินจะทำระหว่างฝึก เราจึงคำนวณไว้ก่อนกับคลัง <span class="mono">16</span> ล้านดีล โดยใช้ตารางประเมินมือที่เร็วขึ้นราว <span class="mono">4</span> เท่าและให้ผลตรงกับตัวเดิมทุกมือ</p>
       <p>แต่ละ street ใช้เฉพาะคะแนนของ street นั้น ไม่จำคะแนนของ street ก่อนหน้า เรียกว่า imperfect recall <a class="ref" href="#ref-3">[3]</a> ทำให้แบ่งกลุ่มได้ละเอียดขึ้นในหน่วยความจำเท่าเดิม งานเปรียบเทียบวิธีจัดกลุ่มใน hold'em พบว่าการจัดตาม distribution ของ equity ร่วมกับ imperfect recall ให้ผลดีที่สุด <a class="ref" href="#ref-4">[4]</a></p>
     </section>
 
@@ -200,21 +205,34 @@
         </table>
       </div>
       <p>ขนาด pot และ range ของทั้งสองคนไม่ได้หายไปไหน solver เรียนคำตอบแยกกันในแต่ละ spot ระหว่างฝึก โดยเจอ range จริงของคู่ต่อสู้ใน spot นั้น มือคะแนนเดียวกันจึงได้คำแนะนำต่างกันใน pot ที่ limp มากับใน pot ที่ 4-bet</p>
-      <p>flop ทั้งหมดมี <span class="mono">22,100</span> แบบ ถ้านับ flop ที่สลับชื่อดอกแล้วเหมือนกันเป็นอันเดียว (ซึ่งไม่เปลี่ยน strategy ของมือใดเลย) จะเหลือ <span class="mono">1,755</span> แบบ นี่คือขั้นต่ำถ้าต้องการคำตอบตรงทุก flop ต่ำกว่านี้ต้องประมาณ วันนี้เรามี <span class="mono">200</span> flop ครอบคลุมทั้ง <span class="mono">48</span> texture ตรงตัว <span class="mono">13.5%</span> ของ flop ที่แจกจริง ที่เหลือหน้าเว็บใช้ flop ที่ใกล้ที่สุดใน texture เดียวกันและบอกให้รู้</p>
+      <p>flop ทั้งหมดมี <span class="mono">22,100</span> แบบ ถ้านับ flop ที่สลับชื่อดอกแล้วเหมือนกันเป็นอันเดียว (ซึ่งไม่เปลี่ยน strategy ของมือใดเลย) จะเหลือ <span class="mono">1,755</span> แบบ นี่คือขั้นต่ำถ้าต้องการคำตอบตรงทุก flop ตอนนี้หน้าเว็บมีครบทั้ง <span class="mono">1,755</span> flop ไม่ต้องใช้ flop ใกล้เคียงแทนอีกแล้ว</p>
     </section>
 
     <section class="prose">
-      <p class="tag">จุดอ่อนและขั้นต่อไป</p>
-      <h2>คะแนนที่วัดกับมือสุ่มยังหยาบใน pot ใหญ่</h2>
-      <p>คะแนนมือของเราวัดกับมือสุ่ม ใน pot ที่ 3-bet หรือ 4-bet คู่ต่อสู้มักถือมือแข็ง มือสองมือที่คะแนนเท่ากันเมื่อเจอมือสุ่มอาจต่างกันมากเมื่อเจอ range จริง เช่น nut low draw เปล่าๆ กับ two pair กลางๆ แต่ solver แยกไม่ได้เพราะเห็นแค่เลขกลุ่ม จึงต้องเล่นสองมือนี้เหมือนกัน</p>
-      <p>ทางแก้ที่งานวิจัยใช้คือวัด equity กับ range หลายแบบแทนมือสุ่มแบบเดียว เช่น range แข็ง range กว้าง range ที่หนักไปทาง low <a class="ref" href="#ref-4">[4]</a> หรือให้คะแนนดูด้วยว่า equity จะเปลี่ยนไปอย่างไรใน street ถัดไป <a class="ref" href="#ref-5">[5]</a> ทั้งสองแบบยังเป็นหนึ่งไฟล์ต่อ flop เหมือนเดิม</p>
+      <p class="tag">ผลลัพธ์</p>
+      <h2>คะแนนใหม่ชนะ solution เดิม <span class="mono">8.6</span> mbb ต่อมือ</h2>
+      <p>เราฝึก solver ใหม่ด้วยคะแนนห้าตัวเลข จำนวนรอบเท่าเดิม <span class="mono">2,800</span> ล้านรอบ แล้วให้แข่งกับ solution เดิมบน <span class="mono">1</span> ล้านดีลที่ไม่เคยใช้ฝึก แต่ละดีลคำนวณผลที่คาดหวังแบบตรงตัวโดยเดินครบทุกทางของการ bet แทนการสุ่ม action และสลับที่นั่งให้ทั้งสองฝ่ายได้เล่นไพ่ชุดเดียวกันทั้งสองฝั่ง</p>
+      <p>solution ใหม่ชนะ <span class="mono">+8.6</span> mbb ต่อมือ (<span class="mono">0.86</span>bb ต่อ <span class="mono">100</span> มือ) ความคลาดเคลื่อนมาตรฐาน <span class="mono">0.6</span> mbb ห่างจากศูนย์ราว <span class="mono">15</span> เท่าของความคลาดเคลื่อน จึงไม่ใช่โชค</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">equity ภายในกลุ่มเดียวกันต่างกันแค่ไหน</th><th scope="col" class="num">flop</th><th scope="col" class="num">turn</th><th scope="col" class="num">river</th></tr></thead>
+          <tbody>
+            <tr class="group"><th colspan="4" scope="rowgroup">วัดกับ range 3-bet</th></tr>
+            <tr><th scope="row">คะแนนเดิม</th><td class="num">0.042</td><td class="num">0.047</td><td class="num">0.058</td></tr>
+            <tr><th scope="row">คะแนนใหม่</th><td class="num yes">0.017</td><td class="num yes">0.015</td><td class="num yes">0.012</td></tr>
+            <tr class="group"><th colspan="4" scope="rowgroup">วัดกับมือสุ่ม</th></tr>
+            <tr><th scope="row">คะแนนเดิม</th><td class="num yes">0.011</td><td class="num yes">0.008</td><td class="num yes">0.006</td></tr>
+            <tr><th scope="row">คะแนนใหม่</th><td class="num">0.017</td><td class="num">0.015</td><td class="num">0.011</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cap">ค่าเบี่ยงเบนมาตรฐานของ equity (สัดส่วน pot) ระหว่างมือในกลุ่มเดียวกัน เฉลี่ยตามจำนวนมือ ยิ่งต่ำยิ่งแปลว่ามือในกลุ่มคล้ายกันจริง วัดบน <span class="mono">1</span> ล้านดีลเดียวกับการแข่ง</p>
+      <p>จำนวนกลุ่มเท่าเดิม คะแนนใหม่จึงแลกความละเอียดเมื่อวัดกับมือสุ่มไปบ้าง เพื่อให้มือในกลุ่มเดียวกันใกล้กันขึ้น <span class="mono">2.5</span> ถึง <span class="mono">5</span> เท่าเมื่อวัดกับ range 3-bet ผลการแข่งบอกว่าเป็นการแลกที่คุ้ม</p>
+      <h3>ขั้นต่อไป</h3>
       <ol class="shift">
-        <li><strong>ปรับวิธีให้คะแนนมือ</strong> ให้ดูทั้งมือสุ่มและ range แข็ง</li>
-        <li><strong>ฝึก solver ใหม่</strong> ด้วยคะแนนใหม่ ราว 5 ชั่วโมง</li>
-        <li><strong>คำนวณครบ 1,755 flop</strong> ครั้งเดียวด้วยคะแนนใหม่ ราว 12 ชั่วโมง</li>
         <li><strong>turn และ river:</strong> ใช้ range จาก solution ทั้งเกม แล้วแก้เฉพาะจุดที่เปิดดูแบบมือจริงทุกมือ (subgame solving <a class="ref" href="#ref-8">[8]</a> วิธีเดียวกับที่ Libratus ใช้ชนะโปร no-limit)</li>
+        <li><strong>range ที่สาม:</strong> ลองเพิ่ม range ที่หนักไปทาง low <a class="ref" href="#ref-4">[4]</a> หรือคะแนนที่ดูว่า equity จะเปลี่ยนไปอย่างไรใน street ถัดไป <a class="ref" href="#ref-5">[5]</a> แล้ววัดด้วยการแข่งแบบเดียวกัน</li>
       </ol>
-      <p class="muted">ต้องทำตามลำดับนี้ เพราะคำแนะนำผูกกับคะแนนมือ ถ้าคำนวณ 1,755 flop ก่อนแล้วค่อยเปลี่ยนวิธีให้คะแนน ต้องคำนวณใหม่ทั้งหมด</p>
       <div class="ctas">
         <a class="cta" href="/o8">เปิด O8 range</a>
         <a class="cta cta--alt" href="/research">กลับไปหน้างานวิจัย</a>
