@@ -106,3 +106,14 @@ td .bigbar { height: 9px; min-width: 5rem; }
 @media (prefers-reduced-motion: no-preference) {
   .cell .bars i, .bigbar i { transition: width .25s ease; }
 }
+
+.step.board .step-opts { gap: .4rem; }
+.board-cards { display: inline-flex; gap: .25rem; font: 600 .95rem/1 var(--font-mono); white-space: nowrap; }
+.flop-card { display: inline-flex; align-items: center; justify-content: center; min-width: 2.1rem; height: 1.9rem; padding: 0 .2rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--paper); }
+.flop-card.empty { color: var(--ash-2); border-style: dashed; }
+.flop-clear { font: 500 .78rem/1 var(--font-body); padding: .35rem .5rem; border: 1px solid var(--edge); border-radius: var(--cut); background: transparent; color: var(--ash); cursor: pointer; }
+.flop-clear:hover { border-color: var(--ink); color: var(--ink); }
+.card-pick { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--edge); border-radius: 3px; background: var(--paper); font: 600 clamp(.6rem, 1.4vw, .85rem)/1 var(--font-mono); cursor: pointer; }
+.card-pick:hover { border-color: var(--ink); }
+.card-pick[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.steps[hidden] { display: none; }

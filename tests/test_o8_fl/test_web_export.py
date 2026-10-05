@@ -38,6 +38,9 @@ class WebExportTest(unittest.TestCase):
         limp = game["nodes"][root["options"][1]["child"]]
         self.assertEqual([o["action"] for o in limp["options"]], ["check", "raise"])
         self.assertEqual(limp["options"][0]["end"], "flop")
+        facing = game["nodes"][root["options"][2]["child"]]  # big blind facing a raise to 2
+        self.assertEqual([(o["action"], o["total"]) for o in facing["options"]],
+                         [("fold", 1.0), ("call", 2.0), ("raise", 3.0)])
         # The row of a class equals the trained policy, quantised to 1/255.
         c = abstraction.preflop_class(card_ids("AsAh3s2h"))
         row = blob[c * 3:c * 3 + 3]

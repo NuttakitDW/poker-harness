@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/static/plo-explorer.css?v=fe38c6b9">
+<link rel="stylesheet" href="/static/plo-explorer.css?v=9afbaf43">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   /* Same CI tokens and stage layout as index.html, method.html and research.html */
@@ -85,9 +85,9 @@
       <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
       <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/o8" aria-current="page">O8 range</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a></div>
     </nav>
-    <p class="eyebrow rise">O8 · Fixed limit · Heads-up · Preflop</p>
+    <p class="eyebrow rise">O8 · Fixed limit · Heads-up · Preflop + Flop</p>
     <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>เปิดดู range preflop ของ Omaha 8-or-better ทุกมือ</h1>
-    <p class="lede rise d2">Fixed limit heads-up cap 5 bet ไล่ action ของ button กับ big blind แล้วเลือกไพ่สองใบแรกใน matrix ตามด้วยอีกสองใบ ตัวเลขมาจาก solver ของตามควายที่เล่นถึง river ทั้งฝั่ง high และ low ใน limit stack ไม่เปลี่ยน strategy จึงไม่มีให้เลือก</p>
+    <p class="lede rise d2">Fixed limit heads-up cap 5 bet ไล่ action ของ button กับ big blind ต่อไปถึง flop ได้ แล้วเลือกไพ่สองใบแรกใน matrix ตามด้วยอีกสองใบ ตัวเลขมาจาก solver ของตามควายที่เล่นถึง river ทั้งฝั่ง high และ low ใน limit stack ไม่เปลี่ยน strategy จึงไม่มีให้เลือก</p>
     <div class="games rise d3" id="games" role="group" aria-label="เกม"></div>
   </div>
 </header>
@@ -105,7 +105,7 @@
   </div>
 </footer>
 
-<script src="/static/plo-explorer.js?v=44d34f5d"></script>
+<script src="/static/plo-explorer.js?v=b1d7f38b"></script>
 <script>
   PloExplorer.mount(document.getElementById("explorer"), {
     games: [{ id: "hu", label: "Heads-up · cap 5",
@@ -119,6 +119,11 @@
     classesUrl: "/static/o8-classes.json",
     tierLabel: "ไพ่ต่ำ",
     showStack: false,
+    postflop: {
+      strategyUrl: "/static/o8-hu-flop.json",
+      flopsUrl: "/static/o8-flops.json",
+      flopUrl: id => `/static/o8-flop-${id}.bin`,
+    },
     hash: true,
   });
 </script>

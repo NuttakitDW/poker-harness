@@ -46,6 +46,15 @@ def low_group(cards: str) -> int:
     return 4
 
 
+def action_total(state: BettingState, action: str) -> float:
+    """What the actor has in on this street after the action (read before the street can close)."""
+    if action == "c":
+        return float(max(state.street_put))
+    if action in "br":
+        return float(max(state.street_put) + state.rules.bet_size(state.street))
+    return float(state.street_put[state.actor])
+
+
 def preflop_nodes(tree: PublicTree) -> tuple[list[dict], list[int]]:
     """Explorer nodes for every preflop decision, and the tree node behind each one."""
     order = [n for n in range(tree.node_count) if tree.kind[n] == DECISION and tree.street[n] == 0]
@@ -56,8 +65,7 @@ def preflop_nodes(tree: PublicTree) -> tuple[list[dict], list[int]]:
         options = []
         for action in state.legal():
             child = int(tree.children[node, SLOT[action]])
-            after = state.apply(action)
-            option = {"action": ACTION[action], "total": max(after.street_put) if action != "f" else state.street_put[state.actor],
+            option = {"action": ACTION[action], "total": action_total(state, action),
                       "all_in": False, "child": index.get(child, -1)}
             if option["child"] < 0:
                 option["end"] = "hand over" if action == "f" else "flop"

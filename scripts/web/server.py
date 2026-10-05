@@ -53,12 +53,13 @@ PUBLIC = pathlib.Path(__file__).resolve().parents[2] / "public"
 PAGE = PUBLIC / "index.html"
 METHOD = PUBLIC / "method.html"  # สร้างด้วย make method
 RESEARCH_PAGES = {"/research", "/research-mtt40", "/research-mtt40-range", "/research-mtt40-en",
-                  "/research-mtt40-range-en", "/research-27td", "/plo", "/o8"}
+                  "/research-mtt40-range-en", "/research-27td", "/research-o8-postflop", "/plo", "/o8"}
 STATIC = PUBLIC / "static"
 # ชื่อไฟล์ที่เปิดให้โหลดได้ ตัวพิมพ์เล็ก ตัวเลข ขีด นามสกุลตามนี้เท่านั้น ออกนอกโฟลเดอร์ไม่ได้
-STATIC_NAME = re.compile(r"[a-z0-9-]+\.(png|pdf|csv|json|js|css)")
+STATIC_NAME = re.compile(r"[a-z0-9-]+\.(png|pdf|csv|json|js|css|bin)")
 STATIC_TYPES = {"png": "image/png", "pdf": "application/pdf", "csv": "text/csv; charset=utf-8",
-                "json": "application/json", "js": "text/javascript; charset=utf-8", "css": "text/css; charset=utf-8"}
+                "json": "application/json", "js": "text/javascript; charset=utf-8", "css": "text/css; charset=utf-8",
+                "bin": "application/octet-stream"}
 STATIC_CACHE = "public, max-age=86400"
 MAX_BODY_BYTES = 14_000_000  # รูป 10 MB เป็น base64 แล้วโตขึ้นราวหนึ่งในสาม
 WARM_UP_QUESTION = "BTN shove 10bb"

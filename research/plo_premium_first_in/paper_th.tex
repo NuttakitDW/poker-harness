@@ -71,8 +71,8 @@ Speculative, Marginal หรือ Trash ตัวจัดกลุ่มขอ
 โดยแยกช่อง nut ไว้ต่างหาก) ตาม flush draw (ไม่มี, ไม่ใช่ nut, nut) และตามจำนวนอันดับไพ่ใบถัดไปที่ทำ straight ได้
 (0, 1, 2, 3 ขึ้นไป) รวม 120 กลุ่มต่อ street ส่วน river ใช้ความแข็งของมืออย่างเดียว
 
-\paragraph{การฝึก} ใช้ external-sampling Monte Carlo CFR พร้อม linear discounting อัปเดตแบบขนานบน Apple M4
-Pro 14 คอร์ ฝึกสอง seed ที่แยกกันอิสระ seed ละ 100 นาที ได้ \Deals\ ล้านดีลต่อ seed ดีลละหก traversal
+\paragraph{การฝึก} ใช้ external-sampling Monte Carlo CFR พร้อม linear discounting อัปเดตแบบขนานบนคอมพิวเตอร์เครื่องเดียว
+ฝึกสอง seed ที่แยกกันอิสระ seed ละ 100 นาที ได้ \Deals\ ล้านดีลต่อ seed ดีลละหก traversal
 ความถี่การตัดสินใจแรกระดับ tier ของสอง seed ต่างกันไม่เกิน 3.1 จุดในทุกตำแหน่ง ยกเว้น small blind
 
 \paragraph{การตรวจสอบ} ตัวประเมินมือ Omaha ให้ผลตรงกับ \texttt{phevaluator} ทุกกลุ่มถูกตรวจว่ามี tier เดียว

@@ -66,7 +66,7 @@ holdings that beat them on the current board (10 bins, with a separate nut bin),
 (0, 1, 2, 3+), giving 120 buckets per street; the river uses strength alone.
 
 \paragraph{Training.} External-sampling Monte Carlo CFR with linear discounting, run as lock-free
-parallel updates on a 14-core Apple M4 Pro. Two independent seeds were trained for 100 minutes
+parallel updates on one computer. Two independent seeds were trained for 100 minutes
 each, \Deals\ million deals per seed with six traversals per deal. The two seeds' tier-level
 first-in frequencies agree to within 3.1 points at every seat except the small blind.
 

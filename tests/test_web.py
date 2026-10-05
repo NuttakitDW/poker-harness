@@ -339,6 +339,15 @@ class ServerTests(unittest.TestCase):
         self.assertIn(b'href="/research-mtt40"', listing)
         self.assertIn(b'href="/research-mtt40-en"', listing)
 
+    def test_the_o8_postflop_research_page_is_listed_and_cites_its_sources(self):
+        response, body = self.request("GET", "/research-o8-postflop")
+        self.assertEqual(response.status, 200)
+        self.assertIn(b"Copyright", body)
+        for anchor in range(1, 9):
+            with self.subTest(ref=anchor):
+                self.assertIn(f'id="ref-{anchor}"'.encode(), body)
+        self.assertIn(b'href="/research-o8-postflop"', self.request("GET", "/research")[1])
+
     def test_the_o8_range_page_and_its_data_are_served(self):
         response, body = self.request("GET", "/o8")
         self.assertEqual(response.status, 200)

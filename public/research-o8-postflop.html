@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย O8 Postflop</title>
+<meta name="description" content="ทำไม postflop ของ Omaha 8-or-better ถึงยาก: แก้ทั้งเกมด้วย CFR กับการจัดกลุ่มมือ เทียบกับแก้ทีละ flop ทำไมต้องมี 1,755 flop และขั้นต่อไปของ solver ตามควาย พร้อมงานวิจัยอ้างอิง">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Same CI tokens and section layout as research-mtt40.html and research-27td.html */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --lamp: #FFF8E6; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C;
+    --pat: #3A62B0; --pat-track: #E6E0CC;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 1000px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.75 var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-size: .92em; }
+  .column { max-width: var(--column); margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) clamp(2rem, 5vw, 3rem); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage :focus-visible { outline-color: var(--on-puppet); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: var(--lamp); padding: 2px; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: .5rem clamp(1rem, 3vw, 2rem); }
+  .nav-links a { text-decoration: none; color: var(--on-puppet-2); }
+  .nav-links a[aria-current="page"] { color: var(--on-puppet); text-decoration: underline dotted; text-underline-offset: .35em; }
+  .eyebrow { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin: clamp(1rem, 4vw, 2.5rem) 0 1rem; }
+  .headline { font-size: clamp(1.7rem, 4.2vw, 2.8rem); line-height: 1.25; font-weight: 700; max-width: 24ch; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: 1rem; max-width: 62ch; color: var(--on-puppet-2); font-size: 1.0625rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 2rem; }
+  .stat { border: 1px solid var(--puppet-edge); border-radius: var(--cut); padding: 1rem 1.1rem; }
+  .stat b { display: block; font: 600 clamp(1.5rem, 3.4vw, 2.1rem)/1.1 var(--font-mono); color: var(--on-puppet); }
+  .stat > span { display: block; margin-top: .4rem; font-size: .875rem; color: var(--on-puppet-3); }
+
+  main { padding: clamp(2rem, 5vw, 3.5rem) var(--gutter) 0; }
+  section { padding-block: clamp(1.75rem, 4vw, 2.75rem); }
+  section + section { border-top: 1px solid var(--edge); }
+  .tag { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); margin-bottom: .6rem; }
+  h2 { font-size: clamp(1.35rem, 2.6vw, 1.75rem); color: var(--blue); margin-bottom: .75rem; }
+  h3 { font-size: 1.05rem; color: var(--blue); margin: 1.4rem 0 .4rem; }
+  .prose p { max-width: 68ch; }
+  .prose p + p { margin-top: .75rem; }
+  .muted { color: var(--ash); }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: .9rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--edge); vertical-align: middle; }
+  thead th { font: 600 .75rem/1.3 var(--font-body); color: var(--ash-2); border-bottom: 1px solid var(--ink); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+  tr.group th { padding-top: 1rem; color: var(--blue); font: 600 .9rem/1.4 var(--font-body); border-bottom: 1px solid var(--ink); }
+  .table-wrap { overflow-x: auto; }
+  .cap { margin-top: .6rem; font-size: .8125rem; color: var(--ash); max-width: 70ch; }
+  .bar { position: relative; display: block; height: 22px; min-width: 64px; background: var(--pat-track); border-radius: 2px; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: var(--pat); }
+  .bar b { position: relative; display: block; padding: 0 .35rem; font: 600 .75rem/22px var(--font-mono); color: var(--ink); }
+  .bar.hi b { color: var(--paper); }
+  .finding { margin-top: 1.25rem; padding: 1rem 1.1rem; background: var(--paper); border-left: 3px solid var(--blue); border-radius: 0 3px 3px 0; }
+  .finding h3 { margin-top: 0; }
+  .finding p { max-width: 70ch; }
+  .shift { counter-reset: shift; list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-direction: column; gap: .8rem; max-width: 72ch; }
+  .shift li { counter-increment: shift; position: relative; padding-left: 2.6rem; }
+  .shift li::before { content: "H" counter(shift); position: absolute; left: 0; top: .1rem; width: 2.1rem; height: 1.6rem; border-radius: var(--cut); background: var(--blue); color: var(--paper); font: 600 .8rem/1.6rem var(--font-mono); text-align: center; }
+  .limits { padding-left: 1.2rem; max-width: 70ch; display: flex; flex-direction: column; gap: .4rem; color: var(--ash); }
+  .ctas { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.25rem; }
+  .cta { display: inline-flex; align-items: center; min-height: 52px; padding: 0 1.5rem; background: var(--red); color: var(--on-puppet); border: 2px solid var(--red-edge); border-radius: var(--cut); font: 600 1.0625rem/1 var(--font-display); text-decoration: none; }
+  .cta:hover { background: #B02C25; }
+  .cta--alt { background: transparent; color: var(--blue); border-color: var(--blue); }
+  .cta--alt:hover { background: var(--blue); color: var(--on-puppet); }
+  .cards { font-family: var(--font-mono); font-weight: 600; white-space: nowrap; }
+
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+  @media (max-width: 720px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; } .d3 { animation-delay: .28s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  }
+  .refs { padding-left: 1.4rem; max-width: 74ch; display: flex; flex-direction: column; gap: .7rem; font-size: .9375rem; }
+  .refs li::marker { font-family: var(--font-mono); color: var(--bronze-txt); }
+  .refs .why { display: block; color: var(--ash); font-size: .875rem; margin-top: .15rem; }
+  .ref { font-family: var(--font-mono); font-size: .8em; color: var(--bronze-txt); text-decoration: none; }
+  .ref:hover { text-decoration: underline; }
+  .steps-list { padding-left: 1.3rem; max-width: 70ch; display: flex; flex-direction: column; gap: .5rem; }
+  td.yes { color: var(--blue); font-weight: 600; }
+  .shift li::before { content: counter(shift); width: 1.6rem; }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/o8">O8 range</a><a href="/method">วิธีคำนวณ</a><a href="/research" aria-current="page">งานวิจัย</a></div>
+    </nav>
+    <p class="eyebrow rise">งานวิจัย · O8 Postflop</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>Postflop ของ O8 ยากตรงไหน และเราแก้ด้วยวิธีที่ถูกได้อย่างไร</h1>
+    <p class="lede rise d2">เราอยากให้หน้า O8 range ดูได้ถึง flop, turn และ river หน้านี้อธิบายว่าทำไมการหา strategy หลัง flop ของ Omaha 8-or-better แบบ heads-up fixed limit ถึงแพง เราเลือกวิธีไหน แลกอะไรไป และขั้นต่อไปคืออะไร พร้อมงานวิจัยที่อยู่เบื้องหลังแต่ละขั้น</p>
+    <div class="stats rise d3">
+      <div class="stat"><b>1 รอบ</b><span>ฝึกครั้งเดียวได้ strategy ทุก street ทุก line: <span class="mono">2,800</span> ล้านรอบ ราว 5 ชั่วโมง</span></div>
+      <div class="stat"><b>1,755</b><span>flop ที่ต่างกันจริง เมื่อนับ flop ที่สลับดอกแล้วเหมือนกันเป็นอันเดียว</span></div>
+      <div class="stat"><b>13.5%</b><span>ของ flop ที่แจกจริง ที่หน้าเว็บตอบได้ตรงตัววันนี้ จากคลัง <span class="mono">200</span> flop</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <section class="prose">
+      <p class="tag">โจทย์</p>
+      <h2>ก่อน flop เสร็จแล้ว หลัง flop ใหญ่กว่ามาก</h2>
+      <p>เกมของเราคือ Omaha 8-or-better แบบ heads-up fixed limit: blinds <span class="mono">0.5/1</span>, bet ครั้งละ <span class="mono">1</span>bb ก่อน flop และบน flop, <span class="mono">2</span>bb บน turn และ river, cap <span class="mono">5</span> bet ต่อ street ตามกติกา WSOP ส่วนก่อน flop ทำเสร็จแล้ว หน้า <a href="/o8">O8 range</a> แสดงครบทั้ง <span class="mono">16,432</span> แบบมือ</p>
+      <p>หลัง flop ใหญ่กว่ามาก มือ 4 ใบมี <span class="mono">270,725</span> แบบ หลังเปิด flop ยังเหลือ <span class="mono">211,876</span> แบบต่อผู้เล่น ตามด้วย turn อีก <span class="mono">49</span> ใบ river อีก <span class="mono">48</span> ใบ และทุก street ยัง bet และ raise ได้หลายครั้ง แค่ heads-up limit hold'em ที่มือมีแค่ 2 ใบ (<span class="mono">1,326</span> แบบ) ยังต้องใช้พลังประมวลผลมหาศาลกว่าจะแก้ได้ทั้งเกมแบบไม่ย่อ <a class="ref" href="#ref-6">[6]</a> Omaha 8 ใหญ่กว่านั้นอีกหลายเท่า เราจึงต้องเลือกวิธีให้ดี</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">สองวิธี</p>
+      <h2>แก้ทีละ flop หรือแก้ทั้งเกมพร้อมกัน</h2>
+      <p><strong>วิธีที่ 1 แก้ทีละ flop</strong> คือวิธีของโปรแกรมอย่าง PioSolver หรือ GTO+ เราใส่ range ของทั้งสองคน ขนาด pot และ flop หนึ่งใบ แล้วให้ solver แก้ flop นั้นด้วยมือจริงทุกมือ ได้คำตอบแม่นมาก แต่ต้องแก้ใหม่ทุกครั้งที่ flop หรือ range เปลี่ยน ถ้าจะทำครบทุก flop ทุก line ก่อน flop ของเกมเราก็คือ <span class="mono">1,755 × 9</span> ราว <span class="mono">15,800</span> ครั้ง และต้องมี range ที่ถูกต้องมาจากที่อื่นก่อน</p>
+      <p><strong>วิธีที่ 2 แก้ทั้งเกมพร้อมกัน</strong> คือวิธีที่เราใช้ solver ฝึก preflop, flop, turn และ river ไปพร้อมกันในการฝึกรอบเดียว range ไม่ใช่สิ่งที่เราใส่ แต่เกิดขึ้นเองจาก strategy ก่อน flop ที่กำลังฝึกอยู่ และ strategy หลัง flop ก็ปรับตาม range นั้นทุกรอบ ผลคือ strategy ที่สอดคล้องกันทุก street ภายใต้กฎการจัดกลุ่มมือเดียวกัน วิธีนี้ใช้ในงาน CFR ชิ้นแรกกับ limit hold'em มาตั้งแต่ปี 2007 <a class="ref" href="#ref-1">[1]</a></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">แก้ทีละ flop</th><th scope="col">แก้ทั้งเกม (ของเรา)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">range</th><td>ต้องใส่เอง</td><td class="yes">solver หาเอง</td></tr>
+            <tr><th scope="row">range เปลี่ยน</th><td>แก้ทุก flop ใหม่</td><td class="yes">รวมอยู่ในการฝึกแล้ว</td></tr>
+            <tr><th scope="row">สิ่งที่เก็บ</th><td>ทุกมือจริง ทุก flop ทุก turn และ river</td><td class="yes">หนึ่งแถวต่อกลุ่มมือต่อสถานการณ์</td></tr>
+            <tr><th scope="row">ต้นทุนครบทุก flop</th><td>ราว <span class="mono">15,800</span> ครั้ง</td><td class="yes">ฝึก 1 รอบ (ตาราง <span class="mono">1.4</span> GB)</td></tr>
+            <tr><th scope="row">ความแม่นต่อมือ</th><td class="yes">ตรงทุกมือ</td><td>ดี แต่มือในกลุ่มเดียวกันต้องเล่นเหมือนกัน</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="finding">
+        <h3>ถูกเพราะเรียนเป็นแบบ ไม่ใช่ท่องจำ</h3>
+        <p>solver ของเราไม่ได้จำว่า A♠2♠3♥K♦ บน Q♥7♦2♣ ต้องทำอะไร แต่จำว่า "มือคะแนนประมาณนี้ ในสถานการณ์นี้ ควรทำแบบนี้" มือ low draw แข็งบน Q♥7♦2♣ กับมือแบบเดียวกันบน K♣8♠3♦ ได้คะแนนกลุ่มเดียวกัน ทุกครั้งที่เจอมือไหนก็ตาม แถวเดียวกันในตารางได้เรียนรู้ บทเรียนเดียวจึงใช้ได้กับหลายพันมือบนหลายร้อย flop สิ่งที่แลกไปคือมือในกลุ่มเดียวกันต้องเล่นเหมือนกันเสมอ</p>
+      </div>
+    </section>
+
+    <section class="prose">
+      <p class="tag">วิธีฝึก</p>
+      <h2>CFR: เล่นกับตัวเองแล้วเรียนจากความเสียดาย</h2>
+      <p>เราใช้ Monte Carlo CFR ซึ่งเป็นตระกูลเดียวกับที่ใช้แก้ heads-up limit hold'em <a class="ref" href="#ref-1">[1]</a><a class="ref" href="#ref-2">[2]</a><a class="ref" href="#ref-6">[6]</a> แต่ละรอบทำแบบนี้</p>
+      <ol class="steps-list">
+        <li>แจกไพ่สุ่มหนึ่งมือ: ไพ่ 4 ใบของทั้งสองคนและ board ครบ 5 ใบ จากคลัง <span class="mono">10</span> ล้านดีลที่คำนวณคะแนนมือไว้แล้ว</li>
+        <li>เล่นมือนั้นจนจบ โดยให้ผู้เล่นคนหนึ่งลองทุก action ส่วนอีกคนเล่นตาม strategy ปัจจุบันของตัวเอง (external sampling <a class="ref" href="#ref-2">[2]</a>) ทำให้แต่ละรอบเร็ว</li>
+        <li>วัดความเสียดาย (regret) ของแต่ละ action: ถ้าเลือก action นี้ตลอดจะได้มากกว่าหรือน้อยกว่าที่เล่นอยู่เท่าไร</li>
+        <li>รอบหน้าเลือก action ตามสัดส่วนของ regret ที่เป็นบวก เช่น regret ของ raise <span class="mono">6</span>, call <span class="mono">2</span>, fold <span class="mono">0</span> ได้ raise <span class="mono">75%</span> call <span class="mono">25%</span> และไม่ให้ regret ติดลบ (regret matching+ <a class="ref" href="#ref-6">[6]</a>) ทำให้เรียนเร็วขึ้น</li>
+        <li>ทำซ้ำหลายพันล้านรอบ ค่าเฉลี่ยของ strategy ทุกรอบจะเข้าใกล้ equilibrium <a class="ref" href="#ref-1">[1]</a> เราให้รอบหลังมีน้ำหนักมากกว่ารอบแรก (linear averaging <a class="ref" href="#ref-7">[7]</a>) เพราะรอบแรกยังเล่นมั่ว</li>
+      </ol>
+      <p>solution ที่อยู่บนหน้า O8 ตอนนี้ผ่านการฝึก <span class="mono">2,800</span> ล้านรอบ ราว <span class="mono">210,000</span> รอบต่อวินาที</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">การจัดกลุ่มมือ</p>
+      <h2>คะแนนของมือ: แยก high กับ low</h2>
+      <p>ก่อน flop เราไม่ย่ออะไรเลย มือที่สลับดอกแล้วเหมือนกันนับเป็นแบบเดียว เหลือ <span class="mono">16,432</span> แบบ ซึ่งไม่เสียความแม่น หลัง flop เราให้คะแนนมือด้วยสามตัวเลข คำนวณเทียบกับมือสุ่มหนึ่งมือ</p>
+      <ul class="limits" style="color:var(--ink)">
+        <li><strong>ส่วน high:</strong> สัดส่วนของ pot ที่คาดว่าจะได้จากฝั่ง high</li>
+        <li><strong>ส่วน low:</strong> สัดส่วนที่คาดว่าจะได้จากฝั่ง low ใน O8 ต้องแยกกัน เพราะมือที่ได้ pot ครึ่งหนึ่งจาก high กับมือที่ได้ครึ่งหนึ่งจาก nut low เล่นต่างกันมาก โดยเฉพาะเมื่อเสี่ยงโดนแบ่ง low (quarter)</li>
+        <li><strong>ความผันผวน:</strong> ผลสุดท้ายยังแกว่งได้แค่ไหน แยกมือ draw ออกจากมือที่ทำได้แล้ว</li>
+      </ul>
+      <p>จากนั้นใช้ k-means จัดเป็น <span class="mono">1,000</span> กลุ่มบน flop และ <span class="mono">2,000</span> กลุ่มบน turn และ river คะแนนพวกนี้คำนวณช้าเกินจะทำระหว่างฝึก เราจึงคำนวณไว้ก่อนกับคลัง <span class="mono">10</span> ล้านดีล</p>
+      <p>แต่ละ street ใช้เฉพาะคะแนนของ street นั้น ไม่จำคะแนนของ street ก่อนหน้า เรียกว่า imperfect recall <a class="ref" href="#ref-3">[3]</a> ทำให้แบ่งกลุ่มได้ละเอียดขึ้นในหน่วยความจำเท่าเดิม งานเปรียบเทียบวิธีจัดกลุ่มใน hold'em พบว่าการจัดตาม distribution ของ equity ร่วมกับ imperfect recall ให้ผลดีที่สุด <a class="ref" href="#ref-4">[4]</a></p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">หน้าเว็บ</p>
+      <h2>ทำไมต้องมี 1,755 flop ไม่ใช่ 1,755 × ทุก range</h2>
+      <p>เวลาเปิด spot หลัง flop หน้าเว็บต้องตอบสามคำถาม</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">คำถาม</th><th scope="col">ตอบจาก</th><th scope="col">ขึ้นกับ line ก่อน flop?</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">มือนี้อยู่กลุ่มไหนบน flop นี้</th><td>ไฟล์ของ flop นั้น (หนึ่งไฟล์ต่อ flop)</td><td class="yes">ไม่ขึ้น: ดูแค่มือกับ board</td></tr>
+            <tr><th scope="row">กลุ่มนี้ทำอะไรใน spot นี้</th><td>ไฟล์ strategy ไฟล์เดียว <span class="mono">0.46</span> MB ครบ <span class="mono">108</span> decision ของทั้ง <span class="mono">9</span> line</td><td>ขึ้น แต่รวมอยู่ในไฟล์เดียวแล้ว</td></tr>
+            <tr><th scope="row">มือนี้มาถึงตรงนี้บ่อยแค่ไหน</th><td>คำนวณในเบราว์เซอร์จาก strategy ก่อน flop</td><td>ขึ้น แต่ไม่ต้องเก็บอะไรเพิ่ม</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>ขนาด pot และ range ของทั้งสองคนไม่ได้หายไปไหน solver เรียนคำตอบแยกกันในแต่ละ spot ระหว่างฝึก โดยเจอ range จริงของคู่ต่อสู้ใน spot นั้น มือคะแนนเดียวกันจึงได้คำแนะนำต่างกันใน pot ที่ limp มากับใน pot ที่ 4-bet</p>
+      <p>flop ทั้งหมดมี <span class="mono">22,100</span> แบบ ถ้านับ flop ที่สลับชื่อดอกแล้วเหมือนกันเป็นอันเดียว (ซึ่งไม่เปลี่ยน strategy ของมือใดเลย) จะเหลือ <span class="mono">1,755</span> แบบ นี่คือขั้นต่ำถ้าต้องการคำตอบตรงทุก flop ต่ำกว่านี้ต้องประมาณ วันนี้เรามี <span class="mono">200</span> flop ครอบคลุมทั้ง <span class="mono">48</span> texture ตรงตัว <span class="mono">13.5%</span> ของ flop ที่แจกจริง ที่เหลือหน้าเว็บใช้ flop ที่ใกล้ที่สุดใน texture เดียวกันและบอกให้รู้</p>
+    </section>
+
+    <section class="prose">
+      <p class="tag">จุดอ่อนและขั้นต่อไป</p>
+      <h2>คะแนนที่วัดกับมือสุ่มยังหยาบใน pot ใหญ่</h2>
+      <p>คะแนนมือของเราวัดกับมือสุ่ม ใน pot ที่ 3-bet หรือ 4-bet คู่ต่อสู้มักถือมือแข็ง มือสองมือที่คะแนนเท่ากันเมื่อเจอมือสุ่มอาจต่างกันมากเมื่อเจอ range จริง เช่น nut low draw เปล่าๆ กับ two pair กลางๆ แต่ solver แยกไม่ได้เพราะเห็นแค่เลขกลุ่ม จึงต้องเล่นสองมือนี้เหมือนกัน</p>
+      <p>ทางแก้ที่งานวิจัยใช้คือวัด equity กับ range หลายแบบแทนมือสุ่มแบบเดียว เช่น range แข็ง range กว้าง range ที่หนักไปทาง low <a class="ref" href="#ref-4">[4]</a> หรือให้คะแนนดูด้วยว่า equity จะเปลี่ยนไปอย่างไรใน street ถัดไป <a class="ref" href="#ref-5">[5]</a> ทั้งสองแบบยังเป็นหนึ่งไฟล์ต่อ flop เหมือนเดิม</p>
+      <ol class="shift">
+        <li><strong>ปรับวิธีให้คะแนนมือ</strong> ให้ดูทั้งมือสุ่มและ range แข็ง</li>
+        <li><strong>ฝึก solver ใหม่</strong> ด้วยคะแนนใหม่ ราว 5 ชั่วโมง</li>
+        <li><strong>คำนวณครบ 1,755 flop</strong> ครั้งเดียวด้วยคะแนนใหม่ ราว 12 ชั่วโมง</li>
+        <li><strong>turn และ river:</strong> ใช้ range จาก solution ทั้งเกม แล้วแก้เฉพาะจุดที่เปิดดูแบบมือจริงทุกมือ (subgame solving <a class="ref" href="#ref-8">[8]</a> วิธีเดียวกับที่ Libratus ใช้ชนะโปร no-limit)</li>
+      </ol>
+      <p class="muted">ต้องทำตามลำดับนี้ เพราะคำแนะนำผูกกับคะแนนมือ ถ้าคำนวณ 1,755 flop ก่อนแล้วค่อยเปลี่ยนวิธีให้คะแนน ต้องคำนวณใหม่ทั้งหมด</p>
+      <div class="ctas">
+        <a class="cta" href="/o8">เปิด O8 range</a>
+        <a class="cta cta--alt" href="/research">กลับไปหน้างานวิจัย</a>
+      </div>
+    </section>
+
+    <section class="prose" aria-labelledby="refs-title">
+      <p class="tag">อ้างอิง</p>
+      <h2 id="refs-title">งานวิจัยที่ใช้</h2>
+      <ol class="refs" lang="en">
+        <li id="ref-1">M. Zinkevich, M. Johanson, M. Bowling, C. Piccione. <em>Regret Minimization in Games with Incomplete Information.</em> NIPS 2007.<span class="why" lang="th">ต้นกำเนิดของ CFR: เล่นกับตัวเองโดยดู regret แล้วเข้าใกล้ equilibrium</span></li>
+        <li id="ref-2">M. Lanctot, K. Waugh, M. Zinkevich, M. Bowling. <em>Monte Carlo Sampling for Regret Minimization in Extensive Games.</em> NIPS 2009.<span class="why" lang="th">MCCFR และ external sampling ที่เราใช้ในแต่ละรอบ</span></li>
+        <li id="ref-3">K. Waugh, M. Zinkevich, M. Johanson, M. Kan, D. Schnizlein, M. Bowling. <a href="https://www.semanticscholar.org/paper/A-Practical-Use-of-Imperfect-Recall-Waugh-Zinkevich/2e1b053416bd36cd9c82965aa94760f87734b121" rel="noopener"><em>A Practical Use of Imperfect Recall.</em></a> SARA 2009.<span class="why" lang="th">ให้แต่ละ street ลืมคะแนนเก่าเพื่อแบ่งกลุ่มได้ละเอียดขึ้น</span></li>
+        <li id="ref-4">M. Johanson, N. Burch, R. Valenzano, M. Bowling. <a href="https://webdocs.cs.ualberta.ca/~bowling/publications/b2hd-13aamas-abstraction.html" rel="noopener"><em>Evaluating State-Space Abstractions in Extensive-Form Games.</em></a> AAMAS 2013.<span class="why" lang="th">เปรียบเทียบวิธีจัดกลุ่มมือ: distribution ของ equity กับ imperfect recall ดีที่สุด</span></li>
+        <li id="ref-5">S. Ganzfried, T. Sandholm. <em>Potential-Aware Imperfect-Recall Abstraction with Earth Mover's Distance in Imperfect-Information Games.</em> AAAI 2014.<span class="why" lang="th">คะแนนมือที่ดูศักยภาพใน street ถัดไป</span></li>
+        <li id="ref-6">M. Bowling, N. Burch, M. Johanson, O. Tammelin. <em>Heads-up Limit Hold'em Poker Is Solved.</em> Science 347(6218), 2015.<span class="why" lang="th">แก้ limit hold'em ทั้งเกมด้วย CFR+ และ regret matching+</span></li>
+        <li id="ref-7">N. Brown, T. Sandholm. <em>Solving Imperfect-Information Games via Discounted Regret Minimization.</em> AAAI 2019.<span class="why" lang="th">ทำไมให้น้ำหนักรอบหลังมากกว่าถึงลู่เข้าเร็วกว่า</span></li>
+        <li id="ref-8">N. Brown, T. Sandholm. <em>Safe and Nested Subgame Solving for Imperfect-Information Games.</em> NeurIPS 2017.<span class="why" lang="th">แก้ทั้งเกมแบบหยาบ แล้วแก้เฉพาะจุดให้แม่นด้วย range จาก solution หยาบ</span></li>
+      </ol>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>งานวิจัยจาก solver ของตามควาย · ตุลาคม 2026</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+<script src="/static/beacon.js" defer></script>
+</body>
+</html>

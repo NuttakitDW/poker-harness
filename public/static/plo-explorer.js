@@ -5,7 +5,10 @@
    ``seats`` and ``stack`` get a table-size row and a stack row instead of one button each.
    Without games, call the returned ``show(data)`` with a solved game and ``focus({seat, hand})``
    to jump to a spot. ``tierLabel`` names the class-group filter (default "Hwang"); ``showStack: false``
-   hides stack sizes, for limit games where the stack does not change the strategy. */
+   hides stack sizes, for limit games where the stack does not change the strategy.
+   ``postflop: {strategyUrl, flopsUrl, flopUrl(id)}`` continues lines that reach the flop: the page
+   picks a flop from the library, averages each hand class over the combos the board leaves, and
+   weights every combo by how often the player to act gets there along the line. */
 window.PloExplorer = (() => {
   "use strict";
   const MARKUP = `
@@ -80,12 +83,18 @@ window.PloExplorer = (() => {
     // A picked action tile keeps hands that take it at least this often; smaller shares are mostly
     // solver noise (an average strategy is never exactly zero).
     const ACTION_MIN = 0.05;
-    const END_TEXT = { multiway: "คนที่สามเข้า", flop: "ไป flop", "hand over": "จบมือ" };
+    const LIST_MIN_WEIGHT = 0.05;  // combos reaching a flop node, below which a hand is left out of the list
+    const END_TEXT = { multiway: "คนที่สามเข้า", flop: "ไป flop", turn: "ไป turn", "hand over": "จบมือ" };
+    const POST = options.postflop || null;
+    const NO_BUCKET = 65535;
+    const LETTER = { fold: "f", check: "k", call: "c", raise: "r", pot: "r" };
     const PAIRS = [[0, 1, 2, 3], [0, 2, 1, 3], [0, 3, 1, 2], [1, 2, 0, 3], [1, 3, 0, 2], [2, 3, 0, 1]];
 
     const $ = id => document.getElementById(id);
     const games = options.games || [];
-    const state = { game: options.initial || (games[0] && games[0].id), path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null };
+    const state = { game: options.initial || (games[0] && games[0].id), path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null, board: null, flop: [], exact: true };
+    let flops = null;  // the flop library: [{id, board, texture}]
+    const boards = {};  // flop id -> Uint16Array of buckets in class order
     const cache = {};
     let classes = null;
     let data = null;
@@ -155,23 +164,188 @@ window.PloExplorer = (() => {
 
     function nodeProbs(index) {
       const node = data.nodes[index];
-      const n = node.options.length, buckets = data.buckets;
+      const flop = isFlop(index);
+      const n = node.options.length, buckets = flop ? data.flop.buckets : data.buckets;
+      const bytes = flop ? data.flop.bytes : strategy;
       const out = new Float32Array(buckets * n);
-      const base = index * buckets * 3;
+      const base = (flop ? index - data.flopOffset : index) * buckets * 3;
       for (let b = 0; b < buckets; b++) {
         let sum = 0;
-        for (let k = 0; k < n; k++) sum += strategy[base + b * 3 + k];
-        for (let k = 0; k < n; k++) out[b * n + k] = sum > 0 ? strategy[base + b * 3 + k] / sum : 1 / n;
+        for (let k = 0; k < n; k++) sum += bytes[base + b * 3 + k];
+        for (let k = 0; k < n; k++) out[b * n + k] = sum > 0 ? bytes[base + b * 3 + k] / sum : 1 / n;
       }
       return out;
     }
+
+    // ---------- postflop ----------
+    const isFlop = index => data.flopOffset !== undefined && index >= data.flopOffset;
+
+    // Append the flop nodes after the preflop ones and point every preflop action that ends the
+    // street at the flop root of its line.
+    function attachPostflop(raw, post) {
+      if (raw.flopOffset !== undefined) return;
+      const offset = raw.nodes.length;
+      const flopNodes = post.nodes.map(node => ({ ...node, street: 1,
+        options: node.options.map(o => ({ ...o, child: o.child >= 0 ? o.child + offset : -1 })) }));
+      (function walk(index, history) {
+        raw.nodes[index].options.forEach(option => {
+          const next = history + LETTER[option.action];
+          if (option.child >= 0) walk(option.child, next);
+          else if (option.end === "flop" && post.roots[next] !== undefined) option.child = offset + post.roots[next];
+        });
+      })(0, "");
+      raw.nodes = raw.nodes.concat(flopNodes);
+      raw.flopOffset = offset;
+      raw.flop = { buckets: post.buckets, bytes: decode(post.strategy) };
+    }
+
+    async function loadPostflop() {
+      const [post, list] = await Promise.all([getJSON(POST.strategyUrl), getJSON(POST.flopsUrl)]);
+      flops = list;
+      return post;
+    }
+
+    async function loadBoard(id) {
+      if (boards[id]) return;
+      if (typeof DecompressionStream === "undefined") throw new Error("เบราว์เซอร์นี้เปิดข้อมูล flop ไม่ได้ ลองอัปเดตเบราว์เซอร์");
+      const response = await fetch(POST.flopUrl(id));
+      if (!response.ok) throw new Error(`flop ${id}: ${response.status}`);
+      const buffer = await new Response(response.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+      boards[id] = new Uint16Array(buffer);
+    }
+
+    const boardEntry = () => flops && flops.find(f => f.id === state.board);
+    // The cards whose data is shown: the picked flop when the library holds it (up to a suit swap,
+    // which never changes a class's strategy), otherwise the library flop used in its place.
+    const boardCards = () => { const e = boardEntry(); return !e ? [] : state.exact ? state.flop : e.board.match(/../g); };
+
+    const RANK_ORDER = "23456789TJQKA";
+    const cardId = card => RANK_ORDER.indexOf(card[0]) * 4 + "cdhs".indexOf(card[1]);
+    const ID_PERMS = (function permute(rest) {
+      if (rest.length === 0) return [[]];
+      return rest.flatMap((x, i) => permute([...rest.slice(0, i), ...rest.slice(i + 1)]).map(tail => [x, ...tail]));
+    })([0, 1, 2, 3]);
+
+    // The same key for every flop that is a suit relabelling of another.
+    function flopKey(cards) {
+      let best = null;
+      for (const perm of ID_PERMS) {
+        const key = cards.map(card => { const id = cardId(card); return (id >> 2) * 4 + perm[id & 3]; })
+          .sort((a, b) => a - b).join(".");
+        if (best === null || key < best) best = key;
+      }
+      return best;
+    }
+
+    function flopTexture(cards) {
+      const suits = new Set(cards.map(c => c[1])).size, ranks = cards.map(c => c[0]);
+      const top = Math.max(...ranks.map(r => RANK_ORDER.indexOf(r)));
+      return [{ 3: "rainbow", 2: "two-tone", 1: "monotone" }[suits], { 3: "unpaired", 2: "paired", 1: "trips" }[new Set(ranks).size],
+        new Set(ranks.filter(r => "A2345678".includes(r))).size, top === 12 ? "A" : top >= 10 ? "K-Q" : top >= 7 ? "J-9" : "8-2"];
+    }
+
+    // Library flop for the picked cards: the same flop if held, else the nearest flop of the same texture.
+    function resolveFlop(cards) {
+      for (const f of flops) f.key ||= flopKey(f.board.match(/../g));
+      const key = flopKey(cards);
+      const same = flops.find(f => f.key === key);
+      if (same) return { id: same.id, exact: true };
+      const texture = flopTexture(cards).join("|");
+      const ranks = list => list.map(c => RANK_ORDER.indexOf(c[0])).sort((a, b) => b - a);
+      const mine = ranks(cards);
+      const distance = f => ranks(f.board.match(/../g)).reduce((sum, r, i) => sum + Math.abs(r - mine[i]), 0)
+        + (f.texture.join("|") === texture ? 0 : 100);
+      const nearest = flops.reduce((best, f) => (distance(f) < distance(best) ? f : best));
+      return { id: nearest.id, exact: false };
+    }
+
+    function pickFlopCard(card) {
+      const at = state.flop.indexOf(card);
+      if (at >= 0) state.flop = state.flop.filter(c => c !== card);
+      else if (state.flop.length < 3) state.flop = [...state.flop, card];
+      setFlop();
+    }
+
+    function setFlop() {
+      if (state.flop.length === 3 && flops) {
+        const found = resolveFlop(state.flop);
+        state.board = found.id;
+        state.exact = found.exact;
+      } else {
+        state.board = null;
+      }
+      render();
+      if (state.board) loadBoard(state.board).then(render).catch(fail);
+    }
+
+    // Decisions on the way to the current node: [{index, slot}].
+    function pathPairs() {
+      const pairs = [];
+      let index = 0;
+      for (const slot of state.path) { pairs.push({ index, slot }); index = data.nodes[index].options[slot].child; }
+      return pairs;
+    }
+
+    // Per class: w = combos weighted by how often the player to act reaches this node, p = average strategy.
+    function preflopView(index) {
+      const n = data.nodes[index].options.length, probs = nodeProbs(index);
+      const w = new Float64Array(classes.length), p = new Float32Array(classes.length * n);
+      classes.forEach((c, i) => { w[i] = c.combos; p.set(probs.subarray(c.bucket * n, c.bucket * n + n), i * n); });
+      return { w, p };
+    }
+
+    function flopView(index) {
+      const node = data.nodes[index], n = node.options.length, current = nodeProbs(index);
+      const mine = pathPairs().filter(({ index: i }) => data.nodes[i].actor === node.actor)
+        .map(({ index: i, slot }) => ({ flop: isFlop(i), probs: nodeProbs(i), slot, m: data.nodes[i].options.length }));
+      const pre = mine.filter(x => !x.flop), post = mine.filter(x => x.flop);
+      const buckets = boards[state.board];
+      const w = new Float64Array(classes.length), p = new Float32Array(classes.length * n);
+      const acc = new Float64Array(n);
+      let offset = 0;
+      classes.forEach((c, i) => {
+        let reach = 1;
+        for (const x of pre) reach *= x.probs[c.bucket * x.m + x.slot];
+        acc.fill(0);
+        let total = 0;
+        for (let k = 0; reach > 0 && k < c.combos; k++) {
+          const b = buckets[offset + k];
+          if (b === NO_BUCKET) continue;
+          let r = reach;
+          for (const x of post) r *= x.probs[b * x.m + x.slot];
+          if (r <= 0) continue;
+          total += r;
+          for (let j = 0; j < n; j++) acc[j] += r * current[b * n + j];
+        }
+        offset += c.combos;
+        w[i] = total;
+        for (let j = 0; j < n; j++) p[i * n + j] = total > 0 ? acc[j] / total : 0;
+      });
+      return { w, p };
+    }
+
+    // A combo of the class that does not use a board card (suits relabelled), for the hand list.
+    function offBoard(cards) {
+      const board = new Set(boardCards());
+      if (!cards.some(card => board.has(card))) return cards;
+      for (const perm of SUIT_PERMS) {
+        const moved = cards.map(card => card[0] + perm["shdc".indexOf(card[1])]);
+        if (!moved.some(card => board.has(card))) return moved;
+      }
+      return cards;
+    }
+    const SUIT_PERMS = (function permute(rest) {
+      if (rest.length === 0) return [[]];
+      return rest.flatMap((x, i) => permute([...rest.slice(0, i), ...rest.slice(i + 1)]).map(tail => [x, ...tail]));
+    })(["s", "h", "d", "c"]);
 
     function optionLabel(node, option) {
       if (option.action === "fold") return { name: "Fold", amount: "" };
       if (option.action === "check") return { name: "Check", amount: "" };
       const amount = fmt(option.total);
+      if (option.action === "raise" && node.street === 1 && node.to_call === 0) return { name: "Bet", amount };
       if (option.action === "call") {
-        const limp = Math.abs(option.total - 1) < 1e-9;  // calling the big blind itself: nobody has raised
+        const limp = !node.street && Math.abs(option.total - 1) < 1e-9;  // calling the big blind itself: nobody has raised
         return { name: option.all_in ? "Call all-in" : limp ? "Limp" : "Call", amount };
       }
       return { name: option.all_in ? "All-in" : "Raise", amount };
@@ -179,6 +353,7 @@ window.PloExplorer = (() => {
 
     const pct = share => share > 0 && share < 0.001 ? "<0.1%" : `${(share * 100).toFixed(1)}%`;
     const fmt = x => (Math.round(x * 1000) / 1000).toString();
+    const fmtCombos = x => Math.round(x).toLocaleString("en-US");
 
     function lineWords() {
       const words = [];
@@ -234,15 +409,19 @@ window.PloExplorer = (() => {
       return state.action && state.action.node === currentNode() ? state.action.slot : null;
     }
 
-    function aggregate(probs, n) {
+    function aggregate(view, n) {
       const picked = pickedAction();
       const cells = Array.from({ length: 169 }, () => ({ combos: 0, freq: new Float64Array(n) }));
-      const total = { combos: 0, freq: new Float64Array(n) };
+      const total = { combos: 0, freq: new Float64Array(n), range: 0 };
       const rows = [];
       const query = parseQuery(state.query);
-      for (const c of classes) {
+      const onFlop = Boolean(state.board) && isFlop(currentNode());
+      for (let i = 0; i < classes.length; i++) {
+        const c = classes[i], weight = view.w[i];
+        if (!(weight > 0)) continue;
+        total.range += weight;
         if (!passes(c) || !queryMatch(c, query)) continue;
-        const p = probs.subarray(c.bucket * n, c.bucket * n + n);
+        const p = view.p.subarray(i * n, i * n + n);
         let keys;
         if (state.first === null) {
           keys = c.firsts;
@@ -252,13 +431,15 @@ window.PloExplorer = (() => {
         }
         for (const key of keys) {  // the matrix keeps every choice visible; the pick narrows the summary
           const cell = cells[key];
-          cell.combos += c.combos;
-          for (let k = 0; k < n; k++) cell.freq[k] += c.combos * p[k];
+          cell.combos += weight;
+          for (let k = 0; k < n; k++) cell.freq[k] += weight * p[k];
         }
         if (state.second !== null && !keys.includes(state.second)) continue;
-        total.combos += c.combos;
-        for (let k = 0; k < n; k++) total.freq[k] += c.combos * p[k];
-        if (picked === null || p[picked] >= ACTION_MIN) rows.push({ c, p, cards: query && query.sig ? query.cards : c.cards });  // searched hands keep their own suits
+        total.combos += weight;
+        for (let k = 0; k < n; k++) total.freq[k] += weight * p[k];
+        const cards = query && query.sig ? query.cards : onFlop ? offBoard(c.cards) : c.cards;
+        // After the flop, hands the line almost never brings here stay in the totals but not the list.
+        if ((picked === null || p[picked] >= ACTION_MIN) && (!onFlop || weight >= LIST_MIN_WEIGHT)) rows.push({ c, p, w: weight, cards });  // searched hands keep their own suits
       }
       return { cells, total, rows };
     }
@@ -319,6 +500,7 @@ window.PloExplorer = (() => {
       let index = 0;
       [...state.path, null].forEach((slot, depth) => {
         const node = data.nodes[index];
+        if (isFlop(index) && node.street === 1 && depth > 0 && !isFlop(pathPairs()[depth - 1].index)) steps.push(boardStep());
         const opts = orderedSlots(node).map(k => {
           const option = node.options[k];
           const label = optionLabel(node, option);
@@ -347,6 +529,14 @@ window.PloExplorer = (() => {
       line.scrollLeft = Math.max(0, now.offsetLeft - line.offsetLeft - line.clientWidth + now.offsetWidth + 8);
     }
 
+    function boardStep() {
+      const slots = [0, 1, 2].map(i => state.flop[i]
+        ? `<span class="flop-card">${cardsHTML([state.flop[i]])}</span>` : '<span class="flop-card empty">?</span>').join("");
+      const change = state.flop.length ? '<button class="flop-clear" type="button" data-clear-flop>เปลี่ยน</button>' : "";
+      return `<div class="step board"><div class="step-seat"><span>Flop</span></div>`
+        + `<div class="step-opts"><span class="board-cards">${slots}</span>${change}</div></div>`;
+    }
+
     // Fold the seat to act and everyone up to the ``count``th seat ahead.
     function foldAhead(count) {
       const path = [...state.path];
@@ -365,7 +555,10 @@ window.PloExplorer = (() => {
       $("spot-title").textContent = words.length ? `${seat} · หลัง ${words.join(", ")}` : `${seat} · ได้เป็นคนแรก (first in)`;
       const toCall = node.to_call > 0 ? ` · ต้องจ่าย ${fmt(node.to_call)}bb` : "";
       const stack = SHOW_STACK ? ` · stack ${fmt(node.behind[node.actor])}bb` : "";
-      $("spot-meta").textContent = `${data.label} · pot ${fmt(node.pot)}bb${toCall}${stack}`;
+      const used = boardCards().join("");
+      const board = node.street !== 1 || !boardEntry() ? ""
+        : state.exact ? ` · flop ${used}` : ` · แสดง flop ${used} แทน ${state.flop.join("")} ที่ยังไม่มีในคลัง`;
+      $("spot-meta").textContent = `${data.label}${board} · pot ${fmt(node.pot)}bb${toCall}${stack}`;
     }
 
     function renderMatrix(cells, node) {
@@ -403,9 +596,9 @@ window.PloExplorer = (() => {
         const name = `${label.name}${label.amount ? " " + label.amount : ""}`;
         return `<button class="tile tile-action" type="button" data-action="${k}" aria-pressed="${picked === k}" `
           + `title="${picked === k ? "กดอีกครั้งเพื่อดูทุกมือ" : `ดูเฉพาะมือที่มี ${name}`}" style="--c:${ACTION_COLOR[option.action]}"><span>${name}</span>`
-          + `<b>${pct(share)}</b><small>${Math.round(total.freq[k]).toLocaleString("en-US")} combos</small></button>`;
+          + `<b>${pct(share)}</b><small>${fmtCombos(total.freq[k])} combos</small></button>`;
       });
-      tiles.push(`<div class="tile"><span>มือที่ตรงตัวกรอง</span><b>${pct(total.combos / 270725)}</b><small>${total.combos.toLocaleString("en-US")} / 270,725</small></div>`);
+      tiles.push(`<div class="tile"><span>มือที่ตรงตัวกรอง</span><b>${pct(total.range ? total.combos / total.range : 0)}</b><small>${fmtCombos(total.combos)} / ${fmtCombos(total.range)}</small></div>`);
       $("tiles").innerHTML = tiles.join("");
       $("sum-bar").innerHTML = barHTML(total.freq, node, total.combos);
     }
@@ -420,11 +613,11 @@ window.PloExplorer = (() => {
         + slots.map(k => `<th class="num">${optionLabel(node, node.options[k]).name}</th>`).join("") + "</tr>";
       const picked = pickedAction();
       const aggressive = picked === null ? slots[0] : picked;
-      rows.sort((p, q) => q.p[aggressive] - p.p[aggressive] || q.c.combos - p.c.combos);
+      rows.sort((p, q) => q.p[aggressive] - p.p[aggressive] || q.w - p.w);
       const shown = rows.slice(0, LIST_LIMIT);
-      $("list").innerHTML = shown.map(({ c, p, cards }) => `<tr><td class="cards">${cardsHTML(cards)}</td>`
+      $("list").innerHTML = shown.map(({ c, p, w, cards }) => `<tr><td class="cards">${cardsHTML(cards)}</td>`
         + `<td class="shape hide-sm">${c.shape}</td><td class="tier hide-sm">${classes.tiers[c.tier]}</td>`
-        + `<td class="num hide-sm">${c.combos}</td><td><div class="bigbar">${barHTML(p, node, 1)}</div></td>`
+        + `<td class="num hide-sm">${Number.isInteger(w) ? w : w.toFixed(1)}</td><td><div class="bigbar">${barHTML(p, node, 1)}</div></td>`
         + slots.map(k => `<td class="num">${(p[k] * 100).toFixed(0)}%</td>`).join("") + "</tr>").join("");
       $("list-count").textContent = `${rows.length.toLocaleString("en-US")} แบบ · ดอกเป็นตัวอย่าง สลับดอกได้`;
       $("more").hidden = rows.length <= LIST_LIMIT;
@@ -444,11 +637,33 @@ window.PloExplorer = (() => {
 
     let view = null;
 
+    function renderNoBoard(node) {
+      const loading = state.flop.length === 3;
+      container.querySelector(".steps").hidden = true;  // the two-card hand picker has nothing to pick yet
+      $("spot-title").textContent = loading ? "กำลังโหลด flop..." : `เลือก flop ทีละใบ (${state.flop.length}/3)`;
+      $("spot-meta").textContent = `${data.label} · pot ${fmt(node.pot)}bb`;
+      for (const id of ["legend", "tiles", "sum-bar", "list", "list-head"]) $(id).innerHTML = "";
+      $("matrix").innerHTML = loading ? "" : "shdc".split("").map(suit => [...RANK_ORDER].reverse().map(rank => {
+        const card = rank + suit, on = state.flop.includes(card);
+        return `<button class="card-pick s-${suit}" type="button" data-card="${card}" aria-pressed="${on}">${rank}${SUIT_GLYPH[suit]}</button>`;
+      }).join("")).join("");
+      $("list-count").textContent = "";
+      $("more").hidden = true;
+    }
+
     function render() {
       const index = currentNode();
       const node = data.nodes[index];
-      const probs = nodeProbs(index);
-      const agg = aggregate(probs, node.options.length);
+      if (isFlop(index) && !(state.board && boards[state.board])) {
+        view = { node, cells: [] };
+        renderLine();
+        renderNoBoard(node);
+        renderFilters();
+        saveHash();
+        return;
+      }
+      container.querySelector(".steps").hidden = false;
+      const agg = aggregate(isFlop(index) ? flopView(index) : preflopView(index), node.options.length);
       view = { node, cells: agg.cells };
       renderLine();
       renderSpot(node);
@@ -485,6 +700,7 @@ window.PloExplorer = (() => {
       const parts = [`g=${state.game}`];
       if (state.path.length) parts.push(`l=${state.path.join(".")}`);
       if (state.first !== null) parts.push(`h=${state.first}${state.second !== null ? "." + state.second : ""}`);
+      if (state.flop.length === 3) parts.push(`b=${state.flop.join("")}`);
       history.replaceState(null, "", "#" + parts.join("&"));
     }
 
@@ -496,6 +712,8 @@ window.PloExplorer = (() => {
       const hand = (params.get("h") || "").split(".").filter(Boolean).map(Number);
       state.first = Number.isInteger(hand[0]) && hand[0] >= 0 && hand[0] < 169 ? hand[0] : null;
       state.second = state.first !== null && Number.isInteger(hand[1]) && hand[1] >= 0 && hand[1] < 169 ? hand[1] : null;
+      const picked = (params.get("b") || "").match(/[2-9TJQKA][shdc]/g) || [];
+      state.flop = picked.length === 3 && new Set(picked).size === 3 ? picked : [];
     }
 
     function validPath() {
@@ -518,8 +736,9 @@ window.PloExplorer = (() => {
       const loaded = await loadGame(name);
       data = loaded.raw;
       strategy = loaded.bytes;
+      if (POST) attachPostflop(data, await loadPostflop());
       validPath();
-      render();
+      if (POST) setFlop(); else render();
     }
 
     if (options.gamesEl) options.gamesEl.addEventListener("click", event => {
@@ -531,6 +750,7 @@ window.PloExplorer = (() => {
     });
 
     $("line").addEventListener("click", event => {
+      if (event.target.closest("[data-clear-flop]")) { state.flop = []; setFlop(); return; }
       const button = event.target.closest(".opt, [data-back], [data-ahead]");
       if (!button || button.disabled) return;
       if (button.dataset.back !== undefined) state.path = state.path.slice(0, Number(button.dataset.back));
@@ -543,7 +763,7 @@ window.PloExplorer = (() => {
     // the searched hand; the game stays.
     function resetAll() {
       clearTimeout(typing);
-      Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null });
+      Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null, board: null, flop: [], exact: true });
       $("search").value = "";
       render();
     }
@@ -551,6 +771,8 @@ window.PloExplorer = (() => {
     $("reset-filters").addEventListener("click", resetAll);
 
     $("matrix").addEventListener("click", event => {
+      const pick = event.target.closest("[data-card]");
+      if (pick) { pickFlopCard(pick.dataset.card); return; }
       const button = event.target.closest(".cell");
       if (!button || button.classList.contains("empty")) return;
       const key = Number(button.dataset.key);
