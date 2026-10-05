@@ -1,10 +1,9 @@
 """Postflop data for the O8 page: the flop library and the flop strategy.
 
-    .venv/bin/python -m o8_fl.flop_web library --count 200      (resumable, one file per flop)
-    .venv/bin/python -m o8_fl.flop_web strategy --run tmp/o8_fl/run2
+    .venv/bin/python -m o8_fl.flop_web --out tmp/o8_fl/flops_v2 library --count 1755   (resumable)
+    .venv/bin/python -m o8_fl.flop_web strategy --run tmp/o8_fl/run3
 
-library writes public/static/o8-flops.json (id, board, texture of each flop) and one
-o8-flop-<id>.bin per flop: gzip of the uint16 bucket of every four-card hand in class order
+library writes o8-flops.json (id, board, texture of each flop) and one o8-flop-<id>.bin per flop: gzip of the uint16 bucket of every four-card hand in class order
 (flops.class_order), 65535 where the hand holds a board card. strategy writes o8-hu-flop.json: every
 flop decision with its actions, the preflop line that leads to each flop root, and the flop strategy
 of every bucket as base64 uint8 (probability x 255).
@@ -23,20 +22,23 @@ import numpy as np
 
 from .buckets import Abstraction
 from .cli import ABSTRACTION
-from .flops import class_order, flop_buckets, flop_label, select_flops, texture
+from .flops import ALL_FLOPS, class_order, flop_buckets, flop_label, select_flops, texture
 from .game import Rules
 from .pool import DealPool
+from .ranges import RANGE, load_cdf
 from .trainer import Trainer
 from .tree import DECISION, PublicTree
 from .web_export import ACTION, SLOT, _state, action_total
 
-POOL = Path("tmp/o8_fl/pool.npz")
+POOL = Path("tmp/o8_fl/pool_v2.npz")
 OUT = Path("public/static")
 
 
-def build_library(count: int, out: Path, abstraction: Abstraction, centroids: np.ndarray, seed: int = 0) -> list[dict]:
+def build_library(count: int, out: Path, abstraction: Abstraction, centroids: np.ndarray, cdf: np.ndarray,
+                  seed: int = 0) -> list[dict]:
     flops = select_flops(count, seed)
-    index = [{"id": f"{i:03d}", "board": flop_label(f), "texture": list(texture(f))} for i, f in enumerate(flops)]
+    width = 4 if count == ALL_FLOPS else 3  # the full library numbers its flops 0000 to 1754
+    index = [{"id": f"{i:0{width}d}", "board": flop_label(f), "texture": list(texture(f))} for i, f in enumerate(flops)]
     out.mkdir(parents=True, exist_ok=True)
     (out / "o8-flops.json").write_text(json.dumps(index, separators=(",", ":")))
     order = class_order(abstraction)
@@ -45,7 +47,8 @@ def build_library(count: int, out: Path, abstraction: Abstraction, centroids: np
         if path.exists():
             continue
         started = time.perf_counter()
-        buckets = flop_buckets(np.array(flop), centroids, order, seed=seed * 1_000_003 + int(entry["id"]) * 1_000_000)
+        buckets = flop_buckets(np.array(flop), centroids, order, cdf,
+                               seed=seed * 1_000_003 + int(entry["id"]) * 1_000_000)
         tmp = path.with_suffix(".tmp")
         tmp.write_bytes(gzip.compress(buckets.astype("<u2").tobytes(), 9))
         tmp.replace(path)
@@ -100,15 +103,16 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--abstraction", type=Path, default=ABSTRACTION)
     sub = parser.add_subparsers(dest="command", required=True)
     lib = sub.add_parser("library")
-    lib.add_argument("--count", type=int, default=200)
+    lib.add_argument("--count", type=int, default=ALL_FLOPS)
+    lib.add_argument("--range", type=Path, default=RANGE)
     strat = sub.add_parser("strategy")
-    strat.add_argument("--run", type=Path, default=Path("tmp/o8_fl/run2"))
+    strat.add_argument("--run", type=Path, default=Path("tmp/o8_fl/run3"))
     strat.add_argument("--cap", type=int, default=5)
     args = parser.parse_args(argv)
     abstraction = Abstraction.cached(args.abstraction)
     pool = DealPool.load(args.pool)
     if args.command == "library":
-        build_library(args.count, args.out, abstraction, pool.centroids[0])
+        build_library(args.count, args.out, abstraction, pool.centroids[0], load_cdf(args.range)[1])
     else:
         trainer = Trainer.load(args.run / "checkpoint.npz", PublicTree.build(Rules(cap=args.cap)), abstraction, pool)
         data = export_strategy(trainer, args.out)

@@ -16,12 +16,13 @@ from numba import njit, prange
 
 from .buckets import Abstraction
 from .cards import RANKS, card_text
-from .equity import hand_equity
+from .equity import FEATURES, hand_features
 from .pool import SAMPLES, assign
+from .ranges import COMBOS
 
 NO_BUCKET = 65535
+ALL_FLOPS = 1755  # suit-isomorphic flops
 LOW_RANKS = set("A2345678")
-COMBOS = np.array(list(itertools.combinations(range(52), 4)), dtype=np.int64)
 
 
 def _canonical(cards: tuple[int, ...]) -> tuple[int, ...]:
@@ -82,10 +83,10 @@ def class_order(abstraction: Abstraction) -> np.ndarray:
 
 
 @njit(cache=True, parallel=True)
-def _features(flop: np.ndarray, order: np.ndarray, combos: np.ndarray, seed: int, runouts: int,
-              opponents: int) -> tuple[np.ndarray, np.ndarray]:
+def _features(flop: np.ndarray, order: np.ndarray, combos: np.ndarray, seed: int, runouts: int, opponents: int,
+              strong: int, cdf: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     n = order.shape[0]
-    points = np.zeros((n, 3), dtype=np.float32)
+    points = np.zeros((n, FEATURES), dtype=np.float32)
     clash = np.zeros(n, dtype=np.bool_)
     board = np.zeros(5, dtype=np.int64)
     board[:3] = flop
@@ -96,16 +97,18 @@ def _features(flop: np.ndarray, order: np.ndarray, combos: np.ndarray, seed: int
                 clash[i] = True
         if clash[i]:
             continue
-        hi, lo, sq = hand_equity(hole, board, 3, runouts, opponents, seed + i)
-        mean = hi + lo
-        points[i, 0], points[i, 1] = hi, lo
-        points[i, 2] = np.sqrt(max(sq - mean * mean, 0.0))
+        points[i] = hand_features(hole, board, 3, runouts, opponents, strong, combos, cdf, seed + i)
     return points, clash
 
 
-def flop_buckets(flop: np.ndarray, centroids: np.ndarray, order: np.ndarray, seed: int = 0,
-                 runouts: int = SAMPLES[0][0], opponents: int = SAMPLES[0][1]) -> np.ndarray:
-    points, clash = _features(np.asarray(flop, dtype=np.int64), order, COMBOS, seed, runouts, opponents)
+def flop_buckets(flop: np.ndarray, centroids: np.ndarray, order: np.ndarray, cdf: np.ndarray, seed: int = 0,
+                 runouts: int = SAMPLES[0][0], opponents: int = SAMPLES[0][1],
+                 strong: int = SAMPLES[0][2]) -> np.ndarray:
+    """Flop bucket of every hand in `order`; `cdf` is the strong range (ranges.load_cdf)."""
+    points, clash = _features(np.asarray(flop, dtype=np.int64), order, COMBOS, seed, runouts, opponents, strong,
+                              cdf)
+    # Older 3-number centroids use only the random-hand part of the score.
+    points = np.ascontiguousarray(points[:, :centroids.shape[1]])
     buckets = assign(points, np.ascontiguousarray(centroids, dtype=np.float32)).astype(np.uint16)
     buckets[clash] = NO_BUCKET
     return buckets

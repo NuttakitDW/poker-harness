@@ -8,20 +8,26 @@ from unittest.mock import patch
 import numpy as np
 
 from o8_fl import pool
+from o8_fl.equity import FEATURES
 from o8_fl.pool import DealPool, assign, build_pool, generate, generate_chunks, kmeans
+from o8_fl.ranges import COMBOS
+
+CDF = np.cumsum(np.ones(len(COMBOS)))
 
 
 class PoolTest(unittest.TestCase):
     def test_generate_shapes_and_ranges(self) -> None:
-        cards, features = generate(50, 3)
+        cards, features = generate(50, 3, COMBOS, CDF)
         self.assertEqual(cards.shape, (50, 13))
-        self.assertEqual(features.shape, (50, 2, 3, 3))
+        self.assertEqual(features.shape, (50, 2, 3, FEATURES))
         for row in cards:
             self.assertEqual(len(set(row.tolist())), 13)
         total = features[..., 0] + features[..., 1]
         self.assertTrue(np.all((total >= 0) & (total <= 1)))
         self.assertTrue(np.all(features[..., 1] <= 0.5))
         self.assertTrue(np.all(features[..., 2] >= 0))
+        strong = features[..., 3] + features[..., 4]
+        self.assertTrue(np.all((strong >= 0) & (strong <= 1)))
 
     def test_kmeans_finds_separate_clusters_and_assign_uses_nearest(self) -> None:
         rng = np.random.default_rng(1)
@@ -37,8 +43,10 @@ class PoolTest(unittest.TestCase):
     def test_chunks_cluster_into_a_pool_that_round_trips(self) -> None:
         with tempfile.TemporaryDirectory() as d, patch.object(pool, "CHUNK", 200):
             directory = Path(d)
-            generate_chunks(400, directory)
-            generate_chunks(400, directory)  # resumes: nothing new
+            strong = directory / "range.npz"
+            np.savez(strong, weights=np.ones(len(COMBOS), dtype=np.float32))
+            generate_chunks(400, directory, strong=strong)
+            generate_chunks(400, directory, strong=strong)  # resumes: nothing new
             self.assertEqual(len(pool.chunk_paths(directory)), 2)
             built = build_pool((5, 6, 7), directory, sample=800)
             self.assertEqual(built.counts, (5, 6, 7))

@@ -40,14 +40,15 @@ class FlopWebTest(unittest.TestCase):
     def test_library_files_decode_to_one_bucket_per_hand_and_resume(self) -> None:
         calls = []
 
-        def fake(flop, centroids, order, seed=0):
+        def fake(flop, centroids, order, cdf, seed=0):
             calls.append(seed)
             return np.zeros(len(order), dtype=np.uint16)
 
         with tempfile.TemporaryDirectory() as d, patch.object(flop_web, "flop_buckets", fake):
             out = Path(d)
-            index = build_library(48, out, self.abstraction, np.zeros((3, 3), dtype=np.float32))
-            build_library(48, out, self.abstraction, np.zeros((3, 3), dtype=np.float32))
+            cdf = np.ones(1)
+            index = build_library(48, out, self.abstraction, np.zeros((3, 3), dtype=np.float32), cdf)
+            build_library(48, out, self.abstraction, np.zeros((3, 3), dtype=np.float32), cdf)
             self.assertEqual(len(calls), 48)  # second run found every file
             listed = json.loads((out / "o8-flops.json").read_text())
             self.assertEqual(listed, index)

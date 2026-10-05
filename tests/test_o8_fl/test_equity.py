@@ -6,7 +6,8 @@ import unittest
 import numpy as np
 
 from o8_fl.cards import card_ids
-from o8_fl.equity import exact_river, hand_equity
+from o8_fl.equity import FEATURES, exact_river, hand_equity, hand_features, range_hand
+from o8_fl.ranges import COMBOS
 from o8_fl.evaluator import NO_LOW, omaha_high, omaha_low
 
 
@@ -64,6 +65,48 @@ class EquityTest(unittest.TestCase):
         bad = hand_equity(arr("Ks9h8d2c"), np.zeros(5, dtype=np.int64), 0, 3000, 4, 3)
         self.assertGreater(good[0] + good[1], 0.6)
         self.assertLess(bad[0] + bad[1], 0.5)
+
+
+def range_cdf(hands: list[str]) -> np.ndarray:
+    """A range of exactly these hands, as cumulative weights over COMBOS."""
+    weights = np.zeros(len(COMBOS))
+    for text in hands:
+        cards = tuple(sorted(card_ids(text)))
+        weights[np.flatnonzero((COMBOS == cards).all(axis=1))[0]] = 1.0
+    return np.cumsum(weights)
+
+
+class RangeEquityTest(unittest.TestCase):
+    def test_range_hand_draws_only_live_hands_of_the_range(self) -> None:
+        cdf = range_cdf(["AsAh2s3h", "KsKhQsQh", "7c8c9dTd"])
+        dead = np.zeros(52, dtype=np.bool_)
+        dead[list(card_ids("As"))] = True
+        out = np.empty(4, dtype=np.int64)
+        seen = set()
+        for _ in range(200):
+            self.assertTrue(range_hand(COMBOS, cdf, dead, out))
+            seen.add(tuple(sorted(out.tolist())))
+        self.assertEqual(seen, {tuple(sorted(card_ids(h))) for h in ("KsKhQsQh", "7c8c9dTd")})
+        dead[list(card_ids("Kh7c"))] = True
+        self.assertFalse(range_hand(COMBOS, cdf, dead, out))
+
+    def test_random_part_matches_hand_equity_and_strong_part_sees_the_range(self) -> None:
+        hole, board = arr("As2s3hKh"), arr("4c5d9h")
+        cdf = np.cumsum(np.ones(len(COMBOS)))  # every hand: the strong part is a second random sample
+        f = hand_features(hole, board, 3, 3000, 4, 4, COMBOS, cdf, 1)
+        self.assertEqual(f.shape, (FEATURES,))
+        hi, lo, _ = hand_equity(hole, board, 3, 3000, 4, 2)
+        self.assertAlmostEqual(f[0], hi, delta=0.02)
+        self.assertAlmostEqual(f[1], lo, delta=0.02)
+        self.assertAlmostEqual(f[3], f[0], delta=0.02)
+        self.assertAlmostEqual(f[4], f[1], delta=0.02)
+
+    def test_a_made_low_loses_its_low_share_against_nut_lows(self) -> None:
+        hole, board = arr("2s3s9hKh"), arr("4c5d8hJsQd")  # 8-5-4-3-2 low
+        cdf = range_cdf(["AhAd2h3d", "Ac2c3cKs", "Ad2d6cTs"])  # every hand here makes a better low
+        f = hand_features(hole, board, 5, 1, 300, 300, COMBOS, cdf, 3)
+        self.assertGreater(f[1], 0.2)  # often wins the low against a random hand
+        self.assertEqual(f[4], 0.0)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,8 @@ from __future__ import annotations
 import numpy as np
 from numba import njit, prange
 
-from .evaluator import NO_LOW, omaha_high, omaha_low
+from .evaluator import (FLUSH5, LOW5, NO_LOW, PLAIN5, omaha_high, omaha_high_prepared, omaha_low,
+                        omaha_low_prepared, prepare_board)
 
 
 @njit(cache=True)
@@ -72,6 +73,85 @@ def hand_equity(hole: np.ndarray, board: np.ndarray, known: int, runouts: int, o
             sq_sum += (h + lo) * (h + lo)
     n = runouts * opponents
     return hi_sum / n, lo_sum / n, sq_sum / n
+
+
+FEATURES = 5  # high, low, spread against a random hand; high, low against the strong range
+MAX_TRIES = 10_000
+
+
+@njit(cache=True)
+def range_hand(combos: np.ndarray, cdf: np.ndarray, dead: np.ndarray, out: np.ndarray) -> bool:
+    """Draw a hand from the weighted range (cumulative weights `cdf` over `combos`) that avoids the
+    dead cards. Rejection keeps the draw exact under card removal; False if none was found."""
+    total = cdf[-1]
+    for _ in range(MAX_TRIES):
+        i = min(np.searchsorted(cdf, np.random.random() * total, side="right"), cdf.shape[0] - 1)
+        if not (dead[combos[i, 0]] or dead[combos[i, 1]] or dead[combos[i, 2]] or dead[combos[i, 3]]):
+            for k in range(4):
+                out[k] = combos[i, k]
+            return True
+    return False
+
+
+@njit(cache=True)
+def hand_features(hole: np.ndarray, board: np.ndarray, known: int, runouts: int, opponents: int,
+                  strong: int, combos: np.ndarray, cdf: np.ndarray, seed: int) -> np.ndarray:
+    """FEATURES numbers for a hand given the first `known` board cards: (high, low, spread) against a
+    random hand as in hand_equity, then (high, low) against `strong` hands per runout drawn from the
+    strong range. Two hands with the same score against a random hand, such as a bare nut low draw
+    and a middling two pair, can be far apart against the hands that reach a raised pot."""
+    np.random.seed(seed)
+    live = _live_cards(hole, board, known)
+    full = np.empty(5, dtype=np.int64)
+    for i in range(known):
+        full[i] = board[i]
+    need = 5 - known
+    dead = np.zeros(52, dtype=np.bool_)
+    opp = np.empty(4, dtype=np.int64)
+    ranks = np.empty((10, 3), dtype=np.int64)
+    suit = np.empty(10, dtype=np.int64)
+    mask = np.empty(10, dtype=np.int64)
+    low = np.empty(10, dtype=np.int64)
+    hi_sum = lo_sum = sq_sum = s_hi = s_lo = 0.0
+    s_n = 0
+    for _ in range(runouts):
+        for i in range(need):
+            j = i + np.random.randint(len(live) - i)
+            live[i], live[j] = live[j], live[i]
+            full[known + i] = live[i]
+        prepare_board(full, ranks, suit, mask, low)
+        my_hi = omaha_high_prepared(hole, ranks, suit, mask, PLAIN5, FLUSH5)
+        my_lo = omaha_low_prepared(hole, low, LOW5)
+        for _ in range(opponents):
+            for i in range(need, need + 4):
+                j = i + np.random.randint(len(live) - i)
+                live[i], live[j] = live[j], live[i]
+                opp[i - need] = live[i]
+            h, lo = _shares(my_hi, my_lo, omaha_high_prepared(opp, ranks, suit, mask, PLAIN5, FLUSH5),
+                            omaha_low_prepared(opp, low, LOW5))
+            hi_sum += h
+            lo_sum += lo
+            sq_sum += (h + lo) * (h + lo)
+        dead[:] = False
+        for c in hole:
+            dead[c] = True
+        for c in full:
+            dead[c] = True
+        for _ in range(strong):
+            if range_hand(combos, cdf, dead, opp):
+                h, lo = _shares(my_hi, my_lo, omaha_high_prepared(opp, ranks, suit, mask, PLAIN5, FLUSH5),
+                                omaha_low_prepared(opp, low, LOW5))
+                s_hi += h
+                s_lo += lo
+                s_n += 1
+    n = runouts * opponents
+    out = np.empty(FEATURES, dtype=np.float64)
+    out[0], out[1] = hi_sum / n, lo_sum / n
+    mean = out[0] + out[1]
+    out[2] = np.sqrt(max(sq_sum / n - mean * mean, 0.0))
+    out[3] = s_hi / s_n if s_n else out[0]
+    out[4] = s_lo / s_n if s_n else out[1]
+    return out
 
 
 @njit(cache=True)

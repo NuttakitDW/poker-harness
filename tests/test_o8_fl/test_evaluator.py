@@ -8,7 +8,8 @@ import numpy as np
 from phevaluator import evaluate_cards, evaluate_omaha_cards
 
 from o8_fl.cards import card_id, card_ids, card_text
-from o8_fl.evaluator import NO_LOW, high5, low5, omaha_high, omaha_low
+from o8_fl.evaluator import (FLUSH5, LOW5, NO_LOW, PLAIN5, high5, low5, omaha_high, omaha_high_prepared, omaha_low,
+                             omaha_low_prepared, prepare_board)
 
 LOW_VALUE = {"A": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8}
 
@@ -106,6 +107,27 @@ class LowTest(unittest.TestCase):
         a2 = omaha_low(np.array(card_ids("Ad2dQsQh")), board)
         a3 = omaha_low(np.array(card_ids("Ac3cJsJh")), board)
         self.assertLess(a3, a2)
+
+
+class PreparedTest(unittest.TestCase):
+    def _check(self, hole: np.ndarray, board: np.ndarray) -> None:
+        ranks, suit = np.empty((10, 3), dtype=np.int64), np.empty(10, dtype=np.int64)
+        mask, low = np.empty(10, dtype=np.int64), np.empty(10, dtype=np.int64)
+        prepare_board(board, ranks, suit, mask, low)
+        self.assertEqual(omaha_high_prepared(hole, ranks, suit, mask, PLAIN5, FLUSH5), omaha_high(hole, board))
+        self.assertEqual(omaha_low_prepared(hole, low, LOW5), omaha_low(hole, board))
+
+    def test_prepared_evaluation_equals_the_direct_one(self) -> None:
+        rng = np.random.default_rng(4)
+        for _ in range(20000):
+            cards = rng.permutation(52)[:9].astype(np.int64)
+            self._check(cards[:4], cards[4:])
+
+    def test_prepared_evaluation_on_flush_and_paired_boards(self) -> None:
+        for hole, board in (("AsKs2d3d", "QsJsTs4d5d"), ("9s8s7h6h", "5s4s3s3h3d"), ("AhAd2h2d", "AsAc2s9h9d"),
+                            ("5h4h3c2c", "Ah6h7hKcKd"), ("KsQs2s3s", "AsJsTs9s8s")):
+            with self.subTest(hole=hole, board=board):
+                self._check(np.array(card_ids(hole), dtype=np.int64), np.array(card_ids(board), dtype=np.int64))
 
 
 if __name__ == "__main__":

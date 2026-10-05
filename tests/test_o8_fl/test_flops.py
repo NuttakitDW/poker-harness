@@ -43,7 +43,8 @@ class FlopTest(unittest.TestCase):
         flop = card_ids("As7d2c")
         centroids = np.array([[0.2, 0.0, 0.3], [0.5, 0.1, 0.4], [0.8, 0.2, 0.3]], dtype=np.float32)
         order = class_order(self.abstraction)[:600]
-        buckets = flop_buckets(np.array(flop), centroids, order, seed=3, runouts=4, opponents=2)
+        cdf = np.cumsum(np.ones(HANDS))
+        buckets = flop_buckets(np.array(flop), centroids, order, cdf, seed=3, runouts=4, opponents=2, strong=2)
         self.assertEqual(buckets.shape, (600,))
         combos = list(__import__("itertools").combinations(range(52), 4))
         for i, index in enumerate(order):

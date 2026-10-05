@@ -1,9 +1,10 @@
 """Deal pool with precomputed equity buckets for training.
 
-Equity against a random hand is far too slow to compute inside training, so it is computed once
-for a large pool of deals: every player's (high, low, spread) on the flop, turn and river, where
-spread is the standard deviation of the final pot share. k-means on those three numbers gives the
-buckets for each street, and training samples whole deals from the pool.
+Equity is far too slow to compute inside training, so it is computed once for a large pool of
+deals: every player's equity.hand_features on the flop, turn and river, that is (high, low, spread)
+against a random hand, where spread is the standard deviation of the final pot share, and (high,
+low) against the strong range (ranges.py). k-means on those five numbers gives the buckets for each
+street, and training samples whole deals from the pool.
 
     .venv/bin/python -m o8_fl.pool generate --deals 16000000      (resumable, 1M-deal chunks)
     .venv/bin/python -m o8_fl.pool cluster --flop 1000 --turn 2000 --river 2000
@@ -19,20 +20,22 @@ from pathlib import Path
 import numpy as np
 from numba import njit, prange
 
-from .equity import hand_equity
+from .equity import FEATURES, hand_features
+from .ranges import RANGE, load_cdf
 
-POOL_DIR = Path("tmp/o8_fl/pool")
+POOL_DIR = Path("tmp/o8_fl/pool_v2")  # tmp/o8_fl/pool holds the older random-hand-only features
 CHUNK = 1_000_000
 STREET_KNOWN = (3, 4, 5)
-# (runouts, opponents per runout) for flop, turn, river: 256 to 300 samples each.
-SAMPLES = ((32, 8), (32, 8), (1, 300))
+# (runouts, random opponents per runout, strong-range opponents per runout) for flop, turn, river:
+# 256 to 300 of each kind.
+SAMPLES = ((32, 8, 8), (32, 8, 8), (1, 300, 300))
 
 
 @njit(cache=True, parallel=True)
-def generate(n: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
-    """n deals: cards (n, 13) as hole0, hole1, board; features (n, 2, 3, 3) high, low, spread."""
+def generate(n: int, seed: int, combos: np.ndarray, cdf: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """n deals: cards (n, 13) as hole0, hole1, board; features (n, 2, 3, FEATURES), see hand_features."""
     cards = np.empty((n, 13), dtype=np.uint8)
-    features = np.empty((n, 2, 3, 3), dtype=np.float32)
+    features = np.empty((n, 2, 3, FEATURES), dtype=np.float32)
     for d in prange(n):
         np.random.seed(seed + d)
         deck = np.arange(52)
@@ -44,12 +47,8 @@ def generate(n: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
         for p in range(2):
             hole = deck[4 * p:4 * p + 4].copy()
             for s in range(3):
-                hi, lo, sq = hand_equity(hole, board, STREET_KNOWN[s], SAMPLES[s][0], SAMPLES[s][1],
-                                         (seed + d) * 7 + p * 3 + s)
-                mean = hi + lo
-                features[d, p, s, 0] = hi
-                features[d, p, s, 1] = lo
-                features[d, p, s, 2] = np.sqrt(max(sq - mean * mean, 0.0))
+                features[d, p, s] = hand_features(hole, board, STREET_KNOWN[s], SAMPLES[s][0], SAMPLES[s][1],
+                                                  SAMPLES[s][2], combos, cdf, (seed + d) * 7 + p * 3 + s)
     return cards, features
 
 
@@ -153,14 +152,15 @@ def chunk_paths(directory: Path = POOL_DIR) -> list[Path]:
     return sorted(directory.glob("chunk_*.npz"))
 
 
-def generate_chunks(total: int, directory: Path = POOL_DIR, seed: int = 1) -> None:
+def generate_chunks(total: int, directory: Path = POOL_DIR, seed: int = 1, strong: Path = RANGE) -> None:
+    combos, cdf = load_cdf(strong)
     directory.mkdir(parents=True, exist_ok=True)
     for index in range(total // CHUNK):
         path = directory / f"chunk_{index:03d}.npz"
         if path.exists():
             continue
         started = time.perf_counter()
-        cards, features = generate(CHUNK, seed + index * CHUNK)
+        cards, features = generate(CHUNK, seed + index * CHUNK, combos, cdf)
         np.savez(path.with_suffix(".tmp.npz"), cards=cards, features=features.astype(np.float16))
         path.with_suffix(".tmp.npz").replace(path)
         print(f"{path.name}: {time.perf_counter() - started:.0f}s", flush=True)
@@ -175,7 +175,7 @@ def build_pool(sizes: tuple[int, int, int], directory: Path = POOL_DIR, sample: 
     buckets = np.empty((len(cards), 2, 3), dtype=np.uint16)
     centroids = []
     for street, k in enumerate(sizes):
-        points = features[:, :, street, :].reshape(-1, 3)
+        points = features[:, :, street, :].reshape(-1, features.shape[-1])
         picked = points[rng.choice(len(points), size=min(sample, len(points)), replace=False)]
         started = time.perf_counter()
         c = kmeans(picked, k, seed=seed + street)
