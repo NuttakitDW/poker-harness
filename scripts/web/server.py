@@ -175,6 +175,8 @@ class Exchange:
             return Reply(200, "text/plain; charset=utf-8", b"ok")
         if path == "/":
             return Reply(200, "text/html; charset=utf-8", PAGE.read_bytes())
+        if path == "/robots.txt":
+            return Reply(200, "text/plain; charset=utf-8", (PUBLIC / "robots.txt").read_bytes())
         if path in ("/method", "/method.html") and METHOD.is_file():
             return Reply(200, "text/html; charset=utf-8", METHOD.read_bytes())
         page = PUBLIC / f"{path.removesuffix('.html').lstrip('/')}.html"

@@ -339,6 +339,15 @@ class ServerTests(unittest.TestCase):
         self.assertIn(b'href="/research-mtt40"', listing)
         self.assertIn(b'href="/research-mtt40-en"', listing)
 
+    def test_robots_txt_keeps_ai_crawlers_out_and_data_unindexed(self):
+        response, body = self.request("GET", "/robots.txt")
+        self.assertEqual(response.status, 200)
+        text = body.decode()
+        for bot in ("GPTBot", "ClaudeBot", "CCBot", "Google-Extended", "Bytespider"):
+            with self.subTest(bot=bot):
+                self.assertIn(f"User-agent: {bot}", text)
+        self.assertIn("Disallow: /static/", text)
+
     def test_the_o8_postflop_research_page_is_listed_and_cites_its_sources(self):
         response, body = self.request("GET", "/research-o8-postflop")
         self.assertEqual(response.status, 200)
