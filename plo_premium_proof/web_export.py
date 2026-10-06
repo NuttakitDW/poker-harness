@@ -26,7 +26,7 @@ from plo_icm.game import Action, PLOState
 from .preflop_chart import ACTION_NAMES, SEATS, chart
 
 TABLE_SIZES = (6, 5, 4, 3, 2)
-STACKS = (100, 40, 20)
+STACKS = (100, 40, 20, 10)
 # Every chart from scripts/final_table/chart_batch.py: each seat has the stack behind after
 # posting the ante, and the ante stays out of the preflop pot-limit size.
 GAMES = {
