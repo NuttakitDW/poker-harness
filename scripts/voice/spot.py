@@ -237,6 +237,9 @@ def merge(new: preflop.Request, memory: preflop.Request | None) -> preflop.Reque
                            entrants=new.entrants or base.entrants,
                            aof=new.aof or base.aof,
                            paid_pct=new.paid_pct or base.paid_pct,
+                           paid_places=new.paid_places or base.paid_places,
+                           bubble_away=new.bubble_away or (
+                               None if new.players_left or new.left_pct is not None else base.bubble_away),
                            field_avg=new.field_avg or base.field_avg,
                            buy_in=new.buy_in or base.buy_in,
                            prize_pool=new.prize_pool or base.prize_pool,

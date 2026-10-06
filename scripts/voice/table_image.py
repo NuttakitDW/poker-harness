@@ -36,7 +36,8 @@ ALL_IN, FOLD = "all-in", "fold"
 PROMPT = """This is a poker table screenshot. Return ONLY JSON, no prose:
 {"game": str, "players": [{"name": str, "stack_bb": number, "bet_bb": number,
 "action": "all-in"|"call"|"fold"|null, "cards": [str, str]|null}],
-"button": str, "hand_finished": bool}
+"button": str, "hand_finished": bool,
+"places_paid": number|null, "players_left": number|null, "avg_stack_bb": number|null}
 - game: the game name in the window title, e.g. "NL All-in or Fold".
 - players: only players dealt into this hand, in CLOCKWISE order starting from the player
   at the bottom of the screen (the hero).
@@ -44,7 +45,10 @@ PROMPT = """This is a poker table screenshot. Return ONLY JSON, no prose:
 - action: the label shown on the player this hand, null if none.
 - cards: face-up cards like "Qh", "Td", "8c"; null when face down or absent.
 - button: the name of the player next to the D button.
-- hand_finished: true if a winner is shown or the board has five cards."""
+- hand_finished: true if a winner is shown or the board has five cards.
+- places_paid, players_left, avg_stack_bb: from the tournament info panel when shown, else null.
+  "Places Paid 240" gives places_paid 240; "My Rank 160/243" or "Players left 243" gives
+  players_left 243; "Avg. Stack 20.1 BB" gives avg_stack_bb 20.1."""
 
 
 class TableError(ValueError):
@@ -70,6 +74,9 @@ class Table:
     seats: tuple[Seat, ...]   # ตามเข็มนาฬิกา เริ่มที่เรา
     button: int               # ที่นั่งที่ถือปุ่ม D
     finished: bool
+    paid: int | None = None   # คนได้เงินในทัวร์ จากแผงข้อมูลทัวร์ ถ้ามี
+    left: int | None = None   # คนที่เหลือในทัวร์
+    average: float | None = None  # สแตกเฉลี่ยของทัวร์เป็น bb
 
 
 def ask(data: bytes, mime: str, api_key: str, prompt: str) -> str:
@@ -107,8 +114,19 @@ def parse(text: str) -> Table:
     names = [seat.name for seat in seats]
     if data.get("button") not in names:
         raise TableError(f"ไม่รู้ว่าใครถือปุ่ม D ({data.get('button')!r})")
+    paid, left = _count(data.get("places_paid")), _count(data.get("players_left"))
+    if paid and left and left > 10 * paid:  # อ่านผิดจนไม่สมเหตุผล ไม่ใช้ดีกว่า
+        paid = left = None
+    average = data.get("avg_stack_bb")
     return Table(aof=bool(_AOF.search(str(data.get("game") or ""))), seats=seats,
-                 button=names.index(data["button"]), finished=bool(data.get("hand_finished")))
+                 button=names.index(data["button"]), finished=bool(data.get("hand_finished")),
+                 paid=paid, left=left,
+                 average=float(average) if isinstance(average, (int, float)) and 0 < average < 10_000 else None)
+
+
+def _count(value: object) -> int | None:
+    """จำนวนคนจากแผงทัวร์ ตัวเลขเต็มบวกเท่านั้น"""
+    return int(value) if isinstance(value, (int, float)) and 0 < value < 1_000_000 else None
 
 
 def _seat(item: dict) -> Seat:
@@ -173,4 +191,10 @@ def question(table: Table) -> str:
     hand = hand_of(table.seats[0].cards)
     if hand:
         words.append(f"hold {hand}")
+    if table.paid:
+        words.append(f"{table.paid} paid")
+    if table.left and table.left >= n:
+        words.append(f"{table.left} left")
+    if table.average:
+        words.append(f"avg {table.average:g}bb")
     return " ".join(words)

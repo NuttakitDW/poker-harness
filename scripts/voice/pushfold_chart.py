@@ -129,21 +129,41 @@ def _players(request: preflop.Request) -> int:
 def stage(request: preflop.Request) -> structures.Stage | None:
     """ช่วงของทัวร์ที่ผู้ถามบอก None ถ้าไม่ได้บอกว่าเหลือกี่คนและไม่ได้พูด icm เฉย ๆ
 
-    ไม่บอกคนลงถือว่าเกม live 20 คน รางวัลตามตาราง live ถ้าเหลือมากกว่านั้นถือว่า 1000 จ่าย 15%
-    จำนวนคนที่บอกมาชนะชื่อช่วง bubble คือเกือบถึงเงิน final table คือเหลือเท่าคนที่โต๊ะนี้
-    พูด icm เฉย ๆ ไม่บอกรางวัลหรือช่วงของทัวร์ คือ bubble
+    ไม่บอกคนลงถือว่าเกม live 20 คน รางวัลตามตาราง live ถ้าเหลือมากกว่านั้น หรือคนนั่งโต๊ะนี้มากกว่าคนที่เหลือ
+    ใน bubble ของเกม live ถือว่า 1000 จ่าย 15% บอกจำนวนคนได้เงินมาแต่ไม่บอกคนลง ถือว่าจ่าย 15%
+    จำนวนคนที่บอกมาชนะชื่อช่วง bubble คือเกือบถึงเงิน "อีก 3 คน" คือคนได้เงิน + 3
+    final table คือเหลือเท่าคนที่โต๊ะนี้ พูด icm เฉย ๆ ไม่บอกรางวัลหรือช่วงของทัวร์ คือ bubble
     """
-    named = request.left_pct is not None or request.players_left or request.stage_word
+    named = (request.left_pct is not None or request.players_left or request.stage_word
+             or request.paid_places or request.bubble_away)
     money = request.buy_in or request.prize_pool
     if not named and not ((request.icm or money) and request.payouts is None):
         return None
-    entrants = request.entrants or _entrants_from_pool(request) or (
-        structures.DEFAULT_ENTRANTS if (request.players_left or 0) <= structures.DEFAULT_ENTRANTS
-        else structures.MTT_ENTRANTS)
-    share = None if request.paid_pct is None else request.paid_pct / 100
     given = tuple(request.payouts or ())
+    found = _stage(request, request.entrants or _entrants_from_pool(request) or _default_entrants(request), given)
+    said = request.entrants or _entrants_from_pool(request) or request.paid_places
+    if not said and found.left < (request.players or 0) and found.entrants < structures.MTT_ENTRANTS:
+        # คนนั่งโต๊ะนี้มากกว่าคนที่เหลือในเกม live เล็ก จึงต้องเป็นทัวร์ใหญ่ เช่น 8 คนที่ bubble
+        found = _stage(request, structures.MTT_ENTRANTS, given)
+    return found
+
+
+def _default_entrants(request: preflop.Request) -> int:
+    if request.paid_places:
+        return max(round(request.paid_places / structures.PAID_SHARE), request.players_left or 0,
+                   request.paid_places + (request.bubble_away or 0))
+    return (structures.DEFAULT_ENTRANTS if (request.players_left or 0) <= structures.DEFAULT_ENTRANTS
+            else structures.MTT_ENTRANTS)
+
+
+def _stage(request: preflop.Request, entrants: int, given: tuple[float, ...]) -> structures.Stage:
+    share = (request.paid_places / entrants if request.paid_places and not given
+             else None if request.paid_pct is None else request.paid_pct / 100)
     if request.players_left or request.left_pct is not None:
         left = request.players_left or max(1, round(entrants * request.left_pct / 100))
+    elif request.bubble_away:
+        paid = structures.Stage.bubble(entrants, share, given).paid
+        left = min(entrants, paid + request.bubble_away)
     elif request.stage_word == "final":
         left = request.players or TABLE_SIZE
     else:

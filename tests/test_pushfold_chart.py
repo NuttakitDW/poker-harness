@@ -514,6 +514,31 @@ class NamedStageTests(unittest.TestCase):
         self.assertIn("150 paid", made.note)
         self.assertIn("standard MTT payouts", made.note)
 
+    def test_players_away_from_the_money_and_places_paid_are_read(self):
+        for said, away, paid in (("8 handed SB 9.8bb hold A2s bubble อีก 3 คน shove ได้ไหม", 3, None),
+                                 ("BTN 12bb bubble 2 players", 2, None),
+                                 ("BTN 12bb 3 away from the money 150 paid", 3, 150),
+                                 ("CO 15bb จ่าย 30 คน เหลือ 35 คน", None, 30),
+                                 ("BTN 10bb places paid 240 243 left", None, 240)):
+            with self.subTest(said=said):
+                parsed = preflop.parse(said)
+                self.assertEqual((parsed.bubble_away, parsed.paid_places), (away, paid))
+        self.assertEqual(preflop.parse("8 handed SB 9.8bb bubble อีก 3 คน").stack, 9.8)
+        self.assertEqual(preflop.parse("BTN shove 10bb icm 12% paid").paid_places, None)
+
+    def test_a_full_table_on_the_bubble_is_a_big_field(self):
+        chosen = pushfold_chart.stage(request(stack=10, players=8, stage_word="bubble"))
+        self.assertEqual((chosen.entrants, chosen.left, chosen.paid), (1000, 155, 150))
+        self.assertIsNone(pushfold_chart.payout_problem(request(stack=10, players=8, stage_word="bubble")))
+
+    def test_places_paid_and_players_away_set_the_players_left(self):
+        chosen = pushfold_chart.stage(request(stack=10, players=8, paid_places=240, bubble_away=3))
+        self.assertEqual((chosen.entrants, chosen.left, chosen.paid), (1600, 243, 240))
+        chosen = pushfold_chart.stage(request(stack=10, paid_places=240, players_left=243))
+        self.assertEqual((chosen.left, chosen.paid, chosen.curve), (243, 240, "mtt"))
+        chosen = pushfold_chart.stage(request(stack=10, bubble_away=2, entrants=1000))
+        self.assertEqual((chosen.left, chosen.paid), (152, 150))
+
     def test_a_paid_share_leaves_the_live_table(self):
         made = pushfold_chart.solved(request(stack=10, stage_word="bubble", paid_pct=30))
         self.assertIn("6 paid, standard MTT payouts", made.note)

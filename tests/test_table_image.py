@@ -45,6 +45,18 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(read.button, 0)
         self.assertEqual(read.seats[0].cards, ("Th", "6d"))
 
+    def test_the_tournament_panel_goes_into_the_question(self):
+        reply = json.loads(table([player("hero", 9.8, cards=["Ad", "2d"]), player("v", 20), player("w", 12)], "v",
+                                 game="GGMasters Asia $25"))
+        reply.update(places_paid=240, players_left=243, avg_stack_bb=20.1)
+        read = table_image.parse(json.dumps(reply))
+        self.assertEqual((read.paid, read.left, read.average), (240, 243, 20.1))
+        self.assertTrue(table_image.question(read).endswith("hold A2s 240 paid 243 left avg 20.1bb"))
+        reply.update(places_paid=None, players_left="243", avg_stack_bb=None)
+        read = table_image.parse(json.dumps(reply))
+        self.assertEqual((read.paid, read.left, read.average), (None, None, None))
+        self.assertNotIn("paid", table_image.question(read))
+
     def test_a_tournament_is_not_aof(self):
         read = table_image.parse(table([player("me"), player("v")], "me", game="MTT Bounty"))
         self.assertFalse(read.aof)

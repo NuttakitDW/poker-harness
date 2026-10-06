@@ -24,6 +24,8 @@ from pushfold.spot import Spot, SpotError  # noqa: E402
 MIN_STACK = 3.0
 MAX_STACK = 30.0
 MAX_ITERS = 4000
+PUSH_FOLD_STACK = 15.0   # at or below this, a full table goes to push/fold ICM (pushfold_chart)
+PUSH_FOLD_PLAYERS = 7
 TARGET = {2: 0.002, 3: 0.006, 4: 0.008, 5: 0.009, 6: 0.010,
           7: 0.012, 8: 0.014, 9: 0.015}
 ACTION_CODES = {floor3.FOLD: "F", floor3.CALL: "C", floor3.RAISE: "R", floor3.ALLIN: "J"}
@@ -60,7 +62,19 @@ def applies(request: preflop.Request) -> bool:
                  or request.buy_in is not None or request.prize_pool is not None)
     return (request.payouts != () and not request.aof and request.game != "cash"
             and not request.explicit_pushfold
-            and request.stack is not None and wants_icm)
+            and request.stack is not None and wants_icm and not _push_fold_is_enough(request))
+
+
+def _push_fold_is_enough(request: preflop.Request) -> bool:
+    """A short stack at a full table with no open in front: the full model (open, 3-bet, cap 3) does
+    not converge in the live budget at 7+ handed, and push/fold ICM answers the shove in seconds."""
+    facing_open = request.scenario == "3-Bet" or (request.villain and request.scenario not in (None, "All-In"))
+    if facing_open or request.stack is None or request.stack > PUSH_FOLD_STACK:
+        return False
+    try:
+        return _players(request) >= PUSH_FOLD_PLAYERS
+    except (icm.PayoutError, ValueError):
+        return False
 
 
 def _players(request: preflop.Request) -> int:

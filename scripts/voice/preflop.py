@@ -134,6 +134,15 @@ _LEFT_COUNT = re.compile(r"(?<![\d.])(\d+)\s*(?:players?\s*)?(?:left|remain\w*)(
 _ENTRANTS = re.compile(r"(?:field(?:\s*size)?|entrants?|runners?|คนลง(?:แข่ง)?|ผู้เข้าแข่ง(?:ขัน)?)\s*(\d+)"
                        r"|(?<![\d.])(\d+)\s*(?:entrants?|runners?|entries)")
 _PAID = re.compile(rf"(?:paid|itm|จ่าย(?:รางวัล)?)\s*{_NUMBER}{_PERCENT}|{_NUMBER}{_PERCENT}\s*(?:paid|itm)")
+# จ่ายกี่คน "240 paid" "places paid 240" "จ่าย 240 คน" อ่านหลัง % จะได้ไม่กิน "12% paid"
+_PAID_COUNT = re.compile(r"(?:places?\s*paid|paid\s*places?|itm\s*places?)\s*:?\s*(\d+)"
+                         r"|(?<![\d.%])(\d+)\s*(?:places?\s*)?(?:paid|itm)(?![a-z])"
+                         r"|จ่าย(?:รางวัล)?\s*(\d+)\s*(?:คน|อันดับ|ที่)")
+# อีกกี่คนถึงเงิน "bubble อีก 3 คน" "bubble 3 players" "3 away from the money" "อีก 3 คนเข้าเงิน"
+_BUBBLE_AWAY = re.compile(r"(?:bubble|บับเบิ้?ล)\s*(?:อีก\s*(\d+)|(\d+)\s*(?:คน|players?|spots?|places?|away))"
+                          r"|(?<![\d.])(\d+)\s*(?:players?\s*|spots?\s*|places?\s*)?(?:away\s*from|from|off)"
+                          r"\s*(?:the\s*)?(?:money|bubble|itm)"
+                          r"|อีก\s*(\d+)\s*คน\s*(?:จะ)?\s*(?:ถึง|เข้า|ติด)\s*(?:เงิน|itm|รางวัล)")
 _BB_UNIT = r"(?:bb|big\s*blinds?|บีบี|บิ๊?กบ(?:ลาย|าย)(?:ด์|ส์)?)"
 # เงินเป็นบาท "buy-in 1000" "ซื้อเข้า 1,000 บาท" "pool 15k" "total buy-in 15000" "เงินรางวัลรวม 15000"
 # ICM ไม่ขึ้นกับหน่วยเงิน ใช้หาจำนวนคนลงจากเงินรวม กับแสดงรางวัลเป็นบาท
@@ -209,6 +218,8 @@ class Request:
     players_left: int | None = None    # เหลือกี่คน
     entrants: int | None = None        # คนลงทั้งหมด
     paid_pct: float | None = None      # จ่ายรางวัลกี่ % ของคนลง
+    paid_places: int | None = None     # จ่ายรางวัลกี่คน
+    bubble_away: int | None = None     # อีกกี่คนถึงเงิน
     field_avg: float | None = None     # สแตกเฉลี่ยของคนที่โต๊ะอื่น เป็น bb
     buy_in: float | None = None        # ค่าซื้อเข้าต่อคน เป็นบาท
     prize_pool: float | None = None    # เงินรางวัลรวม เป็นบาท
@@ -563,7 +574,12 @@ def _read_stage(text: str) -> tuple[dict, str]:
             value = _money(match)
             if value > 0:
                 found[key] = value
+    away = _BUBBLE_AWAY.search(text)
+    if away:  # คำว่า bubble ยังเก็บไว้ให้รู้ว่าเป็นช่วง bubble
+        found["bubble_away"] = int(next(g for g in away.groups() if g is not None))
+        text = text[:away.start()] + " bubble " + text[away.end():]
     for key, pattern, read in (("left_pct", _LEFT_PCT, _stack_value), ("paid_pct", _PAID, _stack_value),
+                               ("paid_places", _PAID_COUNT, int),
                                ("players_left", _LEFT_COUNT, int), ("entrants", _ENTRANTS, int),
                                ("field_avg", _AVERAGE, _stack_value)):
         match = pattern.search(text)

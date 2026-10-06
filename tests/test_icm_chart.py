@@ -76,6 +76,13 @@ class IcmValidationTests(unittest.TestCase):
                                   stage_word="bubble", icm=True)
         self.assertFalse(icm_chart.applies(request))
 
+    def test_a_short_stack_at_a_full_table_goes_to_push_fold(self):
+        short = preflop.parse("8 handed SB 9.8bb hold A2s 240 paid 243 left bubble อีก 3 คน shove ได้ไหม")
+        self.assertFalse(icm_chart.applies(short))
+        self.assertTrue(icm_chart.applies(preflop.parse("8 handed BTN 20bb bubble")))
+        self.assertTrue(icm_chart.applies(preflop.parse("8 handed BB vs CO open 12bb bubble")))
+        self.assertTrue(icm_chart.applies(preflop.parse("3 handed BTN 10bb icm 50/30/20")))
+
     def test_new_global_stack_clears_old_named_stacks(self):
         old = preflop.parse("BTN 15bb SB 15bb BB 15bb icm 50/30/20")
         changed = spot.merge(preflop.parse("12bb"), old)
