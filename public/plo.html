@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ตามควาย PLO4 Range</title>
-<meta name="description" content="เปิดดู range PLO4 2-6 max ทั้ง preflop และ flop ที่ 10bb จาก solver ของตามควาย เลือกตำแหน่ง ไล่ action แล้วกรองมือด้วย matrix สองขั้น">
+<meta name="description" content="เปิดดู range PLO4 2-6 max ทั้ง preflop และ postflop ที่ 10bb จาก solver ของตามควาย เลือกตำแหน่ง ไล่ action แล้วกรองมือด้วย matrix สองขั้น">
 <meta name="theme-color" content="#171512">
 <link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="/static/plo-explorer.css?v=9afbaf43">
+<link rel="stylesheet" href="/static/plo-explorer.css?v=0320d332">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   /* Same CI tokens and stage layout as index.html, method.html and research.html */
@@ -85,9 +85,9 @@
       <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
       <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo" aria-current="page">PLO4 range</a><a href="/o8">O8 range</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a><a href="/academy">ศาลาเรียน</a></div>
     </nav>
-    <p class="eyebrow rise">PLO4 · 2-6 max · Preflop · Flop ที่ 10bb</p>
+    <p class="eyebrow rise">PLO4 · 2-6 max · Preflop · Postflop ที่ 10bb</p>
     <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>เปิดดู range ของ PLO4 ทุกมือ</h1>
-    <p class="lede rise d2">ไล่ action ทีละที่นั่ง แล้วเลือกไพ่สองใบแรกใน matrix ตามด้วยอีกสองใบ ตัวเลขทุกตัวมาจาก solver ของตามควายที่เล่นถึง river และที่สแต็ก <span class="mono">10bb</span> ไล่ต่อถึง flop ได้ เลือก flop สามใบแล้วดูว่าแต่ละมือ check, bet หรือ fold บ่อยแค่ไหน</p>
+    <p class="lede rise d2">ไล่ action ทีละที่นั่ง แล้วเลือกไพ่สองใบแรกใน matrix ตามด้วยอีกสองใบ ตัวเลขทุกตัวมาจาก solver ของตามควายที่เล่นถึง river และที่สแต็ก <span class="mono">10bb</span> ไล่ต่อหลัง flop ได้จนจบมือ เลือกไพ่ flop, turn และ river แล้วดูว่าแต่ละมือ check, bet, call หรือ fold บ่อยแค่ไหน</p>
     <div class="games rise d3" id="games" role="group" aria-label="เกม"></div>
   </div>
 </header>
@@ -105,7 +105,8 @@
   </div>
 </footer>
 
-<script src="/static/plo-explorer.js?v=dd65cae3"></script>
+<script src="/static/plo-river.js?v=c953fdf0"></script>
+<script src="/static/plo-explorer.js?v=4f8ae7b4"></script>
 <script>
   PloExplorer.mount(document.getElementById("explorer"), {
     games: [6, 5, 4, 3, 2].flatMap(seats => [100, 40, 20, 10].map(stack => ({
@@ -119,10 +120,12 @@
       return r.json();
     }),
     postflop: {
-      // 10bb games carry the flop strategy; the bucket tables of all 1,755 flops are shared by every game
-      strategyUrl: name => name.endsWith("-10bb") ? `/static/plo-${name}-flop.json` : null,
+      // 10bb games carry the flop, turn and river strategy; the flop and turn bucket tables (1,755 flops,
+      // 49 turns each) are shared by every game and the river buckets are computed in the browser
+      strategyUrl: name => name.endsWith("-10bb") ? `/static/plo-${name}-post.json` : null,
       flopsUrl: "/static/plo-flops.json",
       flopUrl: id => `/static/plo/v1/flop-${id}.bin`,
+      turnUrl: (id, card) => `/static/plo/v1/turn-${id}-${card}.bin`,
     },
     hash: true,
   });

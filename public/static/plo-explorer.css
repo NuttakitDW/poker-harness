@@ -116,4 +116,5 @@ td .bigbar { height: 9px; min-width: 5rem; }
 .card-pick { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--edge); border-radius: 3px; background: var(--paper); font: 600 clamp(.6rem, 1.4vw, .85rem)/1 var(--font-mono); cursor: pointer; }
 .card-pick:hover { border-color: var(--ink); }
 .card-pick[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.card-pick:disabled { opacity: .25; cursor: not-allowed; }
 .steps[hidden] { display: none; }

@@ -9,7 +9,9 @@
    ``postflop: {strategyUrl, flopsUrl, flopUrl(id)}`` continues lines that reach the flop (``strategyUrl`` may be
    a function of the game id that returns null for games without postflop data): the page
    picks a flop from the library, averages each hand class over the combos the board leaves, and
-   weights every combo by how often the player to act gets there along the line. */
+   weights every combo by how often the player to act gets there along the line. Post nodes may carry
+   ``street`` 1-3 with ``buckets`` [flop, turn, river]: then ``turnUrl(flopId, card)`` serves the turn
+   tables and window.PloRiver (plo-river.js) computes the river buckets. */
 window.PloExplorer = (() => {
   "use strict";
   const MARKUP = `
@@ -85,7 +87,8 @@ window.PloExplorer = (() => {
     // solver noise (an average strategy is never exactly zero).
     const ACTION_MIN = 0.05;
     const LIST_MIN_WEIGHT = 0.05;  // combos reaching a flop node, below which a hand is left out of the list
-    const END_TEXT = { multiway: "คนที่สามเข้า", flop: "ไป flop", turn: "ไป turn", "hand over": "จบมือ" };
+    const END_TEXT = { multiway: "คนที่สามเข้า", flop: "ไป flop", turn: "ไป turn", "hand over": "จบมือ", showdown: "showdown" };
+    const STREET_NAME = ["", "Flop", "Turn", "River"];
     const POST = options.postflop || null;
     const NO_BUCKET = 65535;
     const LETTER = { fold: "f", check: "k", call: "c", raise: "r", pot: "r" };
@@ -93,9 +96,12 @@ window.PloExplorer = (() => {
 
     const $ = id => document.getElementById(id);
     const games = options.games || [];
-    const state = { game: options.initial || (games[0] && games[0].id), path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null, board: null, flop: [], exact: true };
+    const state = { game: options.initial || (games[0] && games[0].id), path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null, board: null, flop: [], turn: null, river: null, perm: null, exact: true };
     let flops = null;  // the flop library: [{id, board, texture}]
     const boards = {};  // flop id -> Uint16Array of buckets in class order
+    const turnTables = {};  // "flop id-turn card id" (library suits) -> the same for the turn
+    const riverTables = {};  // "flop id-turn id-river id" -> river buckets, computed here
+    let comboOrder = null;  // every hand in class order, for the river buckets
     const cache = {};
     let classes = null;
     let data = null;
@@ -165,11 +171,11 @@ window.PloExplorer = (() => {
 
     function nodeProbs(index) {
       const node = data.nodes[index];
-      const flop = isFlop(index);
-      const n = node.options.length, buckets = flop ? data.flop.buckets : data.buckets;
-      const bytes = flop ? data.flop.bytes : strategy;
+      const post = isPost(index);
+      const n = node.options.length, buckets = post ? data.post.sizes[node.street - 1] : data.buckets;
+      const bytes = post ? data.post.bytes : strategy;
       const out = new Float32Array(buckets * n);
-      const base = (flop ? index - data.flopOffset : index) * buckets * 3;
+      const base = post ? data.post.starts[index - data.flopOffset] : index * buckets * 3;
       for (let b = 0; b < buckets; b++) {
         let sum = 0;
         for (let k = 0; k < n; k++) sum += bytes[base + b * 3 + k];
@@ -179,15 +185,19 @@ window.PloExplorer = (() => {
     }
 
     // ---------- postflop ----------
-    const isFlop = index => data.flopOffset !== undefined && index >= data.flopOffset;
+    const isPost = index => data.flopOffset !== undefined && index >= data.flopOffset;
+    const streetOf = index => (isPost(index) ? data.nodes[index].street : 0);
 
     // Append the flop nodes after the preflop ones and point every preflop action that ends the
     // street at the flop root of its line.
     function attachPostflop(raw, post) {
       if (raw.flopOffset !== undefined) return;
       const offset = raw.nodes.length;
-      const flopNodes = post.nodes.map(node => ({ ...node, street: 1,
+      const flopNodes = post.nodes.map(node => ({ ...node, street: node.street || 1,
         options: node.options.map(o => ({ ...o, child: o.child >= 0 ? o.child + offset : -1 })) }));
+      const sizes = Array.isArray(post.buckets) ? post.buckets : [post.buckets];
+      let at = 0;
+      const starts = flopNodes.map(node => { const start = at; at += sizes[node.street - 1] * 3; return start; });
       (function walk(index, history) {
         raw.nodes[index].options.forEach(option => {
           const next = history + LETTER[option.action];
@@ -197,7 +207,7 @@ window.PloExplorer = (() => {
       })(0, "");
       raw.nodes = raw.nodes.concat(flopNodes);
       raw.flopOffset = offset;
-      raw.flop = { buckets: post.buckets, bytes: decode(post.strategy) };
+      raw.post = { sizes, starts, bytes: decode(post.strategy) };
     }
 
     async function loadPostflop(name) {
@@ -207,19 +217,45 @@ window.PloExplorer = (() => {
       return post;
     }
 
-    async function loadBoard(id) {
-      if (boards[id]) return;
+    async function fetchTable(url) {
       if (typeof DecompressionStream === "undefined") throw new Error("เบราว์เซอร์นี้เปิดข้อมูล flop ไม่ได้ ลองอัปเดตเบราว์เซอร์");
-      const response = await fetch(POST.flopUrl(id));
-      if (!response.ok) throw new Error(`flop ${id}: ${response.status}`);
-      const buffer = await new Response(response.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
-      boards[id] = new Uint16Array(buffer);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url}: ${response.status}`);
+      return new Uint16Array(await new Response(response.body.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+    }
+
+    async function loadBoard(id) {
+      if (!boards[id]) boards[id] = await fetchTable(POST.flopUrl(id));
+    }
+
+    // Turn and river cards in the library flop's suits (the tables are stored for those).
+    const toLibrary = card => { const id = cardId(card); return (id >> 2) * 4 + state.perm[id & 3]; };
+    const turnKey = () => (state.board && state.perm && state.turn ? `${state.board}-${toLibrary(state.turn)}` : null);
+    const riverKey = () => (turnKey() && state.river ? `${turnKey()}-${toLibrary(state.river)}` : null);
+    const streetTables = () => ({ 1: boards[state.board], 2: turnTables[turnKey()], 3: riverTables[riverKey()] });
+    const boardReady = street => { const tables = streetTables(); for (let s = 1; s <= street; s++) if (!tables[s]) return false; return true; };
+
+    async function loadStreets() {
+      if (!state.board) return;
+      await loadBoard(state.board);
+      const turn = turnKey();
+      if (turn && !turnTables[turn]) turnTables[turn] = await fetchTable(POST.turnUrl(state.board, String(toLibrary(state.turn)).padStart(2, "0")));
+      const river = riverKey();
+      if (river && !riverTables[river]) {
+        await new Promise(resolve => setTimeout(resolve, 30));  // let "loading" paint before the work
+        comboOrder ||= window.PloRiver.comboOrder(classes.map(c => c.cards));
+        const library = boardEntry().board.match(/../g).map(cardId);
+        riverTables[river] = window.PloRiver.buckets(comboOrder, [...library, toLibrary(state.turn), toLibrary(state.river)]);
+      }
     }
 
     const boardEntry = () => flops && flops.find(f => f.id === state.board);
     // The cards whose data is shown: the picked flop when the library holds it (up to a suit swap,
     // which never changes a class's strategy), otherwise the library flop used in its place.
-    const boardCards = () => { const e = boardEntry(); return !e ? [] : state.exact ? state.flop : e.board.match(/../g); };
+    const boardCards = () => {
+      const e = boardEntry();
+      return !e ? [] : state.exact ? [...state.flop, state.turn, state.river].filter(Boolean) : e.board.match(/../g);
+    };
 
     const RANK_ORDER = "23456789TJQKA";
     const cardId = card => RANK_ORDER.indexOf(card[0]) * 4 + "cdhs".indexOf(card[1]);
@@ -261,23 +297,49 @@ window.PloExplorer = (() => {
       return { id: nearest.id, exact: false };
     }
 
-    function pickFlopCard(card) {
-      const at = state.flop.indexOf(card);
-      if (at >= 0) state.flop = state.flop.filter(c => c !== card);
-      else if (state.flop.length < 3) state.flop = [...state.flop, card];
-      setFlop();
+    // The suit relabelling that turns the picked flop into the library flop.
+    function libraryPerm(cards, library) {
+      const want = library.map(cardId).sort((a, b) => a - b).join(".");
+      return ID_PERMS.find(perm => cards.map(card => { const id = cardId(card); return (id >> 2) * 4 + perm[id & 3]; })
+        .sort((a, b) => a - b).join(".") === want) || null;
     }
 
-    function setFlop() {
+    // A card from the picker: the flop until it has three cards (or while a flop spot is shown),
+    // then the turn, then the river.
+    function pickCard(card) {
+      const street = Math.max(1, streetOf(currentNode()));
+      const used = [...state.flop, state.turn, state.river].includes(card);
+      if (state.flop.length < 3 || street === 1) {
+        const at = state.flop.indexOf(card);
+        if (at >= 0) state.flop = state.flop.filter(c => c !== card);
+        else if (state.flop.length < 3) state.flop = [...state.flop, card];
+        state.turn = null;
+        state.river = null;
+      } else if (used) {
+        return;
+      } else if (street === 2 || !state.turn) {
+        state.turn = card;
+        state.river = null;
+      } else {
+        state.river = card;
+      }
+      setBoard();
+    }
+
+    function setBoard() {
       if (state.flop.length === 3 && flops) {
         const found = resolveFlop(state.flop);
         state.board = found.id;
         state.exact = found.exact;
+        state.perm = found.exact ? libraryPerm(state.flop, boardEntry().board.match(/../g)) : null;
       } else {
         state.board = null;
+        state.perm = null;
       }
+      if (!state.perm) state.turn = null;  // later streets need the picked flop itself
+      if (!state.turn) state.river = null;
       render();
-      if (state.board) loadBoard(state.board).then(render).catch(fail);
+      if (state.board) loadStreets().then(render).catch(fail);
     }
 
     // Decisions on the way to the current node: [{index, slot}].
@@ -296,12 +358,14 @@ window.PloExplorer = (() => {
       return { w, p };
     }
 
-    function flopView(index) {
+    function postView(index) {
       const node = data.nodes[index], n = node.options.length, current = nodeProbs(index);
+      const tables = streetTables();
       const mine = pathPairs().filter(({ index: i }) => data.nodes[i].actor === node.actor)
-        .map(({ index: i, slot }) => ({ flop: isFlop(i), probs: nodeProbs(i), slot, m: data.nodes[i].options.length }));
-      const pre = mine.filter(x => !x.flop), post = mine.filter(x => x.flop);
-      const buckets = boards[state.board];
+        .map(({ index: i, slot }) => ({ post: isPost(i), probs: nodeProbs(i), slot, m: data.nodes[i].options.length,
+          table: tables[streetOf(i)] }));
+      const pre = mine.filter(x => !x.post), post = mine.filter(x => x.post);
+      const buckets = tables[node.street];
       const w = new Float64Array(classes.length), p = new Float32Array(classes.length * n);
       const acc = new Float64Array(n);
       let offset = 0;
@@ -314,7 +378,7 @@ window.PloExplorer = (() => {
           const b = buckets[offset + k];
           if (b === NO_BUCKET) continue;
           let r = reach;
-          for (const x of post) r *= x.probs[b * x.m + x.slot];
+          for (const x of post) r *= x.probs[x.table[offset + k] * x.m + x.slot];
           if (r <= 0) continue;
           total += r;
           for (let j = 0; j < n; j++) acc[j] += r * current[b * n + j];
@@ -345,7 +409,7 @@ window.PloExplorer = (() => {
       if (option.action === "fold") return { name: "Fold", amount: "" };
       if (option.action === "check") return { name: "Check", amount: "" };
       const amount = fmt(option.total);
-      if ((option.action === "raise" || option.action === "pot") && node.street === 1 && node.to_call === 0) return { name: "Bet", amount };
+      if ((option.action === "raise" || option.action === "pot") && node.street >= 1 && node.to_call === 0) return { name: "Bet", amount };
       if (option.action === "call") {
         const limp = !node.street && Math.abs(option.total - 1) < 1e-9;  // calling the big blind itself: nobody has raised
         return { name: option.all_in ? "Call all-in" : limp ? "Limp" : "Call", amount };
@@ -417,7 +481,7 @@ window.PloExplorer = (() => {
       const total = { combos: 0, freq: new Float64Array(n), range: 0 };
       const rows = [];
       const query = parseQuery(state.query);
-      const onFlop = Boolean(state.board) && isFlop(currentNode());
+      const onFlop = Boolean(state.board) && isPost(currentNode());
       for (let i = 0; i < classes.length; i++) {
         const c = classes[i], weight = view.w[i];
         if (!(weight > 0)) continue;
@@ -499,10 +563,11 @@ window.PloExplorer = (() => {
     // come if everyone folds to them (click to jump there).
     function renderLine() {
       const steps = [];
+      const pairs = pathPairs();
       let index = 0;
       [...state.path, null].forEach((slot, depth) => {
         const node = data.nodes[index];
-        if (isFlop(index) && node.street === 1 && depth > 0 && !isFlop(pathPairs()[depth - 1].index)) steps.push(boardStep());
+        if (isPost(index) && streetOf(index) > (depth > 0 ? streetOf(pairs[depth - 1].index) : 0)) steps.push(boardStep(streetOf(index)));
         const opts = orderedSlots(node).map(k => {
           const option = node.options[k];
           const label = optionLabel(node, option);
@@ -531,11 +596,12 @@ window.PloExplorer = (() => {
       line.scrollLeft = Math.max(0, now.offsetLeft - line.offsetLeft - line.clientWidth + now.offsetWidth + 8);
     }
 
-    function boardStep() {
-      const slots = [0, 1, 2].map(i => state.flop[i]
-        ? `<span class="flop-card">${cardsHTML([state.flop[i]])}</span>` : '<span class="flop-card empty">?</span>').join("");
-      const change = state.flop.length ? '<button class="flop-clear" type="button" data-clear-flop>เปลี่ยน</button>' : "";
-      return `<div class="step board"><div class="step-seat"><span>Flop</span></div>`
+    function boardStep(street) {
+      const cards = street === 1 ? [0, 1, 2].map(i => state.flop[i]) : [street === 2 ? state.turn : state.river];
+      const slots = cards.map(card => card
+        ? `<span class="flop-card">${cardsHTML([card])}</span>` : '<span class="flop-card empty">?</span>').join("");
+      const change = cards.some(Boolean) ? `<button class="flop-clear" type="button" data-clear-street="${street}">เปลี่ยน</button>` : "";
+      return `<div class="step board"><div class="step-seat"><span>${STREET_NAME[street]}</span></div>`
         + `<div class="step-opts"><span class="board-cards">${slots}</span>${change}</div></div>`;
     }
 
@@ -557,9 +623,9 @@ window.PloExplorer = (() => {
       $("spot-title").textContent = words.length ? `${seat} · หลัง ${words.join(", ")}` : `${seat} · ได้เป็นคนแรก (first in)`;
       const toCall = node.to_call > 0 ? ` · ต้องจ่าย ${fmt(node.to_call)}bb` : "";
       const stack = SHOW_STACK ? ` · stack ${fmt(node.behind[node.actor])}bb` : "";
-      const used = boardCards().join("");
-      const board = node.street !== 1 || !boardEntry() ? ""
-        : state.exact ? ` · flop ${used}` : ` · แสดง flop ${used} แทน ${state.flop.join("")} ที่ยังไม่มีในคลัง`;
+      const used = boardCards().slice(0, (node.street || 0) + 2).join("");
+      const board = !node.street || !boardEntry() ? ""
+        : state.exact ? ` · ${STREET_NAME[node.street].toLowerCase()} ${used}` : ` · แสดง flop ${used} แทน ${state.flop.join("")} ที่ยังไม่มีในคลัง`;
       $("spot-meta").textContent = `${data.label}${board} · pot ${fmt(node.pot)}bb${toCall}${stack}`;
     }
 
@@ -640,14 +706,17 @@ window.PloExplorer = (() => {
     let view = null;
 
     function renderNoBoard(node) {
-      const loading = state.flop.length === 3;
+      const need = state.flop.length < 3 ? 1 : node.street >= 2 && !state.turn ? 2 : node.street >= 3 && !state.river ? 3 : 0;
+      const loading = need === 0;
       container.querySelector(".steps").hidden = true;  // the two-card hand picker has nothing to pick yet
-      $("spot-title").textContent = loading ? "กำลังโหลด flop..." : `เลือก flop ทีละใบ (${state.flop.length}/3)`;
-      $("spot-meta").textContent = `${data.label} · pot ${fmt(node.pot)}bb`;
+      $("spot-title").textContent = loading ? (node.street === 3 ? "กำลังคำนวณ river..." : "กำลังโหลด board...")
+        : need === 1 ? `เลือก flop ทีละใบ (${state.flop.length}/3)` : need === 2 ? "เลือกไพ่ turn" : "เลือกไพ่ river";
+      $("spot-meta").textContent = `${data.label}${state.flop.length === 3 ? ` · board ${boardCards().join("")}` : ""} · pot ${fmt(node.pot)}bb`;
       for (const id of ["legend", "tiles", "sum-bar", "list", "list-head"]) $(id).innerHTML = "";
+      const taken = [...state.flop, state.turn, state.river];
       $("matrix").innerHTML = loading ? "" : "shdc".split("").map(suit => [...RANK_ORDER].reverse().map(rank => {
-        const card = rank + suit, on = state.flop.includes(card);
-        return `<button class="card-pick s-${suit}" type="button" data-card="${card}" aria-pressed="${on}">${rank}${SUIT_GLYPH[suit]}</button>`;
+        const card = rank + suit, on = state.flop.includes(card), off = need > 1 && taken.includes(card);
+        return `<button class="card-pick s-${suit}" type="button" data-card="${card}" aria-pressed="${on}"${off ? " disabled" : ""}>${rank}${SUIT_GLYPH[suit]}</button>`;
       }).join("")).join("");
       $("list-count").textContent = "";
       $("more").hidden = true;
@@ -656,7 +725,7 @@ window.PloExplorer = (() => {
     function render() {
       const index = currentNode();
       const node = data.nodes[index];
-      if (isFlop(index) && !(state.board && boards[state.board])) {
+      if (isPost(index) && !(state.board && boardReady(node.street))) {
         view = { node, cells: [] };
         renderLine();
         renderNoBoard(node);
@@ -665,7 +734,7 @@ window.PloExplorer = (() => {
         return;
       }
       container.querySelector(".steps").hidden = false;
-      const agg = aggregate(isFlop(index) ? flopView(index) : preflopView(index), node.options.length);
+      const agg = aggregate(isPost(index) ? postView(index) : preflopView(index), node.options.length);
       view = { node, cells: agg.cells };
       renderLine();
       renderSpot(node);
@@ -702,7 +771,7 @@ window.PloExplorer = (() => {
       const parts = [`g=${state.game}`];
       if (state.path.length) parts.push(`l=${state.path.join(".")}`);
       if (state.first !== null) parts.push(`h=${state.first}${state.second !== null ? "." + state.second : ""}`);
-      if (state.flop.length === 3) parts.push(`b=${state.flop.join("")}`);
+      if (state.flop.length === 3) parts.push(`b=${[...state.flop, state.turn, state.river].filter(Boolean).join("")}`);
       history.replaceState(null, "", "#" + parts.join("&"));
     }
 
@@ -715,7 +784,10 @@ window.PloExplorer = (() => {
       state.first = Number.isInteger(hand[0]) && hand[0] >= 0 && hand[0] < 169 ? hand[0] : null;
       state.second = state.first !== null && Number.isInteger(hand[1]) && hand[1] >= 0 && hand[1] < 169 ? hand[1] : null;
       const picked = (params.get("b") || "").match(/[2-9TJQKA][shdc]/g) || [];
-      state.flop = picked.length === 3 && new Set(picked).size === 3 ? picked : [];
+      const fine = picked.length >= 3 && picked.length <= 5 && new Set(picked).size === picked.length;
+      state.flop = fine ? picked.slice(0, 3) : [];
+      state.turn = fine && picked[3] || null;
+      state.river = fine && picked[4] || null;
     }
 
     function validPath() {
@@ -741,7 +813,7 @@ window.PloExplorer = (() => {
       const post = POST && await loadPostflop(name);
       if (post) attachPostflop(data, post);
       validPath();
-      if (POST) setFlop(); else render();
+      if (POST) setBoard(); else render();
     }
 
     if (options.gamesEl) options.gamesEl.addEventListener("click", event => {
@@ -753,7 +825,15 @@ window.PloExplorer = (() => {
     });
 
     $("line").addEventListener("click", event => {
-      if (event.target.closest("[data-clear-flop]")) { state.flop = []; setFlop(); return; }
+      const clear = event.target.closest("[data-clear-street]");
+      if (clear) {
+        const street = Number(clear.dataset.clearStreet);
+        if (street === 1) state.flop = [];
+        if (street <= 2) state.turn = null;
+        state.river = null;
+        setBoard();
+        return;
+      }
       const button = event.target.closest(".opt, [data-back], [data-ahead]");
       if (!button || button.disabled) return;
       if (button.dataset.back !== undefined) state.path = state.path.slice(0, Number(button.dataset.back));
@@ -766,7 +846,7 @@ window.PloExplorer = (() => {
     // the searched hand; the game stays.
     function resetAll() {
       clearTimeout(typing);
-      Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null, board: null, flop: [], exact: true });
+      Object.assign(state, { path: [], first: null, second: null, shape: "all", tier: -1, query: "", action: null, board: null, flop: [], turn: null, river: null, perm: null, exact: true });
       $("search").value = "";
       render();
     }
@@ -775,7 +855,7 @@ window.PloExplorer = (() => {
 
     $("matrix").addEventListener("click", event => {
       const pick = event.target.closest("[data-card]");
-      if (pick) { pickFlopCard(pick.dataset.card); return; }
+      if (pick) { pickCard(pick.dataset.card); return; }
       const button = event.target.closest(".cell");
       if (!button || button.classList.contains("empty")) return;
       const key = Number(button.dataset.key);
