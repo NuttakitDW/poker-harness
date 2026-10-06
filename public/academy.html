@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย Academy</title>
+<meta name="description" content="วิดีโอสอนโป๊กเกอร์จากช่อง YouTube ตามควาย เริ่มจาก Omaha Hi-Lo 8 or Better แบบ fixed limit กติกาและกลยุทธ์พื้นฐาน">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Same CI tokens and stage layout as research.html */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --lamp: #FFF8E6; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 960px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.7 var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-size: .92em; }
+  .column { max-width: var(--column); margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) clamp(2rem, 5vw, 3rem); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage :focus-visible { outline-color: var(--on-puppet); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: var(--lamp); padding: 2px; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: .5rem clamp(1rem, 3vw, 2rem); }
+  .nav-links a { text-decoration: none; color: var(--on-puppet-2); }
+  .nav-links a[aria-current="page"] { color: var(--on-puppet); text-decoration: underline dotted; text-underline-offset: .35em; }
+  .eyebrow { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin: clamp(1rem, 4vw, 2.5rem) 0 1rem; }
+  .headline { font-size: clamp(1.8rem, 4.4vw, 3rem); line-height: 1.22; font-weight: 700; max-width: 22ch; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: 1rem; max-width: 60ch; color: var(--on-puppet-2); font-size: 1.0625rem; }
+
+  main { padding: clamp(2rem, 5vw, 3.5rem) var(--gutter) 0; }
+  .shelf-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .shelf-head h2 { font-size: clamp(1.2rem, 2.4vw, 1.5rem); color: var(--blue); }
+  .count { font: 500 .8125rem/1 var(--font-mono); color: var(--ash-2); }
+
+  .lesson { background: var(--paper); border: 1px solid var(--ink); border-radius: var(--cut); overflow: hidden; }
+  .lesson + .lesson { margin-top: 1.25rem; }
+  .screen { position: relative; aspect-ratio: 16 / 9; background: var(--puppet); }
+  .screen img, .screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  .screen img { object-fit: cover; }
+  .play { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: flex-start; padding: clamp(.8rem, 3vw, 1.4rem); background: linear-gradient(to top, rgba(23, 21, 18, .55), transparent 45%); border: 0; cursor: pointer; font: inherit; color: inherit; }
+  .play span { display: inline-flex; align-items: center; gap: .6rem; min-height: 48px; padding: 0 1.25rem; background: var(--red); color: var(--on-puppet); border: 2px solid var(--red-edge); border-radius: var(--cut); font: 600 1.0625rem/1 var(--font-display); transition: transform .2s ease, background .2s ease; }
+  .play span b { font: 500 .8125rem/1 var(--font-mono); color: var(--on-puppet-2); }
+  .play:hover span, .play:focus-visible span { background: #B02C25; transform: translateY(-2px); }
+  .play:focus-visible { outline: 2px dotted var(--on-puppet); outline-offset: -6px; }
+
+  .lesson-body { display: grid; grid-template-columns: minmax(0, 1fr) 14rem; gap: clamp(1.25rem, 4vw, 2.5rem); padding: clamp(1.1rem, 3vw, 1.75rem); }
+  .lesson-main { min-width: 0; display: flex; flex-direction: column; gap: .8rem; }
+  .tag { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); }
+  .lesson h3 { font-size: clamp(1.2rem, 2.4vw, 1.5rem); line-height: 1.35; color: var(--blue); }
+  .learn { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .4rem; max-width: 62ch; }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; margin: 0; padding: 0; }
+  .chips li { font: 500 .75rem/1 var(--font-mono); padding: .35rem .55rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--ground); color: var(--ash); }
+  .chapters { margin-top: .4rem; border-top: 1px solid var(--edge); padding-top: .8rem; }
+  .chapters summary { cursor: pointer; font: 600 .9375rem/1.4 var(--font-body); color: var(--blue); }
+  .chapters ol { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .15rem 1rem; }
+  .chapters button { display: flex; gap: .7rem; width: 100%; padding: .35rem .4rem; background: none; border: 0; border-radius: var(--cut); font: 400 .9rem/1.45 var(--font-body); color: var(--ink); text-align: left; cursor: pointer; }
+  .chapters button .mono { flex: 0 0 3.2rem; color: var(--bronze-txt); }
+  .chapters button:hover, .chapters button:focus-visible { background: var(--ground); color: var(--blue); }
+  .lesson-side { display: flex; flex-direction: column; gap: .7rem; border-left: 1px dashed var(--bronze); padding-left: clamp(1rem, 3vw, 1.5rem); }
+  .figure b { display: block; font: 600 1.6rem/1.1 var(--font-mono); color: var(--blue); }
+  .figure span { font-size: .8125rem; color: var(--ash); }
+  .cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 1.25rem; background: var(--red); color: var(--on-puppet); border: 2px solid var(--red-edge); border-radius: var(--cut); font: 600 1rem/1 var(--font-display); text-decoration: none; text-align: center; }
+  .cta:hover { background: #B02C25; }
+  .cta--alt { background: transparent; color: var(--blue); border-color: var(--blue); }
+  .cta--alt:hover { background: var(--blue); color: var(--on-puppet); }
+  .side-label { font: 600 .8125rem/1.2 var(--font-body); color: var(--bronze-txt); }
+
+  .channel { margin-top: 1.5rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.25rem; border: 1px dashed var(--bronze); border-radius: var(--cut); }
+  .channel p { max-width: 52ch; color: var(--ash); font-size: .9375rem; }
+  .channel strong { color: var(--ink); }
+
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+
+  @media (max-width: 720px) {
+    .lesson-body { grid-template-columns: minmax(0, 1fr); }
+    .lesson-side { border-left: 0; border-top: 1px dashed var(--bronze); padding-left: 0; padding-top: 1rem; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; } .d3 { animation-delay: .3s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO range</a><a href="/o8">O8 range</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a><a href="/academy" aria-current="page">Academy</a></div>
+    </nav>
+    <p class="eyebrow rise">Academy</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>เรียนโป๊กเกอร์กับตามควาย</h1>
+    <p class="lede rise d2">วิดีโอสอนจากช่อง YouTube ของเรา อธิบายด้วยภาษาง่ายๆ แล้วเปิดดูคำตอบจาก solver ต่อได้ทันทีในหน้า range</p>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <div class="shelf-head">
+      <h2>บทเรียน</h2>
+      <p class="count">1 วิดีโอ</p>
+    </div>
+
+    <article class="lesson rise d3" aria-labelledby="v1-title">
+      <div class="screen" data-video="5pqW60rG-vM">
+        <img src="/static/academy-5pqw60rg-vm.jpg" alt="ภาพปกวิดีโอ Omaha Hi-Lo 8 or Better กติกาและกลยุทธ์พื้นฐาน" width="1280" height="720">
+        <button class="play" type="button" aria-label="เล่นวิดีโอ สอน Omaha Hi-Lo 8 or Better แบบ Fixed Limit">
+          <span>เล่นวิดีโอ <b>15:18</b></span>
+        </button>
+      </div>
+      <div class="lesson-body">
+        <div class="lesson-main">
+          <p class="tag">O8 · Fixed limit · พื้นฐาน</p>
+          <h3 id="v1-title">สอน Omaha Hi-Lo 8 or Better แบบ Fixed Limit | กติกาและกลยุทธ์พื้นฐาน</h3>
+          <p>เรียนตั้งแต่การจัดไพ่ High และ Low การแบ่งพอต ไปจนถึงขนาดเดิมพันและกลยุทธ์พื้นฐาน พร้อมตัวอย่างไพ่และคำถามท้ายบทให้ลองคิดเอง</p>
+          <ul class="learn">
+            <li>กฎ 2 + 3: ใช้ไพ่ในมือสองใบกับกองกลางสามใบ และเลือกชุด High กับ Low แยกกันได้</li>
+            <li>Low แบบ 8 or Better ต้องผ่านเงื่อนไขอะไร เทียบไพ่ต่ำอย่างไร และเมื่อไร High รับทั้งพอต</li>
+            <li>ขนาดเดิมพัน fixed limit ในหน่วย big blind และความต่างระหว่าง cap <span class="mono">4</span> กับ cap <span class="mono">5</span> หน่วย</li>
+            <li>การเลือกมือเริ่มต้น ตำแหน่ง Quartering, Counterfeit และ Pot Odds เมื่อลุ้นแค่ครึ่งพอต</li>
+          </ul>
+          <ul class="chips" aria-label="หัวข้อ">
+            <li>O8</li><li>fixed limit</li><li>กติกา</li><li>มือเริ่มต้น</li><li>17 ตอน</li>
+          </ul>
+          <details class="chapters" open>
+            <summary>เลือกดูตามหัวข้อ</summary>
+            <ol>
+            <li><button type="button" data-start="0"><span class="mono">0:00</span>รู้จัก Omaha Hi-Lo และหน่วย Big Blind</button></li>
+            <li><button type="button" data-start="48"><span class="mono">0:48</span>กฎ 2 + 3: เลือกไพ่ในมือและกองกลาง</button></li>
+            <li><button type="button" data-start="104"><span class="mono">1:44</span>ลำดับการเล่นและตัวเลือกเดิมพัน</button></li>
+            <li><button type="button" data-start="165"><span class="mono">2:45</span>วิธีจัดไพ่ High</button></li>
+            <li><button type="button" data-start="222"><span class="mono">3:42</span>Low แบบ 8 or Better</button></li>
+            <li><button type="button" data-start="288"><span class="mono">4:48</span>วิธีเทียบ Low ทีละใบ</button></li>
+            <li><button type="button" data-start="342"><span class="mono">5:42</span>การแบ่งพอตและกรณีไม่มี Low</button></li>
+            <li><button type="button" data-start="393"><span class="mono">6:33</span>ตัวอย่าง Scoop ทั้ง High และ Low</button></li>
+            <li><button type="button" data-start="456"><span class="mono">7:36</span>ขนาดเดิมพัน Fixed Limit</button></li>
+            <li><button type="button" data-start="512"><span class="mono">8:32</span>Cap 5 หน่วยกับ Cap 4 หน่วย</button></li>
+            <li><button type="button" data-start="562"><span class="mono">9:22</span>การเลือกมือเริ่มต้น</button></li>
+            <li><button type="button" data-start="618"><span class="mono">10:18</span>ตำแหน่งและการเลือก Draw</button></li>
+            <li><button type="button" data-start="672"><span class="mono">11:12</span>Quartering: ชนะ Low แต่ได้หนึ่งในสี่</button></li>
+            <li><button type="button" data-start="722"><span class="mono">12:02</span>Counterfeit: เมื่อ Low ถูกแซง</button></li>
+            <li><button type="button" data-start="784"><span class="mono">13:04</span>Pot Odds เมื่อลุ้นครึ่งพอต</button></li>
+            <li><button type="button" data-start="834"><span class="mono">13:54</span>ทบทวนและคำถามท้ายบท</button></li>
+            <li><button type="button" data-start="901"><span class="mono">15:01</span>ลองศึกษา range ที่ตามควาย.com</button></li>
+            </ol>
+          </details>
+        </div>
+        <aside class="lesson-side">
+          <div class="figure"><b>15:18</b><span>ความยาววิดีโอ</span></div>
+          <p class="side-label">ดูต่อ</p>
+          <a class="cta" href="/o8">เปิด O8 range</a>
+          <a class="cta cta--alt" href="/research-o8-postflop">งานวิจัย O8 postflop</a>
+          <a class="cta cta--alt" href="https://www.youtube.com/watch?v=5pqW60rG-vM" target="_blank" rel="noopener">ดูบน YouTube</a>
+        </aside>
+      </div>
+    </article>
+
+    <div class="channel">
+      <p><strong>มีวิดีโอใหม่เรื่อยๆ</strong> กดติดตามช่องตามควายบน YouTube เพื่อไม่พลาดบทเรียนถัดไป</p>
+      <a class="cta cta--alt" href="https://www.youtube.com/@tamkwai" target="_blank" rel="noopener">ช่อง YouTube ตามควาย</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>Academy จากตามควาย</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+  // Load the YouTube player only when someone presses play or picks a chapter: no third-party requests
+  // before that. The iframe sends the page origin as referrer because YouTube refuses embeds without one.
+  document.querySelectorAll(".lesson").forEach(lesson => {
+    const screen = lesson.querySelector(".screen[data-video]");
+    const title = lesson.querySelector("h3").textContent;
+    const play = start => {
+      const frame = document.createElement("iframe");
+      frame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(screen.dataset.video)}?autoplay=1&rel=0&start=${start}`;
+      frame.title = title;
+      frame.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      frame.allowFullscreen = true;
+      screen.replaceChildren(frame);
+      return frame;
+    };
+    screen.querySelector(".play").addEventListener("click", () => play(0).focus());
+    lesson.querySelectorAll("[data-start]").forEach(button => button.addEventListener("click", () => {
+      play(Number(button.dataset.start) || 0);
+      screen.scrollIntoView({ behavior: "smooth", block: "center" });
+    }));
+  });
+</script>
+<script src="/static/beacon.js" defer></script>
+</body>
+</html>

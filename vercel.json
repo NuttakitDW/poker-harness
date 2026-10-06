@@ -27,7 +27,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-src https://www.youtube-nocookie.com; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
         },
         {
           "key": "X-Content-Type-Options",
@@ -40,7 +40,7 @@
       ]
     },
     {
-      "source": "/static/(.*)\\.(png|pdf|csv)",
+      "source": "/static/(.*)\\.(png|jpg|pdf|csv)",
       "headers": [
         {
           "key": "Cache-Control",

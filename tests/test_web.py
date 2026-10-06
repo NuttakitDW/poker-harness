@@ -435,6 +435,22 @@ class ServerTests(unittest.TestCase):
             with self.subTest(removed=name):
                 self.assertEqual(self.request("GET", f"/static/plo-{name}.json")[0].status, 404)
 
+    def test_the_academy_page_embeds_lessons_from_youtube_and_every_page_links_it(self):
+        response, body = self.request("GET", "/academy")
+        self.assertEqual(response.status, 200)
+        self.assertIn(b"Copyright", body)
+        self.assertIn(b'data-video="5pqW60rG-vM"', body)
+        self.assertIn(b"https://www.youtube-nocookie.com/embed/", body)
+        self.assertIn(b'referrerPolicy = "strict-origin-when-cross-origin"', body)
+        self.assertEqual(body.count(b"data-start=\""), 17)
+        self.assertIn("frame-src https://www.youtube-nocookie.com", response.getheader("Content-Security-Policy"))
+        response, image = self.request("GET", "/static/academy-5pqw60rg-vm.jpg")
+        self.assertEqual((response.status, response.getheader("Content-Type")), (200, "image/jpeg"))
+        self.assertTrue(image.startswith(b"\xff\xd8"))
+        for page in ("/", "/plo", "/o8", "/research", "/research-o8-postflop", "/research-27td", "/research-mtt40-en"):
+            with self.subTest(page=page):
+                self.assertIn(b'href="/academy"', self.request("GET", page)[1])
+
     def test_o8_flop_files_are_served_from_the_local_library(self):
         with tempfile.TemporaryDirectory() as d, mock.patch.object(server, "O8_FLOPS", Path(d)):
             (Path(d) / "o8-flop-0042.bin").write_bytes(b"\x1f\x8b data")
