@@ -1,7 +1,10 @@
 """First-party visit counting and message storage for tamkwai.com.
 
-Pages send small events to POST /api/collect (static/beacon.js): one "view" per page load and
-"time" events with the milliseconds the page was visible. Chat questions are stored by
+Pages send small events to POST /api/collect (static/beacon.js): one "view" per page load,
+"time" events with the milliseconds the page was visible and one "act" per thing a visitor did on
+a page (scrolled, a button, a link; ``name`` says which). A visitor with an "act" is a person; one
+without is "idle", most of them bots that run scripts. Bots that say so in their user agent are
+kept with device "bot", so every count can show all three apart. Chat questions are stored by
 chat._record. Nothing identifies a person: no IP address, no user agent; a visitor is a random id
 the browser keeps, a session is one tab.
 
@@ -31,8 +34,9 @@ MAX_QUESTION_CHARS = 2_000
 ID = re.compile(r"[a-z0-9]{8,32}")
 PATH = re.compile(r"/[A-Za-z0-9/_.\-]{0,120}")
 COUNTRY = re.compile(r"[A-Z]{2}")
+NAME = re.compile(r"[A-Za-z0-9#:/_.\-]{1,80}")
 BOT = re.compile(r"bot|crawl|spider|slurp|preview|headless|lighthouse|monitor", re.I)
-KINDS = ("view", "time")
+KINDS = ("view", "time", "act")
 
 SCHEMA = (
     """CREATE TABLE IF NOT EXISTS visits (
@@ -40,6 +44,7 @@ SCHEMA = (
         visitor TEXT NOT NULL, session TEXT NOT NULL, ms INTEGER NOT NULL, referrer TEXT NOT NULL,
         country TEXT NOT NULL, device TEXT NOT NULL)""",
     "CREATE INDEX IF NOT EXISTS visits_day ON visits (day)",
+    "ALTER TABLE visits ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''",
     """CREATE TABLE IF NOT EXISTS messages (
         ts DOUBLE PRECISION NOT NULL, day TEXT NOT NULL, channel TEXT NOT NULL, source TEXT NOT NULL,
         question TEXT NOT NULL, kind TEXT NOT NULL, detail TEXT NOT NULL)""",
@@ -66,6 +71,8 @@ def referrer_host(value: Any, own_host: str) -> str:
 
 
 def device_of(user_agent: str) -> str:
+    if BOT.search(user_agent or ""):
+        return "bot"
     return "phone" if re.search(r"Mobi|Android|iPhone", user_agent or "") else "desktop"
 
 
@@ -73,8 +80,6 @@ def parse_event(raw: bytes, *, user_agent: str, country: str, host: str, now: fl
     """One beacon body -> a row for ``visits``. Raises EventError for anything not worth storing."""
     if len(raw) > MAX_EVENT_BYTES:
         raise EventError("too large")
-    if BOT.search(user_agent or ""):
-        raise EventError("bot")
     try:
         body = json.loads(raw)
     except (json.JSONDecodeError, UnicodeDecodeError):
@@ -91,11 +96,16 @@ def parse_event(raw: bytes, *, user_agent: str, country: str, host: str, now: fl
         ms = body.get("ms")
         if not isinstance(ms, int) or isinstance(ms, bool) or not 0 < ms <= MAX_TIME_MS:
             raise EventError("bad ms")
+    name = ""
+    if body["kind"] == "act":
+        name = body.get("name")
+        if not (isinstance(name, str) and NAME.fullmatch(name)):
+            raise EventError("bad name")
     country = (country or "").upper()
     return {"ts": now, "day": day_of(now), "kind": body["kind"], "path": path.removesuffix(".html") or "/",
             "visitor": visitor, "session": session, "ms": ms,
             "referrer": referrer_host(body.get("referrer"), host) if body["kind"] == "view" else "",
-            "country": country if COUNTRY.fullmatch(country) else "", "device": device_of(user_agent)}
+            "country": country if COUNTRY.fullmatch(country) else "", "device": device_of(user_agent), "name": name}
 
 
 def message_row(entry: dict, *, channel: str, now: float) -> dict:
@@ -127,7 +137,12 @@ class SqliteStore:
         with self._lock, self._connect() as connection:
             if not self._ready:
                 for statement in SCHEMA:
-                    connection.execute(statement.replace("DOUBLE PRECISION", "REAL"))
+                    try:
+                        connection.execute(statement.replace("DOUBLE PRECISION", "REAL")
+                                           .replace("ADD COLUMN IF NOT EXISTS", "ADD COLUMN"))
+                    except sqlite3.OperationalError as error:
+                        if "duplicate column" not in str(error):
+                            raise
                 self._ready = True
             return [dict(row) for row in connection.execute(sql, params).fetchall()]
 
@@ -170,10 +185,10 @@ def store_from_env(env=os.environ):
 
 
 def save_visit(store, row: dict) -> None:
-    store.execute("INSERT INTO visits (ts, day, kind, path, visitor, session, ms, referrer, country, device) "
-                  "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+    store.execute("INSERT INTO visits (ts, day, kind, path, visitor, session, ms, referrer, country, device, name) "
+                  "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
                   tuple(row[k] for k in ("ts", "day", "kind", "path", "visitor", "session", "ms", "referrer",
-                                         "country", "device")))
+                                         "country", "device", "name")))
 
 
 def save_message(store, row: dict) -> None:
@@ -188,47 +203,91 @@ def _num(value) -> float:
     return float(value or 0)
 
 
+# Who each visitor in the window is: "bot" (a page view said so), "human" (did something) or "idle" (neither).
+WHO = ("WITH who AS (SELECT visitor, CASE WHEN MAX(CASE WHEN device = 'bot' AND kind = 'view' THEN 1 ELSE 0 END) = 1 THEN 'bot' "
+       "WHEN MAX(CASE WHEN kind = 'act' THEN 1 ELSE 0 END) = 1 THEN 'human' ELSE 'idle' END AS who "
+       "FROM visits WHERE day >= $1 GROUP BY visitor) ")
+GROUPS = ("human", "idle", "bot")
+
+
 def summary(store, days: int = 30, now: float | None = None) -> dict:
     """Everything the dashboard's overview shows, for the last ``days`` days (Bangkok time).
 
-    The queries are independent, so they run at the same time (each is one HTTPS round trip on Neon).
+    Every visitor count is split by ``WHO``. The queries are independent, so they run at the same
+    time (each is one HTTPS round trip on Neon). ``$2`` repeats ``$1`` for the SQLite placeholders.
     """
     now = time.time() if now is None else now
     since = day_of(now - (days - 1) * 86_400)
-    top = ("SELECT {c} AS name, COUNT(DISTINCT visitor) AS visitors FROM visits "
-           "WHERE day >= $1 AND kind = 'view' GROUP BY {c} ORDER BY visitors DESC LIMIT 12")
+    joined = "FROM visits v JOIN who w ON w.visitor = v.visitor WHERE v.day >= $2 "
+    top = (WHO + "SELECT v.{c} AS name, w.who, COUNT(DISTINCT v.visitor) AS visitors " + joined +
+           "AND v.kind = 'view' GROUP BY v.{c}, w.who")
+    stats = ("COUNT(DISTINCT v.visitor) AS visitors, SUM(CASE WHEN v.kind = 'view' THEN 1 ELSE 0 END) AS views, "
+             "COUNT(DISTINCT v.session) AS sessions, SUM(v.ms) AS ms ")
     queries = {
-        "daily": "SELECT day, COUNT(DISTINCT visitor) AS visitors, SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) "
-                 "AS views, COUNT(DISTINCT session) AS sessions, SUM(ms) AS ms FROM visits WHERE day >= $1 "
-                 "GROUP BY day ORDER BY day",
+        "daily": WHO + "SELECT v.day, w.who, " + stats + joined + "GROUP BY v.day, w.who",
+        "totals": WHO + "SELECT w.who, " + stats + joined + "GROUP BY w.who",
+        "pages": WHO + "SELECT v.path, w.who, " + stats + joined + "GROUP BY v.path, w.who",
+        "actions": "SELECT path, name, COUNT(DISTINCT visitor) AS visitors, COUNT(*) AS n FROM visits "
+                   "WHERE day >= $1 AND kind = 'act' AND device <> 'bot' GROUP BY path, name "
+                   "ORDER BY visitors DESC, n DESC, name LIMIT 40",
         "asked": "SELECT day, COUNT(*) AS n FROM messages WHERE day >= $1 GROUP BY day",
-        "pages": "SELECT path, SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) AS views, COUNT(DISTINCT visitor) "
-                 "AS visitors, SUM(ms) AS ms FROM visits WHERE day >= $1 GROUP BY path ORDER BY views DESC LIMIT 20",
-        "totals": "SELECT COUNT(DISTINCT visitor) AS visitors, COUNT(DISTINCT session) AS sessions, SUM(ms) AS ms, "
-                  "SUM(CASE WHEN kind = 'view' THEN 1 ELSE 0 END) AS views FROM visits WHERE day >= $1",
         "kinds": "SELECT kind, COUNT(*) AS n FROM messages WHERE day >= $1 GROUP BY kind ORDER BY n DESC",
         "referrer": top.format(c="referrer"), "country": top.format(c="country"), "device": top.format(c="device"),
     }
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(queries)) as pool:
-        futures = {name: pool.submit(store.execute, sql, (since,)) for name, sql in queries.items()}
+        futures = {name: pool.submit(store.execute, sql, (since, since) if "$2" in sql else (since,))
+                   for name, sql in queries.items()}
         got = {name: future.result() for name, future in futures.items()}
     asked = {r["day"]: int(_num(r["n"])) for r in got["asked"]}
-    totals = got["totals"][0]
-    sessions = max(1, int(_num(totals["sessions"])))
-    named = lambda rows: [{"name": r["name"] or "", "visitors": int(_num(r["visitors"]))} for r in rows]  # noqa: E731
+    by_who = {r["who"]: _stats(r) for r in got["totals"]}
+    who = {g: by_who.get(g, _stats({})) for g in GROUPS}
+    totals = {k: sum(who[g][k] for g in GROUPS) for k in ("visitors", "views", "sessions", "ms")}
     return {
         "since": since, "days": days,
-        "totals": {"visitors": int(_num(totals["visitors"])), "views": int(_num(totals["views"])),
-                   "sessions": int(_num(totals["sessions"])), "avg_session_seconds": _num(totals["ms"]) / 1000 / sessions,
+        "totals": {"visitors": totals["visitors"], "views": totals["views"], "sessions": totals["sessions"],
+                   "avg_session_seconds": totals["ms"] / 1000 / max(1, totals["sessions"]),
                    "messages": sum(asked.values())},
-        "daily": [{"day": r["day"], "visitors": int(_num(r["visitors"])), "views": int(_num(r["views"])),
-                   "avg_session_seconds": _num(r["ms"]) / 1000 / max(1, int(_num(r["sessions"]))),
-                   "messages": asked.get(r["day"], 0)} for r in got["daily"]],
-        "pages": [{"path": r["path"], "views": int(_num(r["views"])), "visitors": int(_num(r["visitors"])),
-                   "avg_seconds": _num(r["ms"]) / 1000 / max(1, int(_num(r["views"])))} for r in got["pages"]],
-        "referrers": named(got["referrer"]), "countries": named(got["country"]), "devices": named(got["device"]),
+        "who": {g: {"visitors": w["visitors"], "views": w["views"], "sessions": w["sessions"],
+                    "avg_session_seconds": w["ms"] / 1000 / max(1, w["sessions"])} for g, w in who.items()},
+        "daily": [{"day": day, "visitors": sum(s["visitors"] for s in split.values()),
+                   "humans": split.get("human", {}).get("visitors", 0), "bots": split.get("bot", {}).get("visitors", 0),
+                   "views": sum(s["views"] for s in split.values()), "messages": asked.get(day, 0)}
+                  for day, split in sorted(_pivot(got["daily"], "day").items())],
+        "pages": sorted(({"path": path, "views": sum(s["views"] for s in split.values()),
+                          "visitors": sum(s["visitors"] for s in split.values()),
+                          "humans": split.get("human", {}).get("visitors", 0),
+                          "avg_seconds": sum(s["ms"] for s in split.values()) / 1000
+                          / max(1, sum(s["views"] for s in split.values()))}
+                         for path, split in _pivot(got["pages"], "path").items()),
+                        key=lambda p: (-p["views"], p["path"]))[:20],
+        "actions": [{"path": r["path"], "name": r["name"], "visitors": int(_num(r["visitors"])), "count": int(_num(r["n"]))}
+                    for r in got["actions"]],
+        "referrers": _ranked(got["referrer"]), "countries": _ranked(got["country"]), "devices": _ranked(got["device"]),
         "message_kinds": [{"kind": r["kind"], "count": int(_num(r["n"]))} for r in got["kinds"]],
     }
+
+
+def _stats(row: dict) -> dict:
+    return {k: int(_num(row.get(k))) for k in ("visitors", "views", "sessions", "ms")}
+
+
+def _pivot(rows: list[dict], key: str) -> dict:
+    """Rows of (key, who, stats...) -> {key: {who: stats}}."""
+    out: dict = {}
+    for r in rows:
+        out.setdefault(r[key], {})[r["who"]] = _stats(r)
+    return out
+
+
+def _ranked(rows: list[dict], limit: int = 12) -> list[dict]:
+    """(name, who, visitors) rows -> the top names with all visitors and the people among them."""
+    merged: dict = {}
+    for r in rows:
+        entry = merged.setdefault(r["name"] or "", {"name": r["name"] or "", "visitors": 0, "humans": 0})
+        entry["visitors"] += int(_num(r["visitors"]))
+        if r["who"] == "human":
+            entry["humans"] += int(_num(r["visitors"]))
+    return sorted(merged.values(), key=lambda e: (-e["visitors"], e["name"]))[:limit]
 
 
 def messages(store, limit: int = 100, search: str = "", kind: str = "") -> list[dict]:

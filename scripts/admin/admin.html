@@ -18,6 +18,7 @@
     --bronze: #A87C3F; --bronze-txt: #6B4E22;
     --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
     --red: #C6322A; --red-edge: #8F221C; --bar: #1B2A4A; --bar-soft: #C9CFDC; --good: #2F6B3F;
+    --human: #1B2A4A; --idle: #C9CFDC; --bot: #A87C3F;
     --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
     --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
     --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
@@ -54,6 +55,13 @@
   .kpi span { font-size: .8rem; color: var(--bronze-txt); font-weight: 600; }
   .kpi b { font: 600 clamp(1.5rem, 3vw, 2rem)/1.15 var(--font-mono); color: var(--ink); }
   .kpi small { font: 400 .75rem/1.3 var(--font-mono); color: var(--ash); }
+  .split { display: flex; height: 8px; border-radius: 2px; overflow: hidden; background: var(--ground); margin: .35rem 0 .15rem; }
+  .split i { display: block; height: 100%; }
+  .who-legend { display: flex; flex-wrap: wrap; gap: .15rem .7rem; font: 400 .72rem/1.4 var(--font-mono); color: var(--ash); }
+  .who-legend i, .legend i.dot { display: inline-block; width: 8px; height: 8px; margin-right: .3rem; border-radius: 2px; vertical-align: 0; }
+  .note { font: 400 .75rem/1.5 var(--font-mono); color: var(--ash-2); margin-top: .5rem; }
+  td.act b { font-weight: 500; }
+  td.act small { display: block; font: 400 .72rem/1.3 var(--font-mono); color: var(--ash-2); overflow-wrap: anywhere; }
   .sheet { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: 1rem 1.1rem; min-width: 0; }
   .sheet h2 { font-size: 1.1rem; color: var(--blue); margin-bottom: .6rem; }
   .two { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
@@ -124,23 +132,35 @@
   <div class="column grid">
     <p class="error" id="error"></p>
     <section class="grid kpis" aria-label="สรุป">
-      <div class="kpi"><span>คนเข้า (ไม่ซ้ำ)</span><b id="k-visitors">-</b><small id="k-visitors-note">-</small></div>
-      <div class="kpi"><span>เปิดหน้า</span><b id="k-views">-</b><small id="k-views-note">-</small></div>
-      <div class="kpi"><span>อยู่บนเว็บเฉลี่ย</span><b id="k-time">-</b><small>ต่อการเข้าหนึ่งครั้ง นับเฉพาะตอนหน้าเปิดอยู่</small></div>
+      <div class="kpi"><span>คนเข้าทั้งหมด (ไม่ซ้ำ)</span><b id="k-visitors">-</b>
+        <div class="split" id="k-split" aria-hidden="true"></div>
+        <div class="who-legend" id="k-split-legend"></div></div>
+      <div class="kpi"><span>คนจริง (กดหรือเลื่อนหน้า)</span><b id="k-humans">-</b><small id="k-humans-note">-</small></div>
+      <div class="kpi"><span>คนจริงอยู่บนเว็บเฉลี่ย</span><b id="k-time">-</b><small id="k-time-note">-</small></div>
       <div class="kpi"><span>ข้อความที่ถาม</span><b id="k-messages">-</b><small id="k-messages-note">-</small></div>
     </section>
 
     <section class="sheet" aria-labelledby="daily-title">
       <h2 id="daily-title">รายวัน</h2>
       <div class="chart-wrap"><svg class="daily" id="daily" viewBox="0 0 900 240" role="img" aria-label="คนเข้าและข้อความรายวัน"></svg></div>
-      <div class="legend"><span><i style="background:var(--bar)"></i>คนเข้า</span><span><i style="background:var(--bar-soft)"></i>เปิดหน้า</span><span><i style="background:var(--red)"></i>ข้อความ</span></div>
+      <div class="legend"><span><i style="background:var(--human)"></i>คนจริง</span><span><i style="background:var(--idle)"></i>ไม่ได้กดหรือเลื่อน (ส่วนใหญ่เป็น bot)</span><span><i style="background:var(--bot)"></i>bot ที่บอกตัวเอง</span><span><i style="background:var(--red)"></i>ข้อความ</span></div>
+      <p class="note">คนจริง = กดปุ่ม ลิงก์ ตัวเลือก หรือเลื่อนหน้าอย่างน้อยหนึ่งครั้งในช่วงที่เลือก เริ่มเก็บตั้งแต่ 2026-10-05 ก่อนหน้านั้นทุกคนจึงอยู่ในกลุ่มไม่ได้กด</p>
+    </section>
+
+    <section class="sheet" aria-labelledby="acts-title">
+      <h2 id="acts-title">คนจริงทำอะไรบนเว็บ</h2>
+      <table>
+        <thead><tr><th>หน้า</th><th>ทำอะไร</th><th class="num">คน</th><th class="num">ครั้ง</th></tr></thead>
+        <tbody id="acts"></tbody>
+      </table>
+      <p class="note">ครั้ง = จำนวนการเปิดหน้าที่ทำสิ่งนั้น (กดซ้ำในหน้าเดียวนับครั้งเดียว)</p>
     </section>
 
     <div class="grid two">
       <section class="sheet" aria-labelledby="pages-title">
         <h2 id="pages-title">หน้าที่คนเปิด</h2>
         <table>
-          <thead><tr><th>หน้า</th><th class="num">เปิด</th><th class="num">คน</th><th class="num">เวลาเฉลี่ย</th></tr></thead>
+          <thead><tr><th>หน้า</th><th class="num">เปิด</th><th class="num">คนทั้งหมด</th><th class="num">คนจริง</th><th class="num">เวลาเฉลี่ย</th></tr></thead>
           <tbody id="pages"></tbody>
         </table>
       </section>
@@ -151,6 +171,7 @@
     </div>
 
     <div class="grid three">
+      <p class="note" style="grid-column:1/-1;margin:0">ตัวเลขในรายการ = คนจริง / คนทั้งหมด</p>
       <section class="sheet" aria-labelledby="ref-title"><h2 id="ref-title">มาจากไหน</h2><ul class="rank" id="referrers"></ul></section>
       <section class="sheet" aria-labelledby="country-title"><h2 id="country-title">ประเทศ</h2><ul class="rank" id="countries"></ul></section>
       <section class="sheet" aria-labelledby="device-title"><h2 id="device-title">อุปกรณ์</h2><ul class="rank" id="devices"></ul></section>
@@ -189,6 +210,21 @@
   };
   // Answer kinds that gave the visitor what they asked for; everything else is worth a look.
   const ANSWERED = new Set(["chart", "plo", "plo_advice", "plo_type", "mario", "equity"]);
+  const WHO = [["human", "คนจริง", "var(--human)"], ["idle", "ไม่ได้กด", "var(--idle)"], ["bot", "bot", "var(--bot)"]];
+  // Plain words for the action names beacon.js sends; anything else is shown as its raw name.
+  const ACTS = {
+    "scroll": "เลื่อนอ่านหน้า", "submit:composer": "ส่งคำถามในแชต", "#send": "กดปุ่มส่งคำถาม", "#start": "กดเริ่มถาม",
+    "#ai": "เปิด/ปิด AI", "#new": "เริ่มแชตใหม่", "#file": "แนบรูป", "#pending-drop": "ลบรูปที่แนบ",
+    "link:#guide": "เปิดวิธีใช้", "link:#privacy": "เปิดเรื่องความเป็นส่วนตัว", "page:lang": "สลับภาษา", "page:close": "ปิดหน้าต่าง",
+    "matrix:key": "กดช่องใน range matrix", "matrix:card": "เลือกไพ่ใน matrix", "games:game": "เปลี่ยนเกม",
+    "line:depth": "เลือก action ในสาย", "line:back": "ย้อนกลับไป decision", "line:ahead": "ข้ามไป decision ถัดไป",
+    "line:clearFlop": "เปลี่ยน flop", "tiles:action": "กรองตาม action", "shapes:shape": "กรองตามรูปมือ",
+    "tiers:tier": "กรองตาม tier", "#reset": "รีเซ็ต", "#reset-filters": "รีเซ็ตตัวกรอง", "#pick1": "เลือกไพ่สองใบแรกใหม่",
+    "#pick2": "เลือกไพ่ใบที่สองใหม่", "#search": "ค้นมือ", "#q": "ค้นมือ", "#suits": "กรองดอก", "#tier": "กรอง tier",
+    "#act": "กรอง action", "#sort": "เปลี่ยนการเรียง", "#more": "ดูเพิ่ม",
+  };
+  const actLabel = name => ACTS[name] || (name.startsWith("link:") ? `ไปหน้า ${name.slice(5)}`
+    : name.startsWith("out:") ? `ออกไป ${name.slice(4)}` : "");
   let days = 30;
   const kindsSeen = new Set();
 
@@ -214,7 +250,8 @@
     const top = Math.max(...rows.map(r => r.value), 1);
     for (const r of rows) {
       const li = el("li");
-      li.append(el("span", { class: "name" }, label(r)), el("span", { class: "mono" }, fmt(r.value)));
+      li.append(el("span", { class: "name" }, label(r)),
+        el("span", { class: "mono" }, r.humans === undefined ? fmt(r.value) : `${fmt(r.humans)} / ${fmt(r.value)}`));
       const bar = el("span", { class: "bar" }); const fill = el("i"); fill.style.width = `${(r.value / top * 100).toFixed(1)}%`;
       bar.append(fill); li.append(bar); list.append(li);
     }
@@ -228,15 +265,15 @@
     const start = new Date(`${since}T00:00:00+07:00`);
     for (let i = 0; i < days; i++) {
       const d = new Date(start.getTime() + i * 86400000).toLocaleDateString("sv-SE", { timeZone: "Asia/Bangkok" });
-      list.push(byDay.get(d) || { day: d, visitors: 0, views: 0, messages: 0 });
+      list.push(byDay.get(d) || { day: d, visitors: 0, humans: 0, bots: 0, views: 0, messages: 0 });
     }
     const W = 900, H = 240, L = 40, R = 10, T = 12, B = 34;
-    const top = Math.max(1, ...list.map(r => Math.max(r.views, r.messages)));
+    const top = Math.max(1, ...list.map(r => Math.max(r.visitors, r.messages)));
     const raw = top / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
     const tick = [1, 2, 2.5, 5, 10].map(f => f * mag).find(t => t >= raw) || 10 * mag;
     const max = Math.max(4, Math.ceil(tick) * 4);
     const y = v => T + (1 - v / max) * (H - T - B);
-    const slot = (W - L - R) / list.length, w = Math.max(2, slot * .38);
+    const slot = (W - L - R) / list.length, w = Math.max(3, slot * .6);
     for (let k = 0; k <= 4; k++) {
       const v = max * k / 4;
       svg.append(svgEl("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--edge)", "stroke-width": 1 }));
@@ -245,8 +282,13 @@
     const every = Math.ceil(list.length / 10);
     list.forEach((r, i) => {
       const x = L + slot * i + slot / 2;
-      svg.append(svgEl("rect", { x: x - w, y: y(r.views), width: w, height: y(0) - y(r.views), fill: "var(--bar-soft)" }));
-      svg.append(svgEl("rect", { x, y: y(r.visitors), width: w, height: y(0) - y(r.visitors), fill: "var(--bar)" }));
+      // One stacked bar per day: people at the bottom, then idle visitors, then declared bots.
+      const idle = r.visitors - r.humans - r.bots;
+      let base = 0;
+      for (const [n, fill] of [[r.humans, "var(--human)"], [idle, "var(--idle)"], [r.bots, "var(--bot)"]]) {
+        if (n > 0) svg.append(svgEl("rect", { x: x - w / 2, y: y(base + n), width: w, height: y(base) - y(base + n), fill }));
+        base += n;
+      }
       if (r.messages) svg.append(svgEl("circle", { cx: x, cy: y(r.messages), r: 3.2, fill: "var(--red)" }));
       if (i % every === 0 || i === list.length - 1) svg.append(svgEl("text", { x, y: H - 12, "text-anchor": "middle" }, r.day.slice(5)));
     });
@@ -255,27 +297,48 @@
   async function loadSummary() {
     const s = await api(`/api/summary?days=${days}`);
     const t = s.totals;
+    const who = s.who;
     $("k-visitors").textContent = fmt(t.visitors);
-    $("k-visitors-note").textContent = `${fmt(t.sessions)} ครั้งที่เข้า`;
-    $("k-views").textContent = fmt(t.views);
-    $("k-views-note").textContent = t.sessions ? `${(t.views / t.sessions).toFixed(1)} หน้าต่อครั้ง` : "-";
-    $("k-time").textContent = dur(t.avg_session_seconds);
+    $("k-split").replaceChildren(...WHO.filter(([k]) => who[k].visitors).map(([k, , color]) => {
+      const part = el("i"); part.style.background = color; part.style.flex = String(who[k].visitors); return part;
+    }));
+    $("k-split-legend").replaceChildren(...WHO.map(([k, label, color]) => {
+      const item = el("span"); const dot = el("i"); dot.style.background = color;
+      item.append(dot, `${label} ${fmt(who[k].visitors)}`); return item;
+    }));
+    const human = who.human;
+    $("k-humans").textContent = fmt(human.visitors);
+    $("k-humans-note").textContent = `${fmt(human.sessions)} ครั้งที่เข้า · ${human.sessions ? (human.views / human.sessions).toFixed(1) : "0"} หน้าต่อครั้ง`;
+    $("k-time").textContent = dur(human.avg_session_seconds);
+    $("k-time-note").textContent = `ต่อการเข้าหนึ่งครั้ง · ไม่ได้กด ${dur(who.idle.avg_session_seconds)}`;
     $("k-messages").textContent = fmt(t.messages);
     const answered = s.message_kinds.filter(k => ANSWERED.has(k.kind)).reduce((a, k) => a + k.count, 0);
     $("k-messages-note").textContent = t.messages ? `ได้คำตอบ ${Math.round(answered / t.messages * 100)}%` : "-";
     daily(s.daily, s.since);
     const pages = $("pages");
     pages.replaceChildren();
-    if (!s.pages.length) { const tr = el("tr"); tr.append(el("td", { colspan: 4, class: "empty" }, "ยังไม่มีข้อมูล")); pages.append(tr); }
+    if (!s.pages.length) { const tr = el("tr"); tr.append(el("td", { colspan: 5, class: "empty" }, "ยังไม่มีข้อมูล")); pages.append(tr); }
     for (const p of s.pages) {
       const tr = el("tr");
       tr.append(el("td", { class: "path" }, p.path), el("td", { class: "num" }, fmt(p.views)),
-        el("td", { class: "num" }, fmt(p.visitors)), el("td", { class: "num" }, dur(p.avg_seconds)));
+        el("td", { class: "num" }, fmt(p.visitors)), el("td", { class: "num" }, fmt(p.humans)),
+        el("td", { class: "num" }, dur(p.avg_seconds)));
       pages.append(tr);
     }
-    rank("referrers", s.referrers.map(r => ({ name: r.name, value: r.visitors })), r => r.name || "เข้าตรง / ไม่บอกที่มา");
-    rank("countries", s.countries.map(r => ({ name: r.name, value: r.visitors })), r => r.name || "ไม่ทราบ");
-    rank("devices", s.devices.map(r => ({ name: r.name, value: r.visitors })), r => r.name === "phone" ? "มือถือ" : "คอมพิวเตอร์");
+    const acts = $("acts");
+    acts.replaceChildren();
+    if (!s.actions.length) { const tr = el("tr"); tr.append(el("td", { colspan: 4, class: "empty" }, "ยังไม่มีใครกดหรือเลื่อน")); acts.append(tr); }
+    for (const a of s.actions) {
+      const tr = el("tr"); const what = el("td", { class: "act" });
+      const label = actLabel(a.name);
+      if (label) what.append(el("b", {}, label), el("small", {}, a.name)); else what.append(el("span", { class: "mono" }, a.name));
+      tr.append(el("td", { class: "path" }, a.path), what, el("td", { class: "num" }, fmt(a.visitors)), el("td", { class: "num" }, fmt(a.count)));
+      acts.append(tr);
+    }
+    const split = rows => rows.map(r => ({ name: r.name, value: r.visitors, humans: r.humans }));
+    rank("referrers", split(s.referrers), r => r.name || "เข้าตรง / ไม่บอกที่มา");
+    rank("countries", split(s.countries), r => r.name || "ไม่ทราบ");
+    rank("devices", split(s.devices), r => ({ phone: "มือถือ", bot: "bot ที่บอกตัวเอง" })[r.name] || "คอมพิวเตอร์");
     rank("kinds", s.message_kinds.map(k => ({ name: k.kind, value: k.count })), r => r.name || "-");
     for (const k of s.message_kinds) {
       if (!kindsSeen.has(k.kind)) { kindsSeen.add(k.kind); $("kind").append(el("option", { value: k.kind }, k.kind)); }

@@ -47,13 +47,23 @@ class ParseEventTest(unittest.TestCase):
             with self.subTest(ms=bad), self.assertRaises(analytics.EventError):
                 self.parse(event(kind="time", ms=bad))
 
-    def test_rejects_junk_bots_and_oversize(self):
+    def test_rejects_junk_and_oversize(self):
         for raw in (b"nope", b"[]", event(kind="click"), event(path="https://evil"), event(path="/<script>"),
                     event(visitor="X" * 8), event(session="short"), b"{" + b" " * 3000 + b"}"):
             with self.subTest(raw=raw[:40]), self.assertRaises(analytics.EventError):
                 self.parse(raw)
-        with self.assertRaises(analytics.EventError):
-            self.parse(event(), ua="Googlebot/2.1")
+
+    def test_declared_bots_are_kept_and_marked(self):
+        self.assertEqual(self.parse(event(), ua="Googlebot/2.1")["device"], "bot")
+
+    def test_act_needs_a_short_plain_name(self):
+        row = self.parse(event(kind="act", name="matrix:card"))
+        self.assertEqual((row["kind"], row["name"], row["ms"], row["referrer"]), ("act", "matrix:card", 0, ""))
+        self.assertEqual(self.parse(event(kind="act", name="link:/static/a.pdf"))["name"], "link:/static/a.pdf")
+        self.assertEqual(self.parse(event())["name"], "")
+        for bad in (None, "", "x" * 81, "<b>", "a b", 5):
+            with self.subTest(name=bad), self.assertRaises(analytics.EventError):
+                self.parse(event(kind="act", name=bad))
 
 
 class SqliteReportTest(unittest.TestCase):
@@ -64,10 +74,11 @@ class SqliteReportTest(unittest.TestCase):
     def tearDown(self):
         self.folder.cleanup()
 
-    def add(self, kind="view", path="/", visitor="aaaaaaaa", session="ssssssss", ms=0, now=NOW, referrer=""):
+    def add(self, kind="view", path="/", visitor="aaaaaaaa", session="ssssssss", ms=0, now=NOW, referrer="",
+            name="", ua="Mozilla/5.0 (Macintosh)"):
         row = analytics.parse_event(json.dumps({"kind": kind, "path": path, "visitor": visitor, "session": session,
-                                                "ms": ms, "referrer": referrer}).encode(),
-                                    user_agent="Mozilla/5.0 (Macintosh)", country="TH", host="tamkwai.com", now=now)
+                                                "ms": ms, "referrer": referrer, "name": name}).encode(),
+                                    user_agent=ua, country="TH", host="tamkwai.com", now=now)
         analytics.save_visit(self.store, row)
 
     def test_summary_counts_visitors_views_and_time(self):
@@ -84,10 +95,33 @@ class SqliteReportTest(unittest.TestCase):
         self.assertAlmostEqual(s["totals"]["avg_session_seconds"], 60.0)
         self.assertEqual(s["totals"]["messages"], 1)
         self.assertEqual(s["daily"][0]["visitors"], 2)
-        self.assertEqual(s["referrers"][0], {"name": "", "visitors": 2})
-        self.assertIn({"name": "discord.com", "visitors": 1}, s["referrers"])
+        self.assertEqual(s["referrers"][0], {"name": "", "visitors": 2, "humans": 0})
+        self.assertIn({"name": "discord.com", "visitors": 1, "humans": 0}, s["referrers"])
         plo = next(p for p in s["pages"] if p["path"] == "/plo")
         self.assertEqual((plo["views"], plo["avg_seconds"]), (1, 90.0))
+
+    def test_visitors_split_into_humans_idle_and_bots(self):
+        self.add(path="/o8", visitor="aaaaaaaa", session="s1111111")
+        self.add(kind="act", path="/o8", visitor="aaaaaaaa", session="s1111111", name="scroll")
+        self.add(kind="act", path="/o8", visitor="aaaaaaaa", session="s1111111", name="matrix:card")
+        self.add(kind="time", path="/o8", visitor="aaaaaaaa", session="s1111111", ms=120_000)
+        self.add(path="/", visitor="bbbbbbbb", session="s2222222")                      # opened, did nothing
+        self.add(kind="time", path="/", visitor="bbbbbbbb", session="s2222222", ms=2_000)
+        self.add(path="/", visitor="cccccccc", session="s3333333", ua="Googlebot/2.1")   # says it is a bot
+        self.add(kind="act", path="/", visitor="dddddddd", session="s4444444", name="#send", now=NOW - 40 * 86_400)
+        self.add(path="/", visitor="dddddddd", session="s5555555")                      # acted, but not this window
+        s = analytics.summary(self.store, 30, now=NOW)
+        who = s["who"]
+        self.assertEqual((who["human"]["visitors"], who["idle"]["visitors"], who["bot"]["visitors"]), (1, 2, 1))
+        self.assertAlmostEqual(who["human"]["avg_session_seconds"], 120.0)
+        self.assertEqual(s["totals"]["visitors"], 4)                                     # bots still counted
+        self.assertEqual(s["daily"][0]["humans"], 1)
+        self.assertEqual(s["daily"][0]["bots"], 1)
+        o8 = next(p for p in s["pages"] if p["path"] == "/o8")
+        self.assertEqual((o8["views"], o8["humans"]), (1, 1))
+        self.assertEqual(s["actions"][0], {"path": "/o8", "name": "matrix:card", "visitors": 1, "count": 1})
+        self.assertEqual({a["name"] for a in s["actions"]}, {"matrix:card", "scroll"})
+        self.assertIn({"name": "bot", "visitors": 1, "humans": 0}, s["devices"])
 
     def test_message_search_and_kind_filter(self):
         for i, (q, kind) in enumerate((("BTN shove 10bb", "chart"), ("what is ICM", "ai"), ("hold AJo vs BTN", "chart"))):
@@ -143,16 +177,29 @@ class CollectRouteTest(unittest.TestCase):
             self.assertEqual(self.post(port, event()), 204)
             self.assertEqual(self.post(port, event(kind="time", ms=5000)), 204)
             self.assertEqual(self.post(port, b"garbage"), 204)
+            self.assertEqual(self.post(port, event(kind="act", name="#send")), 204)
             self.assertEqual(self.post(port, event(), ua="bingbot"), 204)
-            rows = store.execute("SELECT kind, ms FROM visits ORDER BY ts")
-            self.assertEqual([(r["kind"], r["ms"]) for r in rows], [("view", 0), ("time", 5000)])
+            rows = store.execute("SELECT kind, ms, name, device FROM visits ORDER BY ts")
+            self.assertEqual([(r["kind"], r["ms"], r["name"], r["device"]) for r in rows],
+                             [("view", 0, "", "phone"), ("time", 5000, "", "phone"), ("act", 0, "#send", "phone"),
+                              ("view", 0, "", "bot")])
+
+    def test_an_old_sqlite_file_gets_the_name_column(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = str(pathlib.Path(folder) / "old.db")
+            import sqlite3
+            with sqlite3.connect(path) as old:
+                old.execute(analytics.SCHEMA[0].replace("DOUBLE PRECISION", "REAL"))
+            store = analytics.SqliteStore(path)
+            analytics.save_visit(store, analytics.parse_event(event(kind="act", name="scroll"), user_agent=UA,
+                                                              country="", host="tamkwai.com", now=NOW))
+            self.assertEqual(store.execute("SELECT name FROM visits")[0]["name"], "scroll")
 
     def test_without_a_store_nothing_happens(self):
         self.assertEqual(self.post(self.run_server(None), event()), 204)
 
     def test_public_pages_load_the_beacon(self):
-        for page in ("index", "plo", "research", "method", "research-mtt40", "research-mtt40-en",
-                     "research-mtt40-range", "research-mtt40-range-en"):
+        for page in sorted(p.stem for p in (ROOT / "public").glob("*.html")):
             with self.subTest(page=page):
                 self.assertIn('<script src="/static/beacon.js" defer></script>',
                               (ROOT / "public" / f"{page}.html").read_text())
