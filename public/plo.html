@@ -111,7 +111,7 @@
     games: [6, 5, 4, 3, 2].flatMap(seats => [100, 40, 20, 10].map(stack => ({
       id: `${seats}max-${stack}bb`, label: `${seats}-max · ${stack}bb`, seats, stack,
       detail: `${seats}-max · ${stack}bb หลังจ่าย ante 0.116bb · ante ไม่นับใน pot preflop · chip EV`,
-    }))).filter(game => game.id !== "6max-10bb"),  // 6-max 10bb is still solving
+    }))),
     initial: "6max-40bb",
     gamesEl: document.getElementById("games"),
     load: name => fetch(`/static/plo-${name}.json`).then(r => {
