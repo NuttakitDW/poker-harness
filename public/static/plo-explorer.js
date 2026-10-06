@@ -6,7 +6,8 @@
    Without games, call the returned ``show(data)`` with a solved game and ``focus({seat, hand})``
    to jump to a spot. ``tierLabel`` names the class-group filter (default "Hwang"); ``showStack: false``
    hides stack sizes, for limit games where the stack does not change the strategy.
-   ``postflop: {strategyUrl, flopsUrl, flopUrl(id)}`` continues lines that reach the flop: the page
+   ``postflop: {strategyUrl, flopsUrl, flopUrl(id)}`` continues lines that reach the flop (``strategyUrl`` may be
+   a function of the game id that returns null for games without postflop data): the page
    picks a flop from the library, averages each hand class over the combos the board leaves, and
    weights every combo by how often the player to act gets there along the line. */
 window.PloExplorer = (() => {
@@ -199,8 +200,9 @@ window.PloExplorer = (() => {
       raw.flop = { buckets: post.buckets, bytes: decode(post.strategy) };
     }
 
-    async function loadPostflop() {
-      const [post, list] = await Promise.all([getJSON(POST.strategyUrl), getJSON(POST.flopsUrl)]);
+    async function loadPostflop(name) {
+      const url = typeof POST.strategyUrl === "function" ? POST.strategyUrl(name) : POST.strategyUrl;
+      const [post, list] = await Promise.all([url ? getJSON(url) : null, flops || getJSON(POST.flopsUrl)]);
       flops = list;
       return post;
     }
@@ -343,7 +345,7 @@ window.PloExplorer = (() => {
       if (option.action === "fold") return { name: "Fold", amount: "" };
       if (option.action === "check") return { name: "Check", amount: "" };
       const amount = fmt(option.total);
-      if (option.action === "raise" && node.street === 1 && node.to_call === 0) return { name: "Bet", amount };
+      if ((option.action === "raise" || option.action === "pot") && node.street === 1 && node.to_call === 0) return { name: "Bet", amount };
       if (option.action === "call") {
         const limp = !node.street && Math.abs(option.total - 1) < 1e-9;  // calling the big blind itself: nobody has raised
         return { name: option.all_in ? "Call all-in" : limp ? "Limp" : "Call", amount };
@@ -736,7 +738,8 @@ window.PloExplorer = (() => {
       const loaded = await loadGame(name);
       data = loaded.raw;
       strategy = loaded.bytes;
-      if (POST) attachPostflop(data, await loadPostflop());
+      const post = POST && await loadPostflop(name);
+      if (post) attachPostflop(data, post);
       validPath();
       if (POST) setFlop(); else render();
     }
