@@ -11,7 +11,8 @@
    picks a flop from the library, averages each hand class over the combos the board leaves, and
    weights every combo by how often the player to act gets there along the line. Post nodes may carry
    ``street`` 1-3 with ``buckets`` [flop, turn, river]: then ``turnUrl(flopId, card)`` serves the turn
-   tables and window.PloRiver (plo-river.js) computes the river buckets. */
+   tables and window.PloRiver (plo-river.js) computes the river buckets (``river`` options such as
+   {low: true} for O8). */
 window.PloExplorer = (() => {
   "use strict";
   const MARKUP = `
@@ -245,7 +246,8 @@ window.PloExplorer = (() => {
         await new Promise(resolve => setTimeout(resolve, 30));  // let "loading" paint before the work
         comboOrder ||= window.PloRiver.comboOrder(classes.map(c => c.cards));
         const library = boardEntry().board.match(/../g).map(cardId);
-        riverTables[river] = window.PloRiver.buckets(comboOrder, [...library, toLibrary(state.turn), toLibrary(state.river)]);
+        riverTables[river] = window.PloRiver.buckets(comboOrder, [...library, toLibrary(state.turn), toLibrary(state.river)],
+          POST.river || {});
       }
     }
 

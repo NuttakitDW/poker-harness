@@ -4,7 +4,9 @@
    ranks 2..A = 0..12 and suits c d h s = 0..3, as in the solver.
    PloRiver.comboOrder(classRows) lists every four-card hand in plo-classes.json order (the order of the
    flop and turn tables); PloRiver.buckets(order, board) gives the river bucket of each, 65535 where the
-   hand holds a board card. */
+   hand holds a board card. With {low: true} (O8, o8_fl.strength) the bucket is strength * 5 + a low
+   grade: 0 no low, 1-3 made low with more than 35% / at most 35% / at most 10% of low-making holdings
+   better, 4 the nut low. */
 (function (root) {
   "use strict";
   const NO_BUCKET = 65535;
@@ -43,6 +45,20 @@
     return value;
   }
 
+  const NO_LOW = 1 << 30;
+  const LOW_VALUE = [2, 3, 4, 5, 6, 7, 8, 0, 0, 0, 0, 0, 1];  // rank 2..A -> A..8 as 1..8, 0 above 8
+
+  // Eight-or-better low of five cards, smaller is better (o8_fl.strength.low5).
+  function low5(a, b, c, d, e) {
+    const v = [LOW_VALUE[a >> 2], LOW_VALUE[b >> 2], LOW_VALUE[c >> 2], LOW_VALUE[d >> 2], LOW_VALUE[e >> 2]];
+    for (let i = 0; i < 5; i++) {
+      if (v[i] === 0) return NO_LOW;
+      for (let j = 0; j < i; j++) if (v[i] === v[j]) return NO_LOW;
+    }
+    v.sort((x, y) => x - y);
+    return (((v[4] * 9 + v[3]) * 9 + v[2]) * 9 + v[1]) * 9 + v[0];
+  }
+
   function popcount(x) { let n = 0; while (x) { x &= x - 1; n++; } return n; }
 
   function canonical(a, b, c, d) {
@@ -59,10 +75,7 @@
   // Every four-card hand (card ids, ascending) grouped by class in ``classRows`` order.
   function comboOrder(classRows) {
     const index = new Map();
-    classRows.forEach((cards, i) => {
-      const ids = cards.map(cardId).sort((x, y) => x - y);
-      index.set(((ids[0] * 52 + ids[1]) * 52 + ids[2]) * 52 + ids[3], i);
-    });
+    classRows.forEach((cards, i) => index.set(canonical(...cards.map(cardId)), i));  // any combo of the class
     const lists = classRows.map(() => []);
     for (let a = 0; a < 52; a++) for (let b = a + 1; b < 52; b++) for (let c = b + 1; c < 52; c++) for (let d = c + 1; d < 52; d++) {
       const i = index.get(canonical(a, b, c, d));
@@ -75,13 +88,13 @@
     return { cards: order, sizes: lists.map(list => list.length / 4) };
   }
 
-  function buckets(order, board) {
+  function buckets(order, board, { low = false } = {}) {
     const on = new Uint8Array(52);
     for (const card of board) on[card] = 1;
     const triples = [];
     for (let x = 0; x < 5; x++) for (let y = x + 1; y < 5; y++) for (let z = y + 1; z < 5; z++) triples.push([board[x], board[y], board[z]]);
-    const pairBest = new Int32Array(52 * 52);
-    const dist = [];
+    const pairBest = new Int32Array(52 * 52), pairLow = new Int32Array(52 * 52);
+    const dist = [], lows = [];
     for (let a = 0; a < 52; a++) {
       if (on[a]) continue;
       for (let b = a + 1; b < 52; b++) {
@@ -90,6 +103,12 @@
         for (const [x, y, z] of triples) { const v = eval5(a, b, x, y, z); if (v > best) best = v; }
         pairBest[a * 52 + b] = best;
         dist.push(best);
+        if (low) {
+          let lo = NO_LOW;
+          for (const [x, y, z] of triples) { const v = low5(a, b, x, y, z); if (v < lo) lo = v; }
+          pairLow[a * 52 + b] = lo;
+          lows.push(lo);
+        }
       }
     }
     const sorted = Int32Array.from(dist).sort();
@@ -99,6 +118,13 @@
       while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] <= v) lo = mid + 1; else hi = mid; }
       return n - lo;
     };
+    const lowSorted = Int32Array.from(lows).sort();
+    const below = v => {  // low-making holdings strictly better than v
+      let lo = 0, hi = lowSorted.length;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (lowSorted[mid] < v) lo = mid + 1; else hi = mid; }
+      return lo;
+    };
+    const makers = low ? below(NO_LOW) : 0;
     const cards = order.cards, out = new Uint16Array(cards.length / 4);
     for (let i = 0; i < out.length; i++) {
       const h0 = cards[4 * i], h1 = cards[4 * i + 1], h2 = cards[4 * i + 2], h3 = cards[4 * i + 3];
@@ -109,7 +135,15 @@
       let bin = EDGES.length;
       if (better === 0) bin = 0;
       else for (let k = 1; k < EDGES.length; k++) if (better / n <= EDGES[k]) { bin = k; break; }
-      out[i] = bin;
+      if (!low) { out[i] = bin; continue; }
+      const made = Math.min(pairLow[h0 * 52 + h1], pairLow[h0 * 52 + h2], pairLow[h0 * 52 + h3],
+        pairLow[h1 * 52 + h2], pairLow[h1 * 52 + h3], pairLow[h2 * 52 + h3]);
+      let grade = 0;
+      if (made < NO_LOW) {
+        const better = below(made);
+        grade = better === 0 ? 4 : better / makers <= 0.1 ? 3 : better / makers <= 0.35 ? 2 : 1;
+      }
+      out[i] = bin * 5 + grade;
     }
     return out;
   }

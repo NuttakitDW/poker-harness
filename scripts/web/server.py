@@ -62,6 +62,9 @@ STATIC_NAME = re.compile(r"[a-z0-9-]+\.(png|jpg|pdf|csv|json|js|css|bin)")
 # ในเครื่องเสิร์ฟจากผลที่คำนวณไว้ใน tmp/
 O8_FLOPS = PUBLIC.parent / "tmp" / "o8_fl" / "flops_v2"
 O8_FLOP_NAME = re.compile(r"o8/v2/flop-([0-9]{4})\.bin")
+# O8 v3 (strength buckets): flop and turn tables, laid out like PLO's
+O8_V3_NAME = re.compile(r"o8/v3/((?:flop-[0-9]{4})|(?:turn-[0-9]{4}-[0-9]{2}))\.bin")
+O8_V3 = {"flop": PUBLIC.parent / "tmp" / "o8_fl" / "flops_v3", "turn": PUBLIC.parent / "tmp" / "o8_fl" / "turns_v3"}
 # ตาราง bucket ของ PLO4 บน flop ทั้ง 1,755 ไฟล์ ใช้ร่วมกันทุกเกม (บนเว็บจริงอยู่บน object storage เช่นกัน)
 PLO_FLOPS = PUBLIC.parent / "tmp" / "plo_premium_proof" / "flops"
 PLO_FLOP_NAME = re.compile(r"plo/v1/((?:flop-[0-9]{4})|(?:turn-[0-9]{4}-[0-9]{2}))\.bin")
@@ -275,6 +278,12 @@ class Exchange:
         flop = O8_FLOP_NAME.fullmatch(name)
         if flop is not None:
             path = O8_FLOPS / f"o8-flop-{flop.group(1)}.bin"
+            if not path.is_file():
+                return _json(404, {"lines": ["not found"]})
+            return Reply(200, STATIC_TYPES["bin"], path.read_bytes(), cache=STATIC_CACHE)
+        table = O8_V3_NAME.fullmatch(name)
+        if table is not None:
+            path = O8_V3[table.group(1)[:4]] / f"{table.group(1)}.bin"
             if not path.is_file():
                 return _json(404, {"lines": ["not found"]})
             return Reply(200, STATIC_TYPES["bin"], path.read_bytes(), cache=STATIC_CACHE)
