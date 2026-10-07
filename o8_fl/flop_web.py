@@ -110,8 +110,9 @@ def export_strategy(trainer: Trainer, out: Path) -> dict:
     tree = trainer.tree
     nodes, roots, order = post_nodes(tree)
     blobs = []
+    counts = trainer.bucket_counts[1:]
     for node in order:
-        count = COUNTS[int(tree.street[node]) - 1]
+        count = counts[int(tree.street[node]) - 1]
         legal = np.flatnonzero(tree.children[node] >= 0)
         base = int(trainer.offsets[node])
         block = trainer.strategy_sum[base:base + count * SLOTS].reshape(count, SLOTS)[:, legal]
@@ -120,7 +121,7 @@ def export_strategy(trainer: Trainer, out: Path) -> dict:
         rows = np.zeros((count, 3), dtype=np.uint8)
         rows[:, :len(legal)] = np.rint(policy * 255).astype(np.uint8)
         blobs.append(rows.tobytes())
-    data = {"iterations": trainer.iterations, "buckets": list(COUNTS), "seats": ["BTN", "BB"], "nodes": nodes,
+    data = {"iterations": trainer.iterations, "buckets": [int(c) for c in counts], "seats": ["BTN", "BB"], "nodes": nodes,
             "roots": roots, "strategy": base64.b64encode(b"".join(blobs)).decode()}
     out.mkdir(parents=True, exist_ok=True)
     (out / "o8-hu-post.json").write_text(json.dumps(data, separators=(",", ":")))

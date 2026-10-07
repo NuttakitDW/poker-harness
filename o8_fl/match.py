@@ -2,7 +2,8 @@
 
 Both solutions share the exact preflop classes; after the flop each maps a hand to its own buckets
 from the same equity.hand_features (a solution with 3-number centroids reads only the random-hand
-part). For every deal the exact expected result is computed by walking the whole betting tree with
+part), from the cards for a strength-bucket pool (o8_fl.strength, one-column placeholder centroids), or
+from the exact-equity tables (o8_fl.exact_tables) for a pool built by them. For every deal the exact expected result is computed by walking the whole betting tree with
 both average strategies, once with each solution in each seat, so only the choice of deals adds
 noise. The deals come from a seed range the training pools never use.
 
@@ -153,10 +154,22 @@ def within_bucket_spread(features: np.ndarray, buckets: np.ndarray, street: int)
 def play(cards: np.ndarray, features: np.ndarray, a: dict, b: dict, tree: PublicTree,
          abstraction: Abstraction) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """(A's result per deal, A's buckets, B's buckets)."""
-    post_a, post_b = street_buckets(features, a["centroids"]), street_buckets(features, b["centroids"])
+    post_a, post_b = _buckets(cards, features, a), _buckets(cards, features, b)
     results = _play(cards, abstraction.preflop, post_a, post_b, tree.kind, tree.actor, tree.street, tree.children,
                     tree.committed, tree.folder, a["offsets"], a["policy"], b["offsets"], b["policy"])
     return results, post_a, post_b
+
+
+def _buckets(cards: np.ndarray, features: np.ndarray, solution: dict) -> np.ndarray:
+    from .exact_tables import deal_buckets, is_exact_pool
+    if is_exact_pool(solution["centroids"]):  # exact-equity buckets: tables and river sums
+        return deal_buckets(cards)
+    if all(c.shape[1] == 1 for c in solution["centroids"]):  # strength buckets come from the cards
+        from plo_premium_proof.tables import comb_table, five_card_ranks
+
+        from .strength import deal_buckets
+        return deal_buckets(np.ascontiguousarray(cards), five_card_ranks(), comb_table()).astype(np.int64)
+    return street_buckets(features, solution["centroids"])
 
 
 def main(argv: list[str] | None = None) -> None:

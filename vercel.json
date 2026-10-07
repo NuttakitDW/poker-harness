@@ -21,8 +21,8 @@
       "destination": "https://data.tamkwai.com/o8/v2/:file"
     },
     {
-      "source": "/static/o8/v3/:file",
-      "destination": "https://data.tamkwai.com/o8/v3/:file"
+      "source": "/static/o8/v4/:file",
+      "destination": "https://data.tamkwai.com/o8/v4/:file"
     },
     {
       "source": "/static/plo/v1/:file",
