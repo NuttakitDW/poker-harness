@@ -53,7 +53,7 @@ PUBLIC = pathlib.Path(__file__).resolve().parents[2] / "public"
 PAGE = PUBLIC / "index.html"
 METHOD = PUBLIC / "method.html"  # สร้างด้วย make method
 RESEARCH_PAGES = {"/research", "/research-mtt40", "/research-mtt40-range", "/research-mtt40-en",
-                  "/research-mtt40-range-en", "/research-27td", "/research-o8-postflop", "/plo", "/o8",
+                  "/research-mtt40-range-en", "/research-27td", "/research-o8-postflop", "/plo", "/plo5", "/o8",
                   "/academy"}
 STATIC = PUBLIC / "static"
 # ชื่อไฟล์ที่เปิดให้โหลดได้ ตัวพิมพ์เล็ก ตัวเลข ขีด นามสกุลตามนี้เท่านั้น ออกนอกโฟลเดอร์ไม่ได้
@@ -68,6 +68,9 @@ O8_V3 = {"flop": PUBLIC.parent / "tmp" / "o8_fl" / "flops_v3", "turn": PUBLIC.pa
 # O8 v4 (exact-equity buckets, o8_fl.exact_tables): flop and turn tables in one folder
 O8_V4_NAME = re.compile(r"o8/v4/((?:flop-[0-9]{4})|(?:turn-[0-9]{4}-[0-9]{2}))\.bin")
 O8_V4 = PUBLIC.parent / "tmp" / "o8_fl" / "exact" / "tables"
+# PLO5 ICM spot library: per-spot solves and the class list (plo_premium_proof.plo5_web), on object storage live
+PLO5_NAME = re.compile(r"plo5/v1/((?:spot-[a-z0-9-]+|plo5-classes)\.json)")
+PLO5_WEB = PUBLIC.parent / "tmp" / "plo5" / "web"
 # ตาราง bucket ของ PLO4 บน flop ทั้ง 1,755 ไฟล์ ใช้ร่วมกันทุกเกม (บนเว็บจริงอยู่บน object storage เช่นกัน)
 PLO_FLOPS = PUBLIC.parent / "tmp" / "plo_premium_proof" / "flops"
 PLO_FLOP_NAME = re.compile(r"plo/v1/((?:flop-[0-9]{4})|(?:turn-[0-9]{4}-[0-9]{2}))\.bin")
@@ -284,6 +287,12 @@ class Exchange:
             if not path.is_file():
                 return _json(404, {"lines": ["not found"]})
             return Reply(200, STATIC_TYPES["bin"], path.read_bytes(), cache=STATIC_CACHE)
+        plo5 = PLO5_NAME.fullmatch(name)
+        if plo5 is not None:
+            path = PLO5_WEB / plo5.group(1)
+            if not path.is_file():
+                return _json(404, {"lines": ["not found"]})
+            return Reply(200, STATIC_TYPES["json"], path.read_bytes(), cache=STATIC_CACHE)
         table = O8_V4_NAME.fullmatch(name)
         if table is not None:
             path = O8_V4 / f"{table.group(1)}.bin"

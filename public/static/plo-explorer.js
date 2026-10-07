@@ -82,7 +82,8 @@ window.PloExplorer = (() => {
     const ACTION_ORDER = { pot: 0, raise: 0, call: 1, check: 1, fold: 2 };
     const TIER_LABEL = options.tierLabel || "Hwang";
     const SHOW_STACK = options.showStack !== false;
-    const SHAPES = [["all", "ทั้งหมด"], ["ds", "ds"], ["ss", "ss"], ["rb", "rainbow"], ["3f", "3 ดอก"], ["mono", "4 ดอก"]];
+    // Suit-shape chips; a five-card game passes its own (options.shapes).
+    const SHAPES = [["all", "ทั้งหมด"], ...(options.shapes || [["ds", "ds"], ["ss", "ss"], ["rb", "rainbow"], ["3f", "3 ดอก"], ["mono", "4 ดอก"]])];
     const LIST_LIMIT = 300;
     // A picked action tile keeps hands that take it at least this often; smaller shares are mostly
     // solver noise (an average strategy is never exactly zero).
@@ -140,12 +141,19 @@ window.PloExplorer = (() => {
         .sort((p, q) => q.length - p.length || (p < q ? -1 : p > q ? 1 : 0)).join("|");
     }
 
+    // Five-card hands (PLO5): every pair as the first two cards, then every pair of the other three.
+    const PAIRS5 = [];
+    for (let a = 0; a < 5; a++) for (let b = a + 1; b < 5; b++) {
+      const rest = [0, 1, 2, 3, 4].filter(i => i !== a && i !== b);
+      for (let c = 0; c < 3; c++) for (let d = c + 1; d < 3; d++) PAIRS5.push([a, b, rest[c], rest[d]]);
+    }
+
     function prepareClasses(raw) {
       return raw.rows.map(([text, shape, combos, bucket, tier]) => {
         const cards = [];
-        for (let i = 0; i < 8; i += 2) cards.push(text.slice(i, i + 2));
+        for (let i = 0; i < text.length; i += 2) cards.push(text.slice(i, i + 2));
         cards.sort((p, q) => rankOf(p[0]) - rankOf(q[0]) || (p[1] < q[1] ? -1 : 1));
-        const halves = PAIRS.map(([a, b, c, d]) => [halfKey(cards[a], cards[b]), halfKey(cards[c], cards[d])]);
+        const halves = (cards.length === 5 ? PAIRS5 : PAIRS).map(([a, b, c, d]) => [halfKey(cards[a], cards[b]), halfKey(cards[c], cards[d])]);
         return {
           cards, shape, combos, bucket, tier, halves,
           firsts: [...new Set(halves.map(h => h[0]))],
@@ -448,15 +456,15 @@ window.PloExplorer = (() => {
     function parseQuery(text) {
       const raw = text.replace(/[\s,]/g, "").replace(/10/g, "T");
       if (!raw) return null;
-      const exact = raw.match(/^([2-9TJQKA][cdhs]){4}$/i);
+      const exact = raw.match(/^([2-9TJQKA][cdhs]){4,5}$/i);
       if (exact) {
         const cards = raw.match(/../g).map(c => c[0].toUpperCase() + c[1].toLowerCase());
-        if (new Set(cards).size !== 4) return { bad: true };
+        if (new Set(cards).size !== cards.length) return { bad: true };
         cards.sort((a, b) => rankOf(a[0]) - rankOf(b[0]));
         return { sig: signature(cards), cards };
       }
       const ranks = raw.toUpperCase();
-      if (/^[2-9TJQKA]{1,4}$/.test(ranks)) return { ranks: [...ranks].sort((p, q) => rankOf(p) - rankOf(q)) };
+      if (/^[2-9TJQKA]{1,5}$/.test(ranks)) return { ranks: [...ranks].sort((p, q) => rankOf(p) - rankOf(q)) };
       return { bad: true };
     }
 

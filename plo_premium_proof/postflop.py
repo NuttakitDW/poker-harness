@@ -154,10 +154,11 @@ def _is_straight(mask: int) -> bool:
 def straight_out_ranks(hole: np.ndarray, board: np.ndarray, shown: int) -> int:
     """Number of distinct next-card ranks that would give hero a straight."""
     outs = 0
+    held = hole.shape[0]
     for rank in range(13):
         found = False
-        for i in range(4):
-            for j in range(i + 1, 4):
+        for i in range(held):
+            for j in range(i + 1, held):
                 if found:
                     break
                 for x in range(shown):

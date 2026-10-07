@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย PLO5 ICM Spots</title>
+<meta name="description" content="คลังสถานการณ์ PLO5 ทัวร์นาเมนต์แบบ ICM จาก solver ของตามควาย เลือกสแตกของแต่ละที่นั่ง แล้วดู range preflop ของทุกมือ">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/static/plo-explorer.css?v=0320d332">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Same CI tokens and stage layout as index.html, method.html and research.html */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --lamp: #FFF8E6; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 1180px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); }
+  .column { max-width: var(--column); margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) clamp(1.5rem, 4vw, 2.25rem); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage :focus-visible { outline-color: var(--on-puppet); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: var(--lamp); padding: 2px; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: .5rem clamp(1rem, 3vw, 2rem); }
+  .nav-links a { text-decoration: none; color: var(--on-puppet-2); }
+  .nav-links a[aria-current="page"] { color: var(--on-puppet); text-decoration: underline dotted; text-underline-offset: .35em; }
+  .eyebrow { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin: clamp(.75rem, 3vw, 1.75rem) 0 .75rem; }
+  .headline { font-size: clamp(1.6rem, 3.8vw, 2.5rem); line-height: 1.22; font-weight: 700; max-width: 26ch; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: .75rem; max-width: 68ch; color: var(--on-puppet-2); }
+  .games { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.25rem; }
+  .game { min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--puppet-edge); border-radius: var(--cut); background: transparent; color: var(--on-puppet-2); cursor: pointer; text-align: left; }
+  .game b { display: block; font: 600 1rem/1.2 var(--font-display); color: var(--on-puppet); }
+  .game span { font: 400 .75rem/1.3 var(--font-mono); }
+  .game[aria-pressed="true"] { border-color: var(--on-puppet); background: rgba(246, 242, 230, .08); box-shadow: inset 0 -3px 0 var(--red); }
+  .game:disabled { opacity: .4; cursor: not-allowed; }
+  .games:has(.game-axis) { flex-direction: column; gap: .6rem; }
+  .game-axis { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .game-axis-name { min-width: 4.5rem; font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); }
+  .game-axis .game { min-width: 4.5rem; text-align: center; }
+  .game-axis .game b { font-family: var(--font-mono); }
+  .game-detail { font: 400 .75rem/1.4 var(--font-mono); color: var(--on-puppet-2); }
+
+  main { padding: clamp(1.25rem, 3vw, 2rem) var(--gutter) 0; }
+
+
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; } .d3 { animation-delay: .28s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  }
+
+  /* Spot library: a dense situation table above the explorer, numbers in mono, the picked row lit. */
+  .library { display: grid; gap: .75rem; }
+  .lib-filters { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; }
+  .lib-group { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+  .lib-group .name { font: 500 .72rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ash-2); margin-right: .2rem; }
+  .lib-chip { min-height: 36px; padding: .35rem .75rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--paper); cursor: pointer; font-size: .85rem; }
+  .lib-chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .lib-count { margin-left: auto; font: 500 .8rem/1 var(--font-mono); color: var(--ash); }
+  .lib-wrap { max-height: 420px; overflow: auto; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--paper); }
+  .lib { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+  .lib th { position: sticky; top: 0; background: var(--paper); z-index: 1; text-align: right; font: 500 .7rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ash-2); padding: .6rem .7rem; border-bottom: 1px solid var(--edge); }
+  .lib th:first-child, .lib td:first-child { text-align: left; }
+  .lib td { padding: .55rem .7rem; border-bottom: 1px solid var(--edge); text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .lib tbody tr { cursor: pointer; }
+  .lib tbody tr:hover td { background: var(--lamp); }
+  .lib tbody tr[aria-selected="true"] td { background: var(--lamp); }
+  .lib tbody tr[aria-selected="true"] td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+  .lib .avg { font-weight: 600; color: var(--blue); }
+  .lib .none { color: var(--edge); }
+  .lib .hi::after { content: "▲"; font-size: .6rem; color: var(--bronze); margin-left: .2rem; vertical-align: .1rem; }
+  .lib .lo::after { content: "▼"; font-size: .6rem; color: var(--red); margin-left: .2rem; vertical-align: .1rem; }
+  .q { font: 600 .68rem/1 var(--font-mono); padding: .2rem .4rem; border-radius: 2px; border: 1px solid currentColor; }
+  .q.solid { color: #2E6B45; } .q.fair { color: var(--bronze-txt); }
+  .spot-head { margin-top: 1.25rem; display: flex; flex-wrap: wrap; gap: .3rem 1rem; align-items: baseline; }
+  .spot-head h2 { font-size: 1.15rem; }
+  .spot-head p { font: 400 .8rem/1.5 var(--font-mono); color: var(--ash); }
+  .explain-lib { max-width: 72ch; color: var(--ash); font-size: .9rem; }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO4 range</a><a href="/plo5" aria-current="page">PLO5 ICM</a><a href="/o8">O8 range</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a><a href="/academy">ศาลาเรียน</a></div>
+    </nav>
+    <p class="eyebrow rise">PLO5 · MTT · ICM · Preflop</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>คลังสถานการณ์ ICM ของ PLO5</h1>
+    <p class="lede rise d2">ทุกแถวคือโต๊ะจริงจากทัวร์ PLO5 ค่าสมัคร <span class="mono">$10</span> คนลง <span class="mono">57</span> จ่าย <span class="mono">9</span> อันดับ แต่ละโต๊ะแก้ด้วย solver ของตามควายแบบ ICM ด้วยสแตกจริงของทุกที่นั่ง เล่นถึง river แล้วเลือกแถวเพื่อดู range preflop ของทุกมือ</p>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <section class="library" aria-labelledby="lib-title">
+      <h2 id="lib-title" class="label" style="font:500 .75rem/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ash-2)">สถานการณ์</h2>
+      <div class="lib-filters" id="lib-filters"></div>
+      <div class="lib-wrap"><table class="lib" id="lib"></table></div>
+      <p class="explain-lib">ตัวเลขคือสแตกหลังจ่าย ante เป็น bb เรียงตามลำดับเล่น preflop ▲ คือสแตกใหญ่สุดของโต๊ะ ▼ คือเล็กสุด "เหลือ" คือจำนวนคนที่ยังอยู่ในทัวร์ (ประมาณ) ICM คิดจากเงินรางวัลจริง 9 อันดับ โดยรวมคนที่โต๊ะอื่นเป็นกลุ่มเดียวที่สแตกเฉลี่ยเท่ากัน คุณภาพบอกว่า solver เล่นไปกี่มือต่อขนาดของเกม (solid ดีกว่า fair) bet ทุกครั้งเป็นขนาด pot</p>
+    </section>
+    <div class="spot-head" id="spot-head"></div>
+    <div id="explorer"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>PLO5 ICM จาก solver ของตามควาย</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+
+<script src="/static/plo-explorer.js?v=ed4b7b11"></script>
+<script>
+(async () => {
+  const SEATS = ["UTG", "HJ", "CO", "BTN", "SB", "BB"];
+  const BASE = "/static/plo5/v1/";
+  const lib = await fetch("/static/plo5-spots.json").then(r => r.json());
+  const spots = lib.spots;
+  const state = { players: 0, stage: "all", depth: "all", id: null };
+  const STAGES = [["all", "ทุกช่วง"], ["early", "40+ คน"], ["mid", "20-39 คน"], ["late", "ต่ำกว่า 20"]];
+  const DEPTHS = [["all", "ทุกสแตก"], ["short", "เฉลี่ยไม่ถึง 25bb"], ["mid", "25-50bb"], ["deep", "50bb ขึ้นไป"]];
+  const sizes = [...new Set(spots.map(s => s.players))].sort();
+  const stageOf = s => s.left >= 40 ? "early" : s.left >= 20 ? "mid" : "late";
+  const depthOf = s => s.avg < 25 ? "short" : s.avg < 50 ? "mid" : "deep";
+  const passes = s => (!state.players || s.players === state.players) && (state.stage === "all" || stageOf(s) === state.stage)
+    && (state.depth === "all" || depthOf(s) === state.depth);
+  const chip = (group, value, text, on) => `<button type="button" class="lib-chip" data-group="${group}" data-value="${value}" aria-pressed="${on}">${text}</button>`;
+  const explorer = PloExplorer.mount(document.getElementById("explorer"), {
+    classesUrl: BASE + "plo5-classes.json", tierLabel: "Equity",
+    shapes: [["ss", "ss"], ["ds", "ds"], ["3f", "3 ดอก"], ["3+2", "3+2"], ["4f", "4 ดอก"], ["5f", "5 ดอก"]],
+  });
+
+  function renderFilters() {
+    document.getElementById("lib-filters").innerHTML =
+      `<div class="lib-group"><span class="name">โต๊ะ</span>${chip("players", 0, "ทั้งหมด", !state.players)}${sizes.map(n => chip("players", n, n + " คน", state.players === n)).join("")}</div>`
+      + `<div class="lib-group"><span class="name">เหลือในทัวร์</span>${STAGES.map(([v, t]) => chip("stage", v, t, state.stage === v)).join("")}</div>`
+      + `<div class="lib-group"><span class="name">สแตก</span>${DEPTHS.map(([v, t]) => chip("depth", v, t, state.depth === v)).join("")}</div>`
+      + `<span class="lib-count">${spots.filter(passes).length} สถานการณ์</span>`;
+  }
+  function renderTable() {
+    const shown = spots.filter(passes);
+    document.getElementById("lib").innerHTML = `<thead><tr><th>Avg</th>${SEATS.map(s => `<th>${s}</th>`).join("")}<th>เหลือ</th><th>คุณภาพ</th></tr></thead><tbody>`
+      + shown.map(s => {
+        const by = Object.fromEntries(s.seats.map((name, i) => [name, s.stacks[i]]));
+        const hi = Math.max(...s.stacks), lo = Math.min(...s.stacks);
+        return `<tr data-id="${s.id}" aria-selected="${s.id === state.id}" tabindex="0"><td class="avg">${Math.round(s.avg)}</td>`
+          + SEATS.map(name => by[name] === undefined ? `<td class="none">–</td>`
+            : `<td class="${by[name] === hi ? "hi" : by[name] === lo ? "lo" : ""}">${Math.round(by[name])}</td>`).join("")
+          + `<td>${s.left}</td><td><span class="q ${s.quality}">${s.quality}</span></td></tr>`;
+      }).join("") + "</tbody>";
+  }
+  async function pick(id) {
+    state.id = id;
+    renderTable();
+    const s = spots.find(x => x.id === id);
+    document.getElementById("spot-head").innerHTML = `<h2>${s.players} คน · เหลือ ${s.left} คนในทัวร์ · เฉลี่ย ${Math.round(s.avg)}bb</h2>`
+      + `<p>${s.seats.map((n, i) => `${n} ${s.stacks[i]}bb`).join(" · ")} · ante ${s.ante.toFixed(3)}bb${s.field ? ` · โต๊ะอื่นเฉลี่ย ${Math.round(s.field)}bb` : ""}</p>`;
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    const data = await fetch(BASE + `spot-${id}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+    explorer.show(data);
+  }
+  document.getElementById("lib-filters").addEventListener("click", e => {
+    const b = e.target.closest("[data-group]");
+    if (!b) return;
+    const v = b.dataset.value;
+    state[b.dataset.group] = b.dataset.group === "players" ? Number(v) : v;
+    renderFilters(); renderTable();
+  });
+  const table = document.getElementById("lib");
+  table.addEventListener("click", e => { const r = e.target.closest("tr[data-id]"); if (r) pick(r.dataset.id).catch(explorer.fail); });
+  table.addEventListener("keydown", e => { const r = e.target.closest("tr[data-id]"); if (r && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); pick(r.dataset.id).catch(explorer.fail); } });
+  renderFilters();
+  const wanted = location.hash.slice(1);
+  pick(spots.some(s => s.id === wanted) ? wanted : spots[0].id).catch(explorer.fail);
+})();
+</script>
+<script src="/static/beacon.js" defer></script>
+</body>
+</html>

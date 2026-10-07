@@ -1,0 +1,359 @@
+<title>PLO-5 Classic Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: the tamkwai puppet-stage header over a parchment worktable; summary, graph and leaks,
+     then a hand browser (list + decision sheet) that stacks to one column on a phone. */
+  :root {
+    --ground: #F6F2E6; --paper: #FBF8EE; --edge: #D9D0B8; --ink: #14213D; --ash: #4F5667; --ash-2: #636A7A;
+    --blue: #1B2A4A; --bronze: #A87C3F; --bronze-txt: #6B4E22; --red: #C6322A;
+    --stage: #171512; --stage-edge: #3A3628; --on-stage: #F6F2E6; --on-stage-2: #D8D2BE; --on-stage-3: #C9BFA3;
+    --good: #2E6B45; --warn: #9A6A1E; --bad: #B3261E; --bar: #1B2A4A; --bar-soft: #CFC6AE;
+    --suit-s: #14213D; --suit-h: #C6322A; --suit-d: #1F5FB8; --suit-c: #2E7D4F;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px; --gutter: clamp(16px, 4vw, 40px); --column: 1180px;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --ground: #12110E; --paper: #1B1A16; --edge: #3A3628; --ink: #EDE7D6; --ash: #B9B19C; --ash-2: #A39B86;
+    --blue: #9FB4DC; --bronze: #C9A266; --bronze-txt: #D9BA86; --red: #E06A5E;
+    --stage: #0B0A08; --stage-edge: #2C2920; --on-stage: #F1EBDA; --on-stage-2: #CFC7B1; --on-stage-3: #B8AE92;
+    --good: #6FBF8B; --warn: #D9A54A; --bad: #EF7468; --bar: #9FB4DC; --bar-soft: #3A3628;
+    --suit-s: #EDE7D6; --suit-h: #EF7468; --suit-d: #7FA8F0; --suit-c: #6FBF8B; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --ground: #12110E; --paper: #1B1A16; --edge: #3A3628; --ink: #EDE7D6; --ash: #B9B19C; --ash-2: #A39B86;
+    --blue: #9FB4DC; --bronze: #C9A266; --bronze-txt: #D9BA86; --red: #E06A5E;
+    --stage: #0B0A08; --stage-edge: #2C2920; --on-stage: #F1EBDA; --on-stage-2: #CFC7B1; --on-stage-3: #B8AE92;
+    --good: #6FBF8B; --warn: #D9A54A; --bad: #EF7468; --bar: #9FB4DC; --bar-soft: #3A3628;
+    --suit-s: #EDE7D6; --suit-h: #EF7468; --suit-d: #7FA8F0; --suit-c: #6FBF8B; color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { font: 400 15px/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 2px; }
+  .mono, .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .column { max-width: var(--column); margin: 0 auto; }
+  .label { font: 500 .72rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ash-2); }
+
+  .stage { position: relative; background: var(--stage); color: var(--on-stage); padding: clamp(1.25rem, 4vw, 2.25rem) var(--gutter); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246,242,230,.12) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage .label { color: var(--on-stage-3); }
+  .stage h1 { font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.15; margin-top: .6rem; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .facts { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; margin-top: .9rem; color: var(--on-stage-2); font-size: .9rem; }
+  .facts b { color: var(--on-stage); font-family: var(--font-mono); font-weight: 600; }
+
+  main { padding: clamp(1.25rem, 3vw, 2rem) var(--gutter) 0; }
+  section { margin-top: clamp(1.5rem, 4vw, 2.5rem); }
+  section > h2 { font-size: 1.25rem; margin-bottom: .75rem; }
+  .sheet { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: clamp(.9rem, 2.5vw, 1.25rem); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; }
+  .tile { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: .9rem 1rem; display: grid; gap: .3rem; }
+  .tile b { font: 600 1.65rem/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+  .tile small { color: var(--ash); font-size: .82rem; }
+  .tile.alert b { color: var(--bad); }
+
+  .graph { width: 100%; height: auto; display: block; }
+  .graph text { font: 500 11px var(--font-mono); fill: var(--ash-2); }
+  .graph .grid { stroke: var(--edge); stroke-width: 1; }
+  .graph .line { fill: none; stroke: var(--blue); stroke-width: 2; }
+  .graph .area { fill: var(--blue); opacity: .08; }
+  .graph .bad { fill: var(--bad); }
+  .graph .warn { fill: var(--warn); }
+  .graph .end { fill: var(--red); }
+  .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin-top: .5rem; font-size: .82rem; color: var(--ash); }
+  .legend i { display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .35rem; vertical-align: -.05rem; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: .75rem; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th { text-align: left; font: 500 .7rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ash-2); padding: .45rem .5rem; border-bottom: 1px solid var(--edge); }
+  td { padding: .45rem .5rem; border-bottom: 1px solid var(--edge); vertical-align: middle; }
+  td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  .meter { height: .45rem; background: var(--bar-soft); border-radius: 2px; overflow: hidden; min-width: 60px; }
+  .meter i { display: block; height: 100%; background: var(--bad); }
+
+  .cards { display: inline-flex; gap: 2px; flex-wrap: wrap; }
+  .card { font: 600 .82rem/1 var(--font-mono); padding: .22rem .26rem; border: 1px solid var(--edge); border-radius: 3px; background: var(--ground); }
+  .s-s { color: var(--suit-s); } .s-h { color: var(--suit-h); } .s-d { color: var(--suit-d); } .s-c { color: var(--suit-c); }
+
+  .pill { display: inline-block; font: 600 .7rem/1 var(--font-mono); letter-spacing: .04em; padding: .25rem .45rem; border-radius: 3px; border: 1px solid currentColor; white-space: nowrap; }
+  .pill.bad { color: var(--bad); } .pill.warn { color: var(--warn); } .pill.good { color: var(--good); } .pill.none { color: var(--ash-2); }
+
+  .costly { display: grid; gap: .5rem; }
+  .costly button { display: grid; grid-template-columns: auto 1fr auto; gap: .3rem 1rem; align-items: center; text-align: left; width: 100%; background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: .7rem .9rem; cursor: pointer; }
+  .costly button:hover { border-color: var(--ink); }
+  .costly .what { min-width: 0; }
+  .costly .what p { color: var(--ash); font-size: .85rem; }
+  .costly .amt { font: 600 1.05rem/1 var(--font-mono); color: var(--bad); }
+
+  .browser { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: .75rem; align-items: start; }
+  @media (max-width: 820px) { .browser { grid-template-columns: minmax(0, 1fr); } }
+  .filters { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .6rem; }
+  .chip { border: 1px solid var(--edge); background: var(--paper); border-radius: 3px; padding: .3rem .6rem; font-size: .8rem; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .list { position: relative; max-height: 640px; overflow-y: auto; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--paper); }
+  .list button { display: grid; grid-template-columns: 3.2rem 1fr auto; gap: .5rem; align-items: center; width: 100%; text-align: left; padding: .5rem .7rem; border: 0; border-bottom: 1px solid var(--edge); background: transparent; cursor: pointer; }
+  .list button[aria-current="true"] { background: var(--ground); box-shadow: inset 3px 0 0 var(--red); }
+  .list .t { font: 500 .78rem/1.2 var(--font-mono); color: var(--ash-2); }
+  .list .mid { min-width: 0; display: grid; gap: .2rem; }
+  .list .mid small { color: var(--ash); font-size: .78rem; }
+
+  .detail { display: grid; gap: .9rem; min-width: 0; }
+  .detail-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; align-items: baseline; }
+  .detail-head h3 { font-size: 1.15rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; color: var(--ash); font-size: .85rem; }
+  .line { display: flex; flex-wrap: wrap; gap: .25rem .4rem; font-size: .85rem; }
+  .line .st { font: 500 .68rem/1.9 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--bronze-txt); }
+  .line .hero { font-weight: 600; color: var(--ink); }
+  .line span { color: var(--ash); }
+  .decision { border-top: 1px dashed var(--edge); padding-top: .8rem; display: grid; gap: .55rem; }
+  .decision-head { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center; justify-content: space-between; }
+  .options { display: grid; gap: .35rem; }
+  .opt { display: grid; grid-template-columns: 7.5rem minmax(60px, 1fr) 6.2rem 5.2rem; gap: .6rem; align-items: center; font-size: .86rem; }
+  @media (max-width: 520px) { .opt { grid-template-columns: 6rem minmax(40px, 1fr) 5.4rem; } .opt .val { grid-column: 3; } .opt .tags { grid-column: 1 / -1; } }
+  .opt .bar { height: .7rem; background: var(--bar-soft); border-radius: 2px; overflow: hidden; }
+  .opt .bar i { display: block; height: 100%; background: var(--bar); }
+  .opt .val { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .opt .tags { display: flex; gap: .25rem; }
+  .tag { font: 600 .66rem/1 var(--font-mono); padding: .2rem .35rem; border-radius: 2px; }
+  .tag.you { background: var(--ink); color: var(--ground); }
+  .tag.best { border: 1px solid var(--good); color: var(--good); }
+  .explain { font-size: .86rem; color: var(--ash); max-width: 70ch; }
+  .empty { color: var(--ash); font-size: .9rem; }
+
+  .notes { display: grid; gap: .5rem; font-size: .9rem; color: var(--ash); max-width: 75ch; }
+  .notes li { margin-bottom: .35rem; }
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--edge); font-size: .8rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+  @media (prefers-reduced-motion: no-preference) { .list button, .costly button { transition: background .15s, border-color .15s; } }
+</style>
+
+<header class="stage">
+  <div class="column">
+    <p class="label" id="eyebrow">Session review · PLO5 · ICM</p>
+    <h1><span class="hoof" aria-hidden="true"></span><span id="title">PLO-5 Classic $10</span></h1>
+    <div class="facts" id="facts"></div>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <section aria-labelledby="sum-h" style="margin-top:0">
+      <h2 id="sum-h" class="label" style="margin-bottom:.6rem">Summary</h2>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section aria-labelledby="stack-h">
+      <h2 id="stack-h">Your stack through the session</h2>
+      <div class="sheet">
+        <svg class="graph" id="graph" viewBox="0 0 900 260" role="img" aria-label="Chip stack by hand"></svg>
+        <div class="legend"><span><i style="background:var(--bad)"></i>costly decision (over $0.20)</span><span><i style="background:var(--warn)"></i>small leak ($0.05 to $0.20)</span><span><i style="background:var(--blue)"></i>chips at the start of each hand</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="leaks-h">
+      <h2 id="leaks-h">Where the equity went</h2>
+      <div class="two">
+        <div class="sheet table-wrap"><table id="by-street"></table></div>
+        <div class="sheet table-wrap"><table id="by-pos"></table></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="costly-h">
+      <h2 id="costly-h">Costliest decisions</h2>
+      <div class="costly" id="costly"></div>
+    </section>
+
+    <section aria-labelledby="hands-h">
+      <h2 id="hands-h">Every hand</h2>
+      <div class="filters" id="filters" role="group" aria-label="Filter hands"></div>
+      <div class="browser">
+        <div class="list" id="list"></div>
+        <article class="sheet detail" id="detail" aria-live="polite"></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="notes-h">
+      <h2 id="notes-h">How this was measured</h2>
+      <ul class="notes" id="notes"></ul>
+    </section>
+  </div>
+</main>
+
+<footer><div class="column"><span>Private session review · solver by ตามควาย</span><span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span></div></footer>
+
+<script>
+const DATA = /*DATA*/null;
+const $ = id => document.getElementById(id);
+const STREETS = ["Preflop", "Flop", "Turn", "River"];
+const money = x => (x < 0 ? "−$" : "$") + Math.abs(x).toFixed(2);
+const pct = x => `${Math.round(x * 100)}%`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const GLYPH = { s: "♠", h: "♥", d: "♦", c: "♣" };
+const cards = text => `<span class="cards">${(text.match(/../g) || []).map(c => `<span class="card s-${c[1]}">${c[0]}${GLYPH[c[1]]}</span>`).join("")}</span>`;
+
+// a decision's cost counts only when it is clearly above the sampling noise
+function severity(d) {
+  const noise = Math.hypot(d.se[d.best] || 0, d.se[d.took] || 0);
+  if (d.loss <= Math.max(0.02, 2 * noise)) return "fine";
+  return d.loss >= 0.2 ? "costly" : d.loss >= 0.05 ? "leak" : "fine";
+}
+const SEV = { costly: ["bad", "Costly"], leak: ["warn", "Small leak"], fine: ["good", "Solver-approved"] };
+
+const hands = DATA.hands;
+// A rating is trusted when the solve had real data for the hand group (not an untouched, even mix)
+// and the solve as a whole was not thin.
+function trusted(h, d) {
+  const n = d.mix.length, even = Math.max(...d.mix.map(m => Math.abs(m - 1 / n))) < 0.02;
+  return !even && h.quality !== "thin";
+}
+hands.forEach(h => h.decisions.forEach(d => { d.trusted = trusted(h, d); }));
+const decisions = hands.flatMap(h => h.decisions.map(d => ({ ...d, hand: h, sev: severity(d) })));
+const counted = d => d.trusted && d.sev !== "fine" ? d.loss : 0;
+const sure = decisions.filter(d => d.trusted);
+const lost = decisions.reduce((s, d) => s + counted(d), 0);
+const agree = sure.filter(d => d.mix[d.took] >= 0.25).length;
+
+$("facts").innerHTML = [
+  `<span>Finished <b>${DATA.finish}th</b> of <b>${DATA.entries}</b> (${DATA.paid} paid)</span>`,
+  `<span><b>${hands.length}</b> hands · ${DATA.start}–${DATA.end}</span>`,
+  `<span>Prize pool <b>$${DATA.payouts.reduce((a, b) => a + b, 0).toFixed(2)}</b> · 1st <b>$${DATA.payouts[0].toFixed(2)}</b></span>`,
+].join("");
+
+$("tiles").innerHTML = [
+  ["ICM equity given up", money(lost), "trusted ratings only, against the solver's best option", "alert"],
+  ["Trusted ratings", sure.length, `of ${decisions.length} decisions rated · ${hands.filter(h => h.skipped).length} hands too deep to solve`],
+  ["Matched the solver", sure.length ? pct(agree / sure.length) : "–", "your action is one the solver uses at least 25% of the time"],
+  ["Costly decisions", sure.filter(d => d.sev === "costly").length, "each over $0.20 of tournament equity"],
+].map(([k, v, s, cls]) => `<div class="tile ${cls || ""}"><span class="label">${k}</span><b>${v}</b><small>${s}</small></div>`).join("");
+
+// stack graph
+(function graph() {
+  const W = 900, H = 260, L = 52, R = 14, T = 14, B = 30;
+  const chips = hands.map(h => h.chips);
+  const top = Math.ceil(Math.max(...chips) / 5000) * 5000;
+  const x = i => L + (W - L - R) * (hands.length > 1 ? i / (hands.length - 1) : 0);
+  const y = v => T + (H - T - B) * (1 - v / top);
+  let svg = "";
+  for (let v = 0; v <= top; v += 5000) svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v / 1000}k</text>`;
+  let lastLevel = -1;
+  hands.forEach((h, i) => { if (h.level !== lastLevel && (h.level % 4 === 1 || i === 0)) { svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">L${h.level}</text>`; } lastLevel = h.level; });
+  const pts = hands.map((h, i) => `${x(i).toFixed(1)},${y(h.chips).toFixed(1)}`);
+  svg += `<path class="area" d="M${x(0)},${y(0)} L${pts.join(" L")} L${x(hands.length - 1)},${y(0)} Z"/>`;
+  svg += `<polyline class="line" points="${pts.join(" ")}"/>`;
+  hands.forEach((h, i) => {
+    const worst = h.decisions.filter(d => d.trusted).map(d => severity(d)).sort((a, b) => (a === "costly" ? -1 : a === "leak" ? 0 : 1) - (b === "costly" ? -1 : b === "leak" ? 0 : 1))[0];
+    if (worst === "costly" || worst === "leak") svg += `<circle class="${worst === "costly" ? "bad" : "warn"}" cx="${x(i)}" cy="${y(h.chips)}" r="4"><title>${h.time} · ${h.position} · ${h.cards}</title></circle>`;
+  });
+  const last = hands.length - 1;
+  svg += `<circle class="end" cx="${x(last)}" cy="${y(hands[last].chips)}" r="4"/>`;
+  $("graph").innerHTML = svg;
+})();
+
+// leak tables
+function leakTable(el, title, key, order) {
+  const groups = {};
+  sure.forEach(d => { const k = key(d); (groups[k] ||= { n: 0, lost: 0, bad: 0 }); groups[k].n++; groups[k].lost += counted(d); if (d.sev !== "fine") groups[k].bad++; });
+  const most = Math.max(0.01, ...Object.values(groups).map(g => g.lost));
+  const keys = order.filter(k => groups[k]);
+  $(el).innerHTML = `<thead><tr><th>${title}</th><th class="n">Decisions</th><th class="n">Leaks</th><th class="n">Equity lost</th><th></th></tr></thead><tbody>` +
+    keys.map(k => { const g = groups[k]; return `<tr><td>${k}</td><td class="n">${g.n}</td><td class="n">${g.bad}</td><td class="n">${money(g.lost)}</td><td><div class="meter"><i style="width:${(g.lost / most * 100).toFixed(1)}%"></i></div></td></tr>`; }).join("") + "</tbody>";
+}
+leakTable("by-street", "Street", d => STREETS[d.street], STREETS);
+leakTable("by-pos", "Position", d => d.hand.position, ["UTG", "HJ", "CO", "BTN", "SB", "BB"]);
+
+// costliest decisions
+const worst = sure.filter(d => d.sev !== "fine").sort((a, b) => b.loss - a.loss).slice(0, 8);
+$("costly").innerHTML = worst.length ? worst.map(d => `<button type="button" data-hand="${d.hand.id}"><span class="t mono">${d.hand.time}</span>
+  <span class="what"><strong>${d.hand.position} · ${STREETS[d.street]}:</strong> you chose ${esc(d.options[d.took]).toLowerCase()}, the solver's best was ${esc(d.options[d.best]).toLowerCase()} ${cards(d.hand.cards)}
+  <p>${d.board ? `Board ${d.board.match(/../g).join(" ")} · ` : ""}pot ${d.pot}bb · ${d.to_call ? `to call ${d.to_call}bb` : "no bet to call"}</p></span>
+  <span class="amt">${money(d.loss)}</span></button>`).join("") : `<p class="empty">No decision cost more than the noise in the estimates.</p>`;
+$("costly").addEventListener("click", e => { const b = e.target.closest("[data-hand]"); if (b) { show(b.dataset.hand); $("hands-h").scrollIntoView({ behavior: "smooth" }); } });
+
+// hand browser
+const FILTERS = [["all", "All hands"], ["leaks", "With a leak"], ["played", "Played past preflop"], ["late", "Level 12+"]];
+let filter = "all", current = null;
+try { filter = localStorage.getItem("plo5-filter") || "all"; } catch (e) {}
+function passes(h) {
+  if (filter === "leaks") return h.decisions.some(d => d.trusted && severity(d) !== "fine");
+  if (filter === "played") return h.line.some(a => a.street > 0 && a.hero);
+  if (filter === "late") return h.level >= 12;
+  return true;
+}
+function renderFilters() {
+  $("filters").innerHTML = FILTERS.map(([k, t]) => `<button type="button" class="chip" data-filter="${k}" aria-pressed="${filter === k}">${t}</button>`).join("");
+}
+function handState(h) {
+  if (h.skipped) return ["none", "Too deep"];
+  if (!h.rated) return ["none", "Not rated"];
+  const sevs = h.decisions.filter(d => d.trusted).map(severity);
+  if (sevs.includes("costly")) return SEV.costly;
+  if (sevs.includes("leak")) return SEV.leak;
+  if (h.decisions.some(d => !d.trusted)) return ["none", "Low confidence"];
+  return SEV.fine;
+}
+function renderList() {
+  const shown = hands.filter(passes);
+  $("list").innerHTML = shown.map(h => { const [cls, txt] = handState(h); return `<button type="button" data-hand="${h.id}" aria-current="${h.id === current}">
+    <span class="t">${h.time}<br>L${h.level}</span><span class="mid">${cards(h.cards)}<small>${h.position} · ${h.players}-handed · ${h.stack_bb}bb · ${h.net >= 0 ? "+" : ""}${h.net.toLocaleString("en-US")}</small></span>
+    <span class="pill ${cls}">${txt}</span></button>`; }).join("") || `<p class="empty" style="padding:.8rem">No hands match this filter.</p>`;
+}
+function lineHTML(h) {
+  let out = "", street = -1;
+  h.line.forEach(a => {
+    if (a.street !== street) { street = a.street; out += `<span class="st">${STREETS[street]}${street && h.board ? " " + h.board.slice(0, (street + 2) * 2).match(/../g).join(" ") : ""}</span>`; }
+    const amt = a.kind === "raise" ? ` to ${a.bb}bb` : a.kind === "bet" || a.kind === "call" ? ` ${a.bb}bb` : "";
+    out += `<span class="${a.hero ? "hero" : ""}">${a.hero ? "You" : a.who} ${a.kind}${amt}${a.all_in ? " all-in" : ""},</span>`;
+  });
+  return out.replace(/,<\/span>$/, "</span>");
+}
+function decisionHTML(d) {
+  const [cls, txt] = d.trusted ? SEV[severity(d)] : ["none", "Low confidence"];
+  const realSize = d.real === "bet" || d.real === "raise" ? ` (you ${d.real === "raise" ? "raised to" : "bet"} ${d.real_bb}bb${d.all_in ? ", all-in" : ""}; the tree has pot-size only)` : "";
+  return `<div class="decision"><div class="decision-head"><strong>${STREETS[d.street]}${d.board ? " " + cards(d.board) : ""}</strong>
+    <span class="meta"><span>pot ${d.pot}bb</span><span>${d.to_call ? `to call ${d.to_call}bb` : "no bet to call"}</span><span class="pill ${cls}">${txt}${!d.trusted || severity(d) === "fine" ? "" : " · " + money(d.loss)}</span></span></div>
+    <div class="options">${d.options.map((o, i) => `<div class="opt"><span>${esc(o)}</span><span class="bar" title="solver plays this ${pct(d.mix[i])} of the time with your hand group"><i style="width:${(d.mix[i] * 100).toFixed(1)}%"></i></span>
+      <span class="val">${money(d.values[i])} <small>±${d.se[i].toFixed(2)}</small></span><span class="tags">${i === d.took ? '<span class="tag you">YOU</span>' : ""}${i === d.best ? '<span class="tag best">BEST</span>' : ""}</span></div>`).join("")}</div>
+    ${d.trusted ? "" : `<p class="explain">Low confidence: the solve had too little data for this spot, so this rating is not counted in the totals.</p>`}
+    ${realSize ? `<p class="explain">${realSize.trim().replace(/^\(|\)$/g, "")}.</p>` : ""}</div>`;
+}
+function show(id) {
+  current = id;
+  const h = hands.find(x => x.id === id);
+  if (!passes(h)) { filter = "all"; renderFilters(); }
+  renderList();
+  const body = h.skipped ? `<p class="empty">Not rated: ${esc(h.skipped)}. Six players with 60bb+ stacks make a game tree over 40 million entries, which a solve of a few minutes cannot cover.</p>`
+    : h.rated ? (h.decisions.length ? h.decisions.map(decisionHTML).join("") : `<p class="empty">The solve could not follow this hand to a decision of yours${h.note ? ` (${esc(h.note)})` : ""}.</p>`)
+    : `<p class="empty">No solve for this hand${h.line.some(a => a.hero) ? "" : ": you had no decision"}.</p>`;
+  $("detail").innerHTML = `<div class="detail-head"><h3>${h.position} ${cards(h.cards)}</h3><span class="mono">${h.id}</span></div>
+    <div class="meta"><span>${h.time} · Level ${h.level} (${h.blinds})</span><span>${h.players}-handed · ${h.stack_bb}bb</span>${h.left ? `<span>~${h.left} players left (estimated)</span>` : ""}<span>Result ${h.net >= 0 ? "+" : ""}${h.net.toLocaleString("en-US")} chips</span>${h.quality ? `<span class="pill ${h.quality === "solid" ? "good" : h.quality === "fair" ? "warn" : "bad"}" title="deals played per strategy-table entry">solve ${h.quality}</span>` : ""}</div>
+    <div class="line">${lineHTML(h)}</div>${h.note && h.decisions.length ? `<p class="explain">Note: ${esc(h.note)}.</p>` : ""}${body}
+    ${h.decisions.length ? `<p class="explain">Bars: how often the solver takes each option with your hand group. Dollars: your tournament equity after each option, with your exact cards on the real board.</p>` : ""}`;
+  const list = $("list"), btn = list.querySelector(`[aria-current="true"]`);
+  if (btn && (btn.offsetTop < list.scrollTop || btn.offsetTop + btn.offsetHeight > list.scrollTop + list.clientHeight)) {
+    list.scrollTop = btn.offsetTop - list.clientHeight / 3;  // scroll the list only, never the page
+  }
+}
+$("filters").addEventListener("click", e => { const b = e.target.closest("[data-filter]"); if (!b) return; filter = b.dataset.filter; try { localStorage.setItem("plo5-filter", filter); } catch (err) {} renderFilters(); renderList(); });
+$("list").addEventListener("click", e => { const b = e.target.closest("[data-hand]"); if (b) show(b.dataset.hand); });
+renderFilters();
+show((worst[0] && worst[0].hand.id) || (hands.find(h => h.rated) || hands[0]).id);
+
+$("notes").innerHTML = [
+  "Each hand you played was re-solved on its own with the real seats, stacks, blinds and ante, as a PLO5 game played through the river. Payoffs are ICM tournament equity from the 9 real prizes, with the rest of the field as one group of average stacks.",
+  "Hands where you only folded preflop share one solve per table, level and table size; each fold is read at your seat in its own hand.",
+  "Six-handed hands with 60bb+ stacks are not rated: their game trees are too big to solve reliably in a few minutes. Each solved hand shows its solve quality (solid, fair or thin), from how many deals the solver played per strategy entry.",
+  "Players left at each hand are estimated (about 45 at the start, falling to 11 at your bust). The hand history does not record it.",
+  "The solver bets and raises pot-size only. Your bets of other sizes are read as pot-size bets, so sizing itself is not judged.",
+  "Hands are grouped: preflop by heads-up and three-way equity (1,000 groups), postflop by strength, flush draw and straight outs. The bars show the group's mix; the dollar values use your exact cards and the real board.",
+  "Dollar values come from simulated deals weighted by how likely the opponents were to play the hand the way they did, then played out with the solver's strategy. A cost counts only when it is larger than its sampling error.",
+].map(t => `<li>${t}</li>`).join("");
+</script>

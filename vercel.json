@@ -25,6 +25,10 @@
       "destination": "https://data.tamkwai.com/o8/v4/:file"
     },
     {
+      "source": "/static/plo5/v1/:file",
+      "destination": "https://data.tamkwai.com/plo5/v1/:file"
+    },
+    {
       "source": "/static/plo/v1/:file",
       "destination": "https://data.tamkwai.com/plo/v1/:file"
     }

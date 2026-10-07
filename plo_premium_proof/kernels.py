@@ -37,11 +37,12 @@ def colex(cards: np.ndarray, count: int, comb: np.ndarray) -> int:
 
 @njit(cache=True)  # pragma: no cover - compiled native code
 def plo_rank(hole: np.ndarray, board: np.ndarray, rank5: np.ndarray, comb: np.ndarray) -> int:
-    """Best Omaha high rank (exactly two hole + three board cards); lower wins."""
+    """Best Omaha high rank (exactly two hole + three board cards, four or five hole cards); lower wins."""
     best = 1 << 30
     five = np.empty(5, dtype=np.int64)
-    for i in range(4):
-        for j in range(i + 1, 4):
+    held = hole.shape[0]
+    for i in range(held):
+        for j in range(i + 1, held):
             for x in range(5):
                 for y in range(x + 1, 5):
                     for z in range(y + 1, 5):
@@ -66,7 +67,7 @@ def _deal(
     for card in range(52):
         taken = False
         if hero >= 0:
-            for k in range(4):
+            for k in range(hero_cards.shape[0]):
                 if hero_cards[k] == card:
                     taken = True
         if not taken:
@@ -74,7 +75,7 @@ def _deal(
             size += 1
     position = 0
     for seat in range(hands.shape[0]):
-        for k in range(4):
+        for k in range(hands.shape[1]):
             if seat == hero:
                 hands[seat, k] = hero_cards[k]
                 continue
@@ -104,7 +105,7 @@ def _situation(
     ranks: np.ndarray,
 ) -> None:
     for seat in range(hands.shape[0]):
-        buckets[seat] = bucket_of[colex(hands[seat], 4, comb)]
+        buckets[seat] = bucket_of[colex(hands[seat], hands.shape[1], comb)]
         ranks[seat] = plo_rank(hands[seat], board, rank5, comb)
 
 

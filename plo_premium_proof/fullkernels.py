@@ -17,6 +17,12 @@ from .kernels import _deal, _situation, tree_links  # noqa: F401
 from .postflop import board_distribution, postflop_bucket
 
 DISTRIBUTION_SIZE = 1176
+PLO4_HANDS = 270725  # a bucket_of longer than this is indexed by five-card hands (PLO5)
+
+
+@njit(cache=True)  # pragma: no cover - compiled native code
+def hole_cards(bucket_of: np.ndarray) -> int:
+    return 5 if bucket_of.shape[0] > PLO4_HANDS else 4
 
 
 @njit(cache=True)  # pragma: no cover - compiled native code
@@ -302,7 +308,7 @@ def train_full(
     seats = behind.shape[1]
     for thread in prange(rng_states.size):
         state = rng_states[thread:thread + 1]
-        hands = np.empty((seats, 4), dtype=np.int64)
+        hands = np.empty((seats, hole_cards(bucket_of)), dtype=np.int64)
         board = np.empty(5, dtype=np.int64)
         preflop = np.empty(seats, dtype=np.int64)
         ranks = np.empty(seats, dtype=np.int64)
@@ -355,7 +361,7 @@ def evaluate_root_actions(
         end = subtree_end[root]
         state = task_seed[task:task + 1].copy()
         hero_cards = task_cards[task]
-        hands = np.empty((BATCH, seats, 4), dtype=np.int64)
+        hands = np.empty((BATCH, seats, hole_cards(bucket_of)), dtype=np.int64)
         board = np.empty((BATCH, 5), dtype=np.int64)
         ranks = np.empty((BATCH, seats), dtype=np.int64)
         buckets = np.empty((BATCH, 4, seats), dtype=np.int64)
@@ -471,7 +477,7 @@ def sample_root_actions(
         root = first_in_nodes[hero]
         state = task_seed[task:task + 1].copy()
         hero_cards = task_cards[task]
-        hands = np.empty((seats, 4), dtype=np.int64)
+        hands = np.empty((seats, hole_cards(bucket_of)), dtype=np.int64)
         board = np.empty(5, dtype=np.int64)
         preflop = np.empty(seats, dtype=np.int64)
         ranks = np.empty(seats, dtype=np.int64)
