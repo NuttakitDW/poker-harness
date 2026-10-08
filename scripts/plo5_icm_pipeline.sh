@@ -1,5 +1,5 @@
 #!/bin/zsh
-# PLO5 (or PLO4) tournament review: per-hand ICM solves -> option values -> private dashboard page.
+# PLO5 (or PLO4) tournament review: per-hand ICM solves -> option values -> range charts -> private dashboard page.
 # Resumable: rerun the same command and finished solves are kept.
 #
 #   scripts/plo5_icm_pipeline.sh <hand-history.txt> <session-tag> <payouts 1st,2nd,...> <entries> <finish> <first-left> [start-stack]
@@ -22,6 +22,7 @@ for round in {1..20}; do
   echo "== solver exited with an error (round $round); restarting" >> "$LOG"
 done
 NUMBA_CACHE_DIR="$ROOT/tmp/numba/eval" .venv/bin/python -u -m plo_premium_proof.review evaluate "${ARGS[@]}" >> "$LOG" 2>&1
+NUMBA_CACHE_DIR="$ROOT/tmp/numba/chart" .venv/bin/python -u -m plo_premium_proof.review charts "${ARGS[@]}" >> "$LOG" 2>&1
 .venv/bin/python scripts/plo5_dashboard.py --hh "$HH" --out "$OUT/dashboard.html" --review "$OUT/review" \
   --title "$TAG" --entries "$ENTRIES" --finish "$FINISH" --payouts "$PAYOUTS" >> "$LOG" 2>&1
 echo "== $(date) ALL DONE $TAG" >> "$LOG"

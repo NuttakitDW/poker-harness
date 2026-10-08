@@ -46,7 +46,9 @@ def collect(hh: Path, review: Path = REVIEW, title: str = "PLO-5 Classic $10", e
         job = json.loads((path.parent / "review.json").read_text())
         data = json.loads(path.read_text())
         for hand_id, review in data["hands"].items():
-            rated[hand_id] = {"review": review, "job": job["job"]["kind"], "spec": job["spec"],
+            chart_file = path.parent / "chart.json"
+            chart = json.loads(chart_file.read_text()).get(hand_id, []) if chart_file.exists() else []
+            rated[hand_id] = {"review": review, "chart": chart, "job": job["job"]["kind"], "spec": job["spec"],
                               "left": job["players_left"], "meta": job["meta"]}
     rows = []
     for hand, net in zip(hands, nets):
@@ -66,16 +68,18 @@ def collect(hh: Path, review: Path = REVIEW, title: str = "PLO-5 Classic $10", e
                          quality=r["meta"].get("quality"),
                          effective=min((d.get("effective_deals") or 0) for d in r["review"]["decisions"])
                          if r["review"]["decisions"] else None)
-            for d in r["review"]["decisions"]:
+            for index, d in enumerate(r["review"]["decisions"]):
                 if d.get("values") is None:
                     continue
+                chart = r["chart"][index] if index < len(r["chart"]) else None
                 labels = [_label(a, d["to_call_bb"]) for a in d["legal"]]
                 best = max(range(len(labels)), key=lambda i: d["values"][i])
                 entry["decisions"].append({
                     "street": d["street"], "board": d["board"], "pot": d["pot_bb"], "to_call": d["to_call_bb"],
                     "options": labels, "mix": d["mix"], "values": d["values"], "se": d["value_se"],
                     "took": d["slot"], "best": best, "loss": d["loss"], "mix_loss": d["mix_loss"],
-                    "real": d["real"], "real_bb": round(d["real_amount"] / hand.bb, 1), "all_in": d["all_in"]})
+                    "real": d["real"], "real_bb": round(d["real_amount"] / hand.bb, 1), "all_in": d["all_in"],
+                    "chart": chart})
         rows.append(entry)
     return {"title": title, "date": hands[0].time.strftime("%Y-%m-%d"),
             "start": hands[0].time.strftime("%H:%M"), "end": hands[-1].time.strftime("%H:%M"),

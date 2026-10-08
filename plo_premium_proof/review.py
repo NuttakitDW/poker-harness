@@ -265,7 +265,7 @@ def session_from(path: Path, payouts: tuple[float, ...], entries: int, finish: i
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=("plan", "solve", "evaluate"))
+    parser.add_argument("command", choices=("plan", "solve", "evaluate", "charts"))
     parser.add_argument("--hh", type=Path, required=True)
     parser.add_argument("--payouts", required=True, help="prizes 1st, 2nd, ... comma separated")
     parser.add_argument("--entries", type=int, required=True)
@@ -278,6 +278,14 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     session = session_from(args.hh, tuple(float(x) for x in args.payouts.split(",")), args.entries, args.finish,
                            args.first_left, args.start_stack)
+    if args.command == "charts":
+        for folder in sorted(args.out.iterdir()):
+            if (folder / "review_ev.json").exists() and not (folder / "chart.json").exists():
+                try:
+                    charts(folder, session)
+                except Exception as error:  # noqa: BLE001 - the page shows the decision without a chart
+                    print(f"FAILED chart {folder.name}: {error}", flush=True)
+        return
     if args.command == "evaluate":
         for folder in sorted(args.out.iterdir()):
             if (folder / "review.json").exists() and not (folder / "review_ev.json").exists():
@@ -298,9 +306,6 @@ def main(argv: list[str] | None = None) -> None:
     else:
         run(session, out=args.out, only=set(args.only) if args.only else None)
 
-
-if __name__ == "__main__":
-    main()
 
 
 # ---------- what each option was worth ----------
@@ -359,3 +364,47 @@ def evaluate(folder: Path, session: Session, deals: int = 400_000, log=print) ->
     (folder / "review_ev.json").write_text(json.dumps({"money_per_bb": money, "hands": result}, indent=1))
     log(f"  values {folder.name}: {sum(len(r['decisions']) for r in result.values())} decision(s)")
     return result
+
+
+# ---------- the solver's range chart at each hero decision ----------
+
+def charts(folder: Path, session: Session, log=print) -> None:
+    """chart.json: for every rated decision, the 13 x 13 matrix of the solver's mix, weighted by reach."""
+    from .review_chart import class_cells, class_mix, matrix
+    data = json.loads((folder / "review.json").read_text())
+    ev = json.loads((folder / "review_ev.json").read_text())
+    spec = FinalTableSpec.from_dict(data["spec"])
+    tree = FullTree.build(spec.tree_config(), cache_dir=None)
+    raw = np.load(folder / "policy.npz")["policy"].astype(np.float32)
+    policy = raw / np.maximum(raw.sum(axis=1, keepdims=True), 1.0)
+    tables = Plo5Tables()
+    rank5, comb = five_card_ranks(), comb_table()
+    texts = [card_text(tuple(int(c) for c in rep)) for rep in tables.reps]
+    by_id = {h.hand_id: h for h in session.hands}
+    out = {}
+    for hand_id, review in ev["hands"].items():
+        hand = by_id[hand_id]
+        hero = hand.hero
+        rows = []
+        for d in review["decisions"]:
+            path = np.asarray(d["path"], dtype=np.int64).reshape(-1, 2)
+            mine = [i for i in range(len(path)) if tree.actor[path[i, 0]] == hero]
+            nodes = path[mine, 0].copy() if mine else np.zeros(0, dtype=np.int64)
+            slots = path[mine, 1].copy() if mine else np.zeros(0, dtype=np.int64)
+            streets = tree.street[nodes].astype(np.int64) if mine else np.zeros(0, dtype=np.int64)
+            board = np.zeros(5, dtype=np.int64)
+            known = d["street"] + 2 if d["street"] else 0
+            board[:known] = hand.board[:known]
+            count = len(d["legal"])
+            per_class = class_mix(board, known, nodes, slots, streets, d["node"], d["street"], count, policy,
+                                  tree.row_start, tree.decision_index, tables.bucket_of, tables.class_of,
+                                  len(tables.reps), rank5, comb)
+            hero_text = card_text(tuple(sorted(hand.hero_cards)))
+            rows.append({"cells": matrix(per_class, texts), "hero_cells": class_cells(hero_text)})
+        out[hand_id] = rows
+    (folder / "chart.json").write_text(json.dumps(out, separators=(",", ":")))
+    log(f"  charts {folder.name}: {sum(len(r) for r in out.values())} decision(s)")
+
+
+if __name__ == "__main__":
+    main()

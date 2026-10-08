@@ -11,6 +11,7 @@
     --stage: #171512; --stage-edge: #3A3628; --on-stage: #F6F2E6; --on-stage-2: #D8D2BE; --on-stage-3: #C9BFA3;
     --good: #2E6B45; --warn: #9A6A1E; --bad: #B3261E; --bar: #1B2A4A; --bar-soft: #CFC6AE;
     --suit-s: #14213D; --suit-h: #C6322A; --suit-d: #1F5FB8; --suit-c: #2E7D4F;
+    --act-raise: #C6322A; --act-call: #B98A45; --act-fold: #3E5C9A; --cell-empty: #ECE6D4;
     --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
     --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
     --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -21,13 +22,15 @@
     --blue: #9FB4DC; --bronze: #C9A266; --bronze-txt: #D9BA86; --red: #E06A5E;
     --stage: #0B0A08; --stage-edge: #2C2920; --on-stage: #F1EBDA; --on-stage-2: #CFC7B1; --on-stage-3: #B8AE92;
     --good: #6FBF8B; --warn: #D9A54A; --bad: #EF7468; --bar: #9FB4DC; --bar-soft: #3A3628;
-    --suit-s: #EDE7D6; --suit-h: #EF7468; --suit-d: #7FA8F0; --suit-c: #6FBF8B; color-scheme: dark; } }
+    --suit-s: #EDE7D6; --suit-h: #EF7468; --suit-d: #7FA8F0; --suit-c: #6FBF8B;
+    --act-raise: #E06A5E; --act-call: #C9A266; --act-fold: #7C9BDD; --cell-empty: #24221D; color-scheme: dark; } }
   :root[data-theme="dark"] {
     --ground: #12110E; --paper: #1B1A16; --edge: #3A3628; --ink: #EDE7D6; --ash: #B9B19C; --ash-2: #A39B86;
     --blue: #9FB4DC; --bronze: #C9A266; --bronze-txt: #D9BA86; --red: #E06A5E;
     --stage: #0B0A08; --stage-edge: #2C2920; --on-stage: #F1EBDA; --on-stage-2: #CFC7B1; --on-stage-3: #B8AE92;
     --good: #6FBF8B; --warn: #D9A54A; --bad: #EF7468; --bar: #9FB4DC; --bar-soft: #3A3628;
-    --suit-s: #EDE7D6; --suit-h: #EF7468; --suit-d: #7FA8F0; --suit-c: #6FBF8B; color-scheme: dark; }
+    --suit-s: #EDE7D6; --suit-h: #EF7468; --suit-d: #7FA8F0; --suit-c: #6FBF8B;
+    --act-raise: #E06A5E; --act-call: #C9A266; --act-fold: #7C9BDD; --cell-empty: #24221D; color-scheme: dark; }
   *, *::before, *::after { box-sizing: border-box; }
   html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
   body { font: 400 15px/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
@@ -127,6 +130,17 @@
   .tag.you { background: var(--ink); color: var(--ground); }
   .tag.best { border: 1px solid var(--good); color: var(--good); }
   .explain { font-size: .86rem; color: var(--ash); max-width: 70ch; }
+  .opt .pct { font: 500 .78rem/1 var(--font-mono); color: var(--ash); margin-left: .35rem; }
+  .chart-wrap { overflow-x: auto; }
+  .chart { display: grid; grid-template-columns: repeat(13, minmax(26px, 1fr)); gap: 2px; min-width: 360px; max-width: 560px; }
+  .cell { position: relative; aspect-ratio: 1.25; border-radius: 2px; overflow: hidden; background: var(--cell-empty); display: flex; }
+  .cell i { display: block; height: 100%; }
+  .cell b { position: absolute; inset: 0; display: grid; place-items: center; font: 600 .56rem/1 var(--font-mono); color: #FBF8EE; text-shadow: 0 0 2px rgba(0,0,0,.6); }
+  .cell.faint { opacity: .35; }
+  .cell.empty b { color: var(--ash-2); text-shadow: none; }
+  .cell.mine { outline: 2px solid var(--ink); outline-offset: -1px; z-index: 1; }
+  .chart-legend { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .8rem; color: var(--ash); margin-top: .35rem; }
+  .chart-legend i { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem; vertical-align: -.05rem; }
   .empty { color: var(--ash); font-size: .9rem; }
 
   .notes { display: grid; gap: .5rem; font-size: .9rem; color: var(--ash); max-width: 75ch; }
@@ -200,13 +214,17 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 const GLYPH = { s: "♠", h: "♥", d: "♦", c: "♣" };
 const cards = text => `<span class="cards">${(text.match(/../g) || []).map(c => `<span class="card s-${c[1]}">${c[0]}${GLYPH[c[1]]}</span>`).join("")}</span>`;
 
-// a decision's cost counts only when it is clearly above the sampling noise
+// A decision is a mistake only when you took an action the solver uses less than 10% of the time and the
+// cost is clearly above the sampling noise. Following the solver while the exact-card values disagree is
+// "unclear": the solver's hand grouping, not your play.
 function severity(d) {
   const noise = Math.hypot(d.se[d.best] || 0, d.se[d.took] || 0);
   if (d.loss <= Math.max(0.02, 2 * noise)) return "fine";
+  if (d.mix[d.took] >= 0.10) return "unclear";
   return d.loss >= 0.2 ? "costly" : d.loss >= 0.05 ? "leak" : "fine";
 }
-const SEV = { costly: ["bad", "Costly"], leak: ["warn", "Small leak"], fine: ["good", "Solver-approved"] };
+const SEV = { costly: ["bad", "Costly"], leak: ["warn", "Small leak"], fine: ["good", "Solver-approved"],
+              unclear: ["none", "Unclear: hand grouping"] };
 
 const hands = DATA.hands;
 // A rating is trusted when the solve had real data for the hand group (not an untouched, even mix)
@@ -217,7 +235,7 @@ function trusted(h, d) {
 }
 hands.forEach(h => h.decisions.forEach(d => { d.trusted = trusted(h, d); }));
 const decisions = hands.flatMap(h => h.decisions.map(d => ({ ...d, hand: h, sev: severity(d) })));
-const counted = d => d.trusted && d.sev !== "fine" ? d.loss : 0;
+const counted = d => d.trusted && (d.sev === "costly" || d.sev === "leak") ? d.loss : 0;
 const sure = decisions.filter(d => d.trusted);
 const lost = decisions.reduce((s, d) => s + counted(d), 0);
 const agree = sure.filter(d => d.mix[d.took] >= 0.25).length;
@@ -252,7 +270,7 @@ $("tiles").innerHTML = [
   svg += `<path class="area" d="M${x(0)},${y(0)} L${pts.join(" L")} L${x(hands.length - 1)},${y(0)} Z"/>`;
   svg += `<polyline class="line" points="${pts.join(" ")}"/>`;
   hands.forEach((h, i) => {
-    const worst = h.decisions.filter(d => d.trusted).map(d => severity(d)).sort((a, b) => (a === "costly" ? -1 : a === "leak" ? 0 : 1) - (b === "costly" ? -1 : b === "leak" ? 0 : 1))[0];
+    const worst = h.decisions.filter(d => d.trusted).map(d => severity(d)).filter(s => s !== "unclear").sort((a, b) => (a === "costly" ? -1 : a === "leak" ? 0 : 1) - (b === "costly" ? -1 : b === "leak" ? 0 : 1))[0];
     if (worst === "costly" || worst === "leak") svg += `<circle class="${worst === "costly" ? "bad" : "warn"}" cx="${x(i)}" cy="${y(h.chips)}" r="4"><title>${h.time} · ${h.position} · ${h.cards}</title></circle>`;
   });
   const last = hands.length - 1;
@@ -263,7 +281,7 @@ $("tiles").innerHTML = [
 // leak tables
 function leakTable(el, title, key, order) {
   const groups = {};
-  sure.forEach(d => { const k = key(d); (groups[k] ||= { n: 0, lost: 0, bad: 0 }); groups[k].n++; groups[k].lost += counted(d); if (d.sev !== "fine") groups[k].bad++; });
+  sure.forEach(d => { const k = key(d); (groups[k] ||= { n: 0, lost: 0, bad: 0 }); groups[k].n++; groups[k].lost += counted(d); if (counted(d) > 0) groups[k].bad++; });
   const most = Math.max(0.01, ...Object.values(groups).map(g => g.lost));
   const keys = order.filter(k => groups[k]);
   $(el).innerHTML = `<thead><tr><th>${title}</th><th class="n">Decisions</th><th class="n">Leaks</th><th class="n">Equity lost</th><th></th></tr></thead><tbody>` +
@@ -273,7 +291,7 @@ leakTable("by-street", "Street", d => STREETS[d.street], STREETS);
 leakTable("by-pos", "Position", d => d.hand.position, ["UTG", "HJ", "CO", "BTN", "SB", "BB"]);
 
 // costliest decisions
-const worst = sure.filter(d => d.sev !== "fine").sort((a, b) => b.loss - a.loss).slice(0, 8);
+const worst = sure.filter(d => d.sev === "costly" || d.sev === "leak").sort((a, b) => b.loss - a.loss).slice(0, 8);
 $("costly").innerHTML = worst.length ? worst.map(d => `<button type="button" data-hand="${d.hand.id}"><span class="t mono">${d.hand.time}</span>
   <span class="what"><strong>${d.hand.position} · ${STREETS[d.street]}:</strong> you chose ${esc(d.options[d.took]).toLowerCase()}, the solver's best was ${esc(d.options[d.best]).toLowerCase()} ${cards(d.hand.cards)}
   <p>${d.board ? `Board ${d.board.match(/../g).join(" ")} · ` : ""}pot ${d.pot}bb · ${d.to_call ? `to call ${d.to_call}bb` : "no bet to call"}</p></span>
@@ -285,7 +303,7 @@ const FILTERS = [["all", "All hands"], ["leaks", "With a leak"], ["played", "Pla
 let filter = "all", current = null;
 try { filter = localStorage.getItem("plo5-filter") || "all"; } catch (e) {}
 function passes(h) {
-  if (filter === "leaks") return h.decisions.some(d => d.trusted && severity(d) !== "fine");
+  if (filter === "leaks") return h.decisions.some(d => d.trusted && ["costly", "leak"].includes(severity(d)));
   if (filter === "played") return h.line.some(a => a.street > 0 && a.hero);
   if (filter === "late") return h.level >= 12;
   return true;
@@ -299,6 +317,7 @@ function handState(h) {
   const sevs = h.decisions.filter(d => d.trusted).map(severity);
   if (sevs.includes("costly")) return SEV.costly;
   if (sevs.includes("leak")) return SEV.leak;
+  if (h.decisions.some(d => d.trusted && severity(d) === "unclear")) return SEV.unclear;
   if (h.decisions.some(d => !d.trusted)) return ["none", "Low confidence"];
   return SEV.fine;
 }
@@ -317,13 +336,38 @@ function lineHTML(h) {
   });
   return out.replace(/,<\/span>$/, "</span>");
 }
+const actColor = label => /^(Raise|Bet)/.test(label) ? "var(--act-raise)" : /^(Call|Check)/.test(label) ? "var(--act-call)" : "var(--act-fold)";
+const CHART_RANKS = "AKQJT98765432";
+function cellName(key) {
+  const row = Math.floor(key / 13), col = key % 13;
+  if (row === col) return CHART_RANKS[row] + CHART_RANKS[row];
+  return row < col ? CHART_RANKS[row] + CHART_RANKS[col] + "s" : CHART_RANKS[col] + CHART_RANKS[row] + "o";
+}
+// the solver's range at this decision: each cell holds every hand containing that pair of cards
+function chartHTML(d) {
+  if (!d.chart) return "";
+  const order = d.options.map((o, i) => i).sort((a, b) => (/^(Raise|Bet)/.test(d.options[a]) ? 0 : /^(Call|Check)/.test(d.options[a]) ? 1 : 2)
+    - (/^(Raise|Bet)/.test(d.options[b]) ? 0 : /^(Call|Check)/.test(d.options[b]) ? 1 : 2));
+  const mine = new Set(d.chart.hero_cells);
+  const cells = d.chart.cells.map((c, key) => {
+    const w = c[0], empty = w <= 0;
+    const bars = empty ? "" : order.map(i => c[1 + i] > 0.001 ? `<i style="width:${(c[1 + i] * 100).toFixed(1)}%;background:${actColor(d.options[i])}"></i>` : "").join("");
+    const tip = empty ? "no hands reach here" : order.map(i => `${d.options[i]} ${pct(c[1 + i])}`).join(", ");
+    return `<div class="cell${empty ? " empty" : w < 0.05 ? " faint" : ""}${mine.has(key) ? " mine" : ""}" title="${cellName(key)}: ${tip}">${bars}<b>${cellName(key)}</b></div>`;
+  }).join("");
+  return `<details class="chart-box" open><summary class="label" style="cursor:pointer">Solver's range here</summary>
+    <div class="chart-wrap"><div class="chart" role="img" aria-label="Solver range chart">${cells}</div></div>
+    <div class="chart-legend">${order.map(i => `<span><i style="background:${actColor(d.options[i])}"></i>${esc(d.options[i])}</span>`).join("")}<span>outlined: your hand · faded: few hands get here</span></div></details>`;
+}
 function decisionHTML(d) {
   const [cls, txt] = d.trusted ? SEV[severity(d)] : ["none", "Low confidence"];
   const realSize = d.real === "bet" || d.real === "raise" ? ` (you ${d.real === "raise" ? "raised to" : "bet"} ${d.real_bb}bb${d.all_in ? ", all-in" : ""}; the tree has pot-size only)` : "";
   return `<div class="decision"><div class="decision-head"><strong>${STREETS[d.street]}${d.board ? " " + cards(d.board) : ""}</strong>
-    <span class="meta"><span>pot ${d.pot}bb</span><span>${d.to_call ? `to call ${d.to_call}bb` : "no bet to call"}</span><span class="pill ${cls}">${txt}${!d.trusted || severity(d) === "fine" ? "" : " · " + money(d.loss)}</span></span></div>
-    <div class="options">${d.options.map((o, i) => `<div class="opt"><span>${esc(o)}</span><span class="bar" title="solver plays this ${pct(d.mix[i])} of the time with your hand group"><i style="width:${(d.mix[i] * 100).toFixed(1)}%"></i></span>
+    <span class="meta"><span>pot ${d.pot}bb</span><span>${d.to_call ? `to call ${d.to_call}bb` : "no bet to call"}</span><span class="pill ${cls}">${txt}${!d.trusted || !["costly", "leak"].includes(severity(d)) ? "" : " · " + money(d.loss)}</span></span></div>
+    <div class="options">${d.options.map((o, i) => `<div class="opt"><span>${esc(o)}<span class="pct">${pct(d.mix[i])}</span></span><span class="bar" title="solver plays this ${pct(d.mix[i])} of the time with your hand group"><i style="width:${(d.mix[i] * 100).toFixed(1)}%;background:${actColor(o)}"></i></span>
       <span class="val">${money(d.values[i])} <small>±${d.se[i].toFixed(2)}</small></span><span class="tags">${i === d.took ? '<span class="tag you">YOU</span>' : ""}${i === d.best ? '<span class="tag best">BEST</span>' : ""}</span></div>`).join("")}</div>
+    ${d.trusted && severity(d) === "unclear" ? `<p class="explain">You took an action the solver also uses (${pct(d.mix[d.took])}), but the values for your exact cards favour ${esc(d.options[d.best]).toLowerCase()} by ${money(d.loss)}. The solver groups your hand with others that play differently, so this is not counted as a mistake.</p>` : ""}
+    ${chartHTML(d)}
     ${d.trusted ? "" : `<p class="explain">Low confidence: the solve had too little data for this spot, so this rating is not counted in the totals.</p>`}
     ${realSize ? `<p class="explain">${realSize.trim().replace(/^\(|\)$/g, "")}.</p>` : ""}</div>`;
 }

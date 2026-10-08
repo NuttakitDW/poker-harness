@@ -45,10 +45,17 @@ Say what is possible and what is not, then wait for a go-ahead (the user asks "c
 .venv/bin/python -m plo_premium_proof.review plan --hh "<hh>" --payouts 113.80,93.78,... \
     --entries 57 --finish 11 --first-left 45 --out tmp/plo5/sessions/<tag>/review
 
-# 3. Everything else, unattended and resumable (solves -> values -> dashboard.html)
+# 3. Everything else, unattended and resumable (solves -> values -> range charts -> dashboard.html)
 nohup scripts/plo5_icm_pipeline.sh "<hh>" <tag> 113.80,93.78,... 57 11 45 10000 >/dev/null 2>&1 &
 tail -f tmp/plo5/sessions/<tag>/pipeline.log      # "ALL DONE <tag>" at the end
 ```
+
+How the page rates a decision: a **mistake** only when the hero took an action the solver uses under
+10% of the time and the cost beats the sampling noise; when the hero followed the solver but the
+exact-card values disagree, it is **"Unclear: hand grouping"** (bucket coarseness, not the hero's
+play) and is left out of the totals. Every decision shows the solver's percentages, the dollar value
+of each option and the solver's 13×13 range chart at that point (reach-weighted, hero cells outlined).
+Explain the page in those plain terms when the user asks; the bars-vs-dollars split confused them once.
 
 Then publish `tmp/plo5/sessions/<tag>/dashboard.html` with the Artifact tool (private by default;
 load `artifact-design` first). Before publishing, sanity-check the top mistakes: a rating whose solver
@@ -81,6 +88,7 @@ mix is an even 33/33/33 is an untouched bucket; the page already treats those an
 | `plo_premium_proof/hh.py` | GG Omaha tournament parser (preflop order UTG…BB, bb stacks, actions); `session_nets` from stack deltas (GG omits returned uncalled bets) |
 | `plo_premium_proof/review.py` | spots (`FinalTableSpec` + crowd ICM), jobs (voluntary hands alone, fold-only hands grouped by table/level/size), budgets, solve, replay, `evaluate` |
 | `plo_premium_proof/review_ev.py` | numba kernel: option values by reach-weighted deals with common random numbers |
+| `plo_premium_proof/review_chart.py` | numba kernel: the solver's range chart at a decision over all 2.6M hands, reach-weighted |
 | `scripts/plo5_dashboard.py` + `.html` | the review page (tamkwai CI, both themes) |
 | `scripts/plo5_icm_pipeline.sh` | supervisor: solve → evaluate → dashboard |
 | `plo_premium_proof/plo5_web.py`, `public/plo5.html` | public spot library + explorer |
