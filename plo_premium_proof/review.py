@@ -70,7 +70,9 @@ class Session:
         away = self.entries * self.start_stack - sum(hand.chips)
         field = (away / (left - n) / hand.bb) if left > n else 0.0
         caps = CAPS_DEEP_6 if n >= 6 and max(hand.stacks_bb) > 30 else CAPS
-        return FinalTableSpec(stacks=tuple(round(x, 3) for x in hand.stacks_bb), payouts=self.payouts,
+        # the solver takes 0.2-400bb; chips past the biggest other stack are never in play in this hand
+        stacks = tuple(round(min(max(x, 0.2), 400.0), 3) for x in hand.stacks_bb)
+        return FinalTableSpec(stacks=stacks, payouts=self.payouts,
                               ante_bb=round(hand.ante_bb, 4), raise_caps=caps, minutes=minutes,
                               players_left=left if left > n else 0,
                               field_stack_bb=round(max(field, 0.2), 3) if left > n else 0.0, label=label)

@@ -1,0 +1,203 @@
+<title>PLO5 Decision Progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Layout: tamkwai stage header, then latest-vs-previous scorecard, trend lines, the session ledger and
+     leak comparisons on a parchment worktable. Same tokens as the session review page. */
+  :root {
+    --ground: #F6F2E6; --paper: #FBF8EE; --edge: #D9D0B8; --ink: #14213D; --ash: #4F5667; --ash-2: #636A7A;
+    --blue: #1B2A4A; --bronze: #A87C3F; --bronze-txt: #6B4E22; --red: #C6322A;
+    --stage: #171512; --on-stage: #F6F2E6; --on-stage-2: #D8D2BE; --on-stage-3: #C9BFA3;
+    --good: #2E6B45; --bad: #B3261E; --series-a: #1B2A4A; --series-b: #A87C3F; --bar-soft: #E4DCC6;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px; --gutter: clamp(16px, 4vw, 40px); --column: 1080px;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --ground: #12110E; --paper: #1B1A16; --edge: #3A3628; --ink: #EDE7D6; --ash: #B9B19C; --ash-2: #A39B86;
+    --blue: #9FB4DC; --bronze: #C9A266; --bronze-txt: #D9BA86; --red: #E06A5E;
+    --stage: #0B0A08; --on-stage: #F1EBDA; --on-stage-2: #CFC7B1; --on-stage-3: #B8AE92;
+    --good: #6FBF8B; --bad: #EF7468; --series-a: #9FB4DC; --series-b: #C9A266; --bar-soft: #2C2A23; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --ground: #12110E; --paper: #1B1A16; --edge: #3A3628; --ink: #EDE7D6; --ash: #B9B19C; --ash-2: #A39B86;
+    --blue: #9FB4DC; --bronze: #C9A266; --bronze-txt: #D9BA86; --red: #E06A5E;
+    --stage: #0B0A08; --on-stage: #F1EBDA; --on-stage-2: #CFC7B1; --on-stage-3: #B8AE92;
+    --good: #6FBF8B; --bad: #EF7468; --series-a: #9FB4DC; --series-b: #C9A266; --bar-soft: #2C2A23; color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { font: 400 15px/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+  h1, h2 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .column { max-width: var(--column); margin: 0 auto; }
+  .label { font: 500 .72rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ash-2); }
+  .stage { position: relative; background: var(--stage); color: var(--on-stage); padding: clamp(1.25rem, 4vw, 2.25rem) var(--gutter); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246,242,230,.12) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage .label { color: var(--on-stage-3); }
+  .stage h1 { font-size: clamp(1.7rem, 4vw, 2.5rem); line-height: 1.15; margin-top: .6rem; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: .8rem; color: var(--on-stage-2); max-width: 64ch; font-size: .95rem; }
+  main { padding: clamp(1.25rem, 3vw, 2rem) var(--gutter) 0; }
+  section { margin-top: clamp(1.5rem, 4vw, 2.5rem); }
+  section > h2 { font-size: 1.2rem; margin-bottom: .75rem; }
+  .sheet { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: clamp(.9rem, 2.5vw, 1.25rem); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .75rem; }
+  .card { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: .9rem 1rem; display: grid; gap: .35rem; }
+  .card b { font: 600 1.6rem/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+  .card small { color: var(--ash); font-size: .82rem; }
+  .delta { font: 600 .8rem/1 var(--font-mono); }
+  .delta.better { color: var(--good); } .delta.worse { color: var(--bad); } .delta.same { color: var(--ash-2); }
+  .trend { width: 100%; height: auto; display: block; }
+  .trend text { font: 500 11px var(--font-mono); fill: var(--ash-2); }
+  .trend .grid { stroke: var(--edge); }
+  .trend .a { fill: none; stroke: var(--series-a); stroke-width: 2.5; }
+  .trend .b { fill: none; stroke: var(--series-b); stroke-width: 2; stroke-dasharray: 5 4; }
+  .trend .pa { fill: var(--series-a); } .trend .pb { fill: var(--series-b); }
+  .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font-size: .82rem; color: var(--ash); margin-top: .4rem; }
+  .legend i { display: inline-block; width: 1rem; height: 3px; margin-right: .4rem; vertical-align: .2rem; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+  th { text-align: left; font: 500 .7rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ash-2); padding: .5rem .55rem; border-bottom: 1px solid var(--edge); }
+  td { padding: .5rem .55rem; border-bottom: 1px solid var(--edge); }
+  td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  a { color: var(--blue); }
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: .75rem; }
+  .bars { display: grid; gap: .45rem; }
+  .bar-row { display: grid; grid-template-columns: 4.5rem 1fr 4.5rem; gap: .6rem; align-items: center; font-size: .86rem; }
+  .bar-pair { display: grid; gap: 3px; }
+  .bar-pair i { display: block; height: .55rem; border-radius: 2px; min-width: 2px; }
+  .bar-row .v { text-align: right; font: 500 .78rem/1.35 var(--font-mono); color: var(--ash); }
+  .worst { display: grid; gap: .45rem; }
+  .worst div { display: grid; grid-template-columns: 3.4rem 1fr auto; gap: .8rem; align-items: baseline; padding: .55rem .8rem; border: 1px solid var(--edge); border-radius: var(--cut); background: var(--paper); font-size: .88rem; }
+  .worst .t { font: 500 .78rem var(--font-mono); color: var(--ash-2); }
+  .worst b { font: 600 .9rem var(--font-mono); color: var(--bad); }
+  .worst p { min-width: 0; }
+  .notes { color: var(--ash); font-size: .9rem; max-width: 75ch; display: grid; gap: .4rem; padding-left: 1.1rem; }
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--edge); font-size: .8rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+</style>
+
+<header class="stage">
+  <div class="column">
+    <p class="label">Decision progress · PLO5 · ICM</p>
+    <h1><span class="hoof" aria-hidden="true"></span>Are my decisions getting better?</h1>
+    <p class="lede" id="lede"></p>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <section aria-labelledby="now-h" style="margin-top:0">
+      <h2 id="now-h" class="label" style="margin-bottom:.6rem">Latest session against the one before</h2>
+      <div class="cards" id="cards"></div>
+    </section>
+
+    <section aria-labelledby="trend-h">
+      <h2 id="trend-h">Trend by session</h2>
+      <div class="sheet">
+        <svg class="trend" id="trend" viewBox="0 0 900 240" role="img" aria-label="Equity lost and match rate by session"></svg>
+        <div class="legend"><span><i style="background:var(--series-a)"></i>buy-ins lost per 100 decisions (lower is better, left scale)</span><span><i style="background:var(--series-b)"></i>matched the solver (higher is better, right scale)</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="ledger-h">
+      <h2 id="ledger-h">Every session</h2>
+      <div class="sheet table-wrap"><table id="ledger"></table></div>
+    </section>
+
+    <section aria-labelledby="leak-h">
+      <h2 id="leak-h">Where the equity goes: latest against the one before</h2>
+      <div class="compare">
+        <div class="sheet"><p class="label" style="margin-bottom:.6rem">By street · buy-ins lost per 100 decisions</p><div class="bars" id="by-street"></div></div>
+        <div class="sheet"><p class="label" style="margin-bottom:.6rem">By position · buy-ins lost per 100 decisions</p><div class="bars" id="by-pos"></div></div>
+      </div>
+      <div class="legend"><span><i style="background:var(--series-a)"></i><span id="lg-a"></span></span><span><i style="background:var(--series-b)"></i><span id="lg-b"></span></span></div>
+    </section>
+
+    <section aria-labelledby="worst-h">
+      <h2 id="worst-h">Costliest decisions last session</h2>
+      <div class="worst" id="worst"></div>
+    </section>
+
+    <section aria-labelledby="notes-h">
+      <h2 id="notes-h">How sessions are compared</h2>
+      <ul class="notes">
+        <li>Every session is scored with the same rules as its review page: only trusted ratings count, and a decision is a mistake only when you took an action the solver uses under 10% of the time and it cost more than the sampling noise.</li>
+        <li>Equity is in buy-ins so sessions with different prize pools compare fairly, and per 100 decisions so long and short sessions compare fairly.</li>
+        <li>"Matched the solver" counts decisions where your action is one the solver takes at least 25% of the time.</li>
+        <li>A single session is a small sample (a few dozen trusted decisions). Read the trend over several sessions, not one jump.</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer><div class="column"><span>Private progress tracker · solver by ตามควาย</span><span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span></div></footer>
+
+<script>
+const S = /*DATA*/null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = x => `${Math.round(x * 100)}%`;
+const bi = x => x.toFixed(2);
+const latest = S[S.length - 1], prev = S.length > 1 ? S[S.length - 2] : null;
+const dateLabel = s => new Date(s.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+$("lede").textContent = `${S.length} reviewed session${S.length > 1 ? "s" : ""} of PLO-5 tournaments, ${S.reduce((a, s) => a + s.decisions, 0)} trusted decisions rated against per-hand ICM solves. Lower equity lost and a higher match rate mean better decisions.`;
+
+function delta(now, before, lowerIsBetter, fmt) {
+  if (before === null || before === undefined) return `<span class="delta same">first session</span>`;
+  const diff = now - before;
+  if (Math.abs(diff) < 1e-9) return `<span class="delta same">same as before</span>`;
+  const better = lowerIsBetter ? diff < 0 : diff > 0;
+  return `<span class="delta ${better ? "better" : "worse"}">${diff > 0 ? "▲" : "▼"} ${fmt(Math.abs(diff))} ${better ? "better" : "worse"}</span>`;
+}
+$("cards").innerHTML = [
+  ["Buy-ins lost per 100 decisions", bi(latest.lost_per_100), delta(latest.lost_per_100, prev && prev.lost_per_100, true, bi), "ICM equity given up on trusted decisions"],
+  ["Matched the solver", pct(latest.match), delta(latest.match, prev && prev.match, false, x => pct(x)), "your action is one the solver takes 25%+ of the time"],
+  ["Costly mistakes per 100", latest.costly_per_100.toFixed(1), delta(latest.costly_per_100, prev && prev.costly_per_100, true, x => x.toFixed(1)), "each over $0.20 of tournament equity"],
+  ["Trusted decisions", latest.decisions, prev ? `<span class="delta same">${prev.decisions} last time</span>` : "", `${latest.hands} hands · ${latest.bullets} bullet${latest.bullets > 1 ? "s" : ""}`],
+].map(([k, v, d, s]) => `<div class="card"><span class="label">${k}</span><b>${v}</b>${d}<small>${s}</small></div>`).join("");
+
+(function trend() {
+  const W = 900, H = 240, L = 50, R = 50, T = 16, B = 34;
+  const n = S.length;
+  const x = i => n === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (n - 1);
+  const top = Math.max(1, Math.ceil(Math.max(...S.map(s => s.lost_per_100)) * 2) / 2);
+  const yA = v => T + (H - T - B) * (1 - v / top), yB = v => T + (H - T - B) * (1 - v);
+  let svg = "";
+  for (let k = 0; k <= 4; k++) {
+    const v = top * k / 4, y = yA(v);
+    svg += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text x="${L - 6}" y="${y + 4}" text-anchor="end">${v.toFixed(2)}</text><text x="${W - R + 6}" y="${y + 4}">${pct(k / 4)}</text>`;
+  }
+  S.forEach((s, i) => { svg += `<text x="${x(i)}" y="${H - 10}" text-anchor="middle">${dateLabel(s)}</text>`; });
+  if (n > 1) {
+    svg += `<polyline class="a" points="${S.map((s, i) => `${x(i)},${yA(s.lost_per_100)}`).join(" ")}"/>`;
+    svg += `<polyline class="b" points="${S.map((s, i) => `${x(i)},${yB(s.match)}`).join(" ")}"/>`;
+  }
+  S.forEach((s, i) => { svg += `<circle class="pa" cx="${x(i)}" cy="${yA(s.lost_per_100)}" r="5"><title>${dateLabel(s)}: ${bi(s.lost_per_100)} buy-ins per 100</title></circle><circle class="pb" cx="${x(i)}" cy="${yB(s.match)}" r="4"><title>${dateLabel(s)}: ${pct(s.match)} matched</title></circle>`; });
+  $("trend").innerHTML = svg;
+})();
+
+$("ledger").innerHTML = `<thead><tr><th>Date</th><th>Tournament</th><th class="n">Finish</th><th class="n">Bullets</th><th class="n">Hands</th><th class="n">Trusted</th><th class="n">Lost (BI)</th><th class="n">Per 100</th><th class="n">Matched</th><th class="n">Costly/100</th><th>Review</th></tr></thead><tbody>`
+  + S.slice().reverse().map(s => `<tr><td>${dateLabel(s)}</td><td>${esc(s.title)}</td><td class="n">${s.finish}/${s.entries}</td><td class="n">${s.bullets}</td><td class="n">${s.hands}</td><td class="n">${s.decisions}</td><td class="n">${bi(s.lost_bi)}</td><td class="n">${bi(s.lost_per_100)}</td><td class="n">${pct(s.match)}</td><td class="n">${s.costly_per_100.toFixed(1)}</td><td>${s.dashboard ? `<a href="${esc(s.dashboard)}" target="_blank" rel="noopener">Open</a>` : "–"}</td></tr>`).join("") + "</tbody>";
+
+function compare(el, key, names) {
+  const rate = (s, k) => s[key][k] && s[key][k].decisions ? 100 * s[key][k].lost_bi / s[key][k].decisions : 0;
+  const rows = names.filter(k => latest[key][k].decisions || (prev && prev[key][k].decisions));
+  const most = Math.max(0.01, ...rows.flatMap(k => [rate(latest, k), prev ? rate(prev, k) : 0]));
+  $(el).innerHTML = rows.map(k => `<div class="bar-row"><span>${k}</span><span class="bar-pair">
+      <i style="width:${(rate(latest, k) / most * 100).toFixed(1)}%;background:var(--series-a)" title="${dateLabel(latest)}"></i>
+      ${prev ? `<i style="width:${(rate(prev, k) / most * 100).toFixed(1)}%;background:var(--series-b)" title="${dateLabel(prev)}"></i>` : ""}</span>
+      <span class="v">${rate(latest, k).toFixed(2)}${prev ? `<br>${rate(prev, k).toFixed(2)}` : ""}</span></div>`).join("");
+}
+compare("by-street", "streets", ["Preflop", "Flop", "Turn", "River"]);
+compare("by-pos", "positions", ["UTG", "HJ", "CO", "BTN", "SB", "BB"]);
+$("lg-a").textContent = `${dateLabel(latest)} (latest)`;
+$("lg-b").textContent = prev ? dateLabel(prev) : "";
+
+$("worst").innerHTML = latest.worst.length ? latest.worst.map(w => `<div><span class="t">${w.time}</span><p><strong>${w.position} · ${w.street}${w.board ? " " + w.board.match(/../g).join(" ") : ""}:</strong> you chose ${esc(w.took).toLowerCase()}, the solver's best was ${esc(w.best).toLowerCase()} <span style="color:var(--ash);font-family:var(--font-mono);font-size:.8rem">${esc(w.cards)}</span></p><b>${bi(w.lost_bi)} BI</b></div>`).join("")
+  : `<p style="color:var(--ash)">No trusted mistakes in the latest session.</p>`;
+</script>

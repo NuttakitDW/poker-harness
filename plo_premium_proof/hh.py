@@ -151,11 +151,12 @@ def parse_file(path: Path) -> list[Hand]:
 
 def session_nets(hands: list[Hand]) -> list[int]:
     """Hero's chips won or lost per hand: the change to the next hand's stack (exact, uncalled bets
-    included), and the logged actions for the last hand."""
+    included), and the logged actions for the last hand and for every bust (re-entries restart the stack)."""
     nets = []
     for i, hand in enumerate(hands):
-        if i + 1 < len(hands):
+        logged = hand.hero_net()
+        if i + 1 < len(hands) and logged != -hand.chips[hand.hero]:
             nets.append(hands[i + 1].chips[hands[i + 1].hero] - hand.chips[hand.hero])
-        else:
-            nets.append(hand.hero_net())
+        else:  # the last hand, or a bust before a re-entry (the next hand starts a new stack)
+            nets.append(logged)
     return nets
