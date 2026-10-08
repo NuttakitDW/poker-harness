@@ -222,8 +222,10 @@ const sure = decisions.filter(d => d.trusted);
 const lost = decisions.reduce((s, d) => s + counted(d), 0);
 const agree = sure.filter(d => d.mix[d.took] >= 0.25).length;
 
+const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+$("title").textContent = DATA.title;
 $("facts").innerHTML = [
-  `<span>Finished <b>${DATA.finish}th</b> of <b>${DATA.entries}</b> (${DATA.paid} paid)</span>`,
+  `<span>Finished <b>${ordinal(DATA.finish)}</b> of <b>${DATA.entries}</b> (${DATA.paid} paid)</span>`,
   `<span><b>${hands.length}</b> hands · ${DATA.start}–${DATA.end}</span>`,
   `<span>Prize pool <b>$${DATA.payouts.reduce((a, b) => a + b, 0).toFixed(2)}</b> · 1st <b>$${DATA.payouts[0].toFixed(2)}</b></span>`,
 ].join("");
@@ -348,10 +350,10 @@ renderFilters();
 show((worst[0] && worst[0].hand.id) || (hands.find(h => h.rated) || hands[0]).id);
 
 $("notes").innerHTML = [
-  "Each hand you played was re-solved on its own with the real seats, stacks, blinds and ante, as a PLO5 game played through the river. Payoffs are ICM tournament equity from the 9 real prizes, with the rest of the field as one group of average stacks.",
+  `Each hand you played was re-solved on its own with the real seats, stacks, blinds and ante, as a PLO5 game played through the river. Payoffs are ICM tournament equity from the ${DATA.paid} real prizes, with the rest of the field as one group of average stacks.`,
   "Hands where you only folded preflop share one solve per table, level and table size; each fold is read at your seat in its own hand.",
   "Six-handed hands with 60bb+ stacks are not rated: their game trees are too big to solve reliably in a few minutes. Each solved hand shows its solve quality (solid, fair or thin), from how many deals the solver played per strategy entry.",
-  "Players left at each hand are estimated (about 45 at the start, falling to 11 at your bust). The hand history does not record it.",
+  `Players left at each hand are estimated, falling evenly to ${DATA.finish} at your last hand. The hand history does not record it.`,
   "The solver bets and raises pot-size only. Your bets of other sizes are read as pot-size bets, so sizing itself is not judged.",
   "Hands are grouped: preflop by heads-up and three-way equity (1,000 groups), postflop by strength, flush draw and straight outs. The bars show the group's mix; the dollar values use your exact cards and the real board.",
   "Dollar values come from simulated deals weighted by how likely the opponents were to play the hand the way they did, then played out with the solver's strategy. A cost counts only when it is larger than its sampling error.",

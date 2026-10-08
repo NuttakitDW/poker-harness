@@ -1,6 +1,7 @@
 """Build the private PLO5 session review page from the review solves (plo_premium_proof.review).
 
-    .venv/bin/python scripts/plo5_dashboard.py --hh <file> --out <page.html>
+    .venv/bin/python scripts/plo5_dashboard.py --hh <file> --out <page.html> --review tmp/plo5/review \
+        --title "PLO-5 Classic $10" --entries 57 --finish 11 --payouts 113.80,93.78,...
 
 Reads tmp/plo5/review/*/review_ev.json (option values per hero decision) and the hand history, and
 writes one self-contained HTML page: session summary, stack graph, leaks by street and position,
@@ -31,16 +32,17 @@ def _label(action: str, to_call: float) -> str:
     return action.capitalize()
 
 
-def collect(hh: Path) -> dict:
+def collect(hh: Path, review: Path = REVIEW, title: str = "PLO-5 Classic $10", entries: int = 57, finish: int = 11,
+            payouts: tuple[float, ...] = (113.80, 93.78, 77.31, 63.73, 52.53, 43.30, 35.70, 24.26, 19.99)) -> dict:
     hands = parse_file(hh)
     nets = session_nets(hands)
     rated: dict[str, dict] = {}
     skipped: dict[str, str] = {}
-    for path in sorted(REVIEW.glob("*/skipped.json")):
+    for path in sorted(review.glob("*/skipped.json")):
         info = json.loads(path.read_text())
         for hand_id in info["job"]["hands"]:
             skipped[hand_id] = info["reason"]
-    for path in sorted(REVIEW.glob("*/review_ev.json")):
+    for path in sorted(review.glob("*/review_ev.json")):
         job = json.loads((path.parent / "review.json").read_text())
         data = json.loads(path.read_text())
         for hand_id, review in data["hands"].items():
@@ -75,18 +77,23 @@ def collect(hh: Path) -> dict:
                     "took": d["slot"], "best": best, "loss": d["loss"], "mix_loss": d["mix_loss"],
                     "real": d["real"], "real_bb": round(d["real_amount"] / hand.bb, 1), "all_in": d["all_in"]})
         rows.append(entry)
-    return {"title": "PLO-5 Classic $10", "date": hands[0].time.strftime("%Y-%m-%d"),
+    return {"title": title, "date": hands[0].time.strftime("%Y-%m-%d"),
             "start": hands[0].time.strftime("%H:%M"), "end": hands[-1].time.strftime("%H:%M"),
-            "entries": 57, "finish": 11, "paid": 9,
-            "payouts": [113.80, 93.78, 77.31, 63.73, 52.53, 43.30, 35.70, 24.26, 19.99], "hands": rows}
+            "entries": entries, "finish": finish, "paid": len(payouts), "payouts": list(payouts), "hands": rows}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--hh", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--review", type=Path, default=REVIEW)
+    parser.add_argument("--title", default="PLO-5 Classic $10")
+    parser.add_argument("--entries", type=int, default=57)
+    parser.add_argument("--finish", type=int, default=11)
+    parser.add_argument("--payouts", default="113.80,93.78,77.31,63.73,52.53,43.30,35.70,24.26,19.99")
     args = parser.parse_args()
-    data = collect(args.hh)
+    data = collect(args.hh, args.review, args.title, args.entries, args.finish,
+                   tuple(float(x) for x in args.payouts.split(",")))
     template = (Path(__file__).parent / "plo5_dashboard.html").read_text()
     payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     args.out.parent.mkdir(parents=True, exist_ok=True)

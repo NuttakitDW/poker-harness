@@ -8,7 +8,8 @@ Writes, under --out:
 
 Only the solver's output goes out: no hand history, hole cards or player names.
 
-    .venv/bin/python -m plo_premium_proof.plo5_web --out tmp/plo5/web
+    .venv/bin/python -m plo_premium_proof.plo5_web --out tmp/plo5/web --review tmp/plo5/review --tag gg1007 \
+        --entries 57 --payouts 113.80,93.78,...
 """
 
 from __future__ import annotations
@@ -49,7 +50,7 @@ def export_classes(out: Path, tables: Plo5Tables) -> int:
     return len(rows)
 
 
-def export_spot(folder: Path, out: Path) -> dict | None:
+def export_spot(folder: Path, out: Path, tag: str = "", entries: int = 57) -> dict | None:
     review = json.loads((folder / "review.json").read_text())
     spec = FinalTableSpec.from_dict(review["spec"])
     tree = FullTree.build(spec.tree_config(), cache_dir=None)
@@ -62,13 +63,13 @@ def export_spot(folder: Path, out: Path) -> dict | None:
 
     nodes, blob = heads_up_tree(spec.tree_config().root(), tree.actor, tree.children, tree.action_ids,
                                 tree.action_count, rows_of, spec.seat_names)
-    spot_id = folder.name.lower()
+    spot_id = f"{tag}-{folder.name.lower()}" if tag else folder.name.lower()
     n = len(spec.stacks)
     stacks = [round(x, 1) for x in spec.stacks]
     left = spec.players_left or n
     label = f"{n}-handed · {left} left · avg {round(sum(stacks) / n)}bb"
     detail = (" · ".join(f"{name} {x:g}" for name, x in zip(spec.seat_names, stacks))
-              + f" · ante {spec.ante_bb:g}bb · ICM, {left} of 57 left, 9 paid"
+              + f" · ante {spec.ante_bb:g}bb · ICM, {left} of {entries} left, {len(spec.payouts)} paid"
               + (f" · other tables avg {spec.field_stack_bb:.0f}bb" if spec.field_stack_bb else ""))
     data = {"name": spot_id, "label": label, "detail": detail, "stack": max(stacks), "ante": spec.ante_bb,
             "buckets": buckets, "seats": list(spec.seat_names), "nodes": nodes,
@@ -83,19 +84,25 @@ def export_spot(folder: Path, out: Path) -> dict | None:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=Path("tmp/plo5/web"))
+    parser.add_argument("--review", type=Path, default=REVIEW, help="the session's solve folder (review.py --out)")
+    parser.add_argument("--tag", default="", help="prefix for spot ids, so several sessions can share the library")
+    parser.add_argument("--entries", type=int, default=57)
+    parser.add_argument("--start-stack", type=int, default=10000)
+    parser.add_argument("--payouts", default="113.80,93.78,77.31,63.73,52.53,43.30,35.70,24.26,19.99")
     args = parser.parse_args(argv)
+    payouts = [float(x) for x in args.payouts.split(",")]
     args.out.mkdir(parents=True, exist_ok=True)
     print(f"{export_classes(args.out, Plo5Tables())} classes")
     spots = []
-    for folder in sorted(REVIEW.iterdir()):
+    for folder in sorted(args.review.iterdir()):
         if (folder / "review.json").exists() and (folder / "policy.npz").exists():
-            row = export_spot(folder, args.out)
+            row = export_spot(folder, args.out, args.tag, args.entries)
             if row:
                 spots.append(row)
                 print(folder.name, row["players"], row["left"], row["quality"], flush=True)
     spots.sort(key=lambda s: (-s["left"], s["players"]))
-    library = {"tournament": {"entries": 57, "paid": 9, "start_stack": 10000,
-                              "payouts": [113.80, 93.78, 77.31, 63.73, 52.53, 43.30, 35.70, 24.26, 19.99]},
+    library = {"tournament": {"entries": args.entries, "paid": len(payouts), "start_stack": args.start_stack,
+                              "payouts": payouts},
                "spots": spots}
     (args.out / "plo5-spots.json").write_text(json.dumps(library, separators=(",", ":")))
     print(f"{len(spots)} spots")

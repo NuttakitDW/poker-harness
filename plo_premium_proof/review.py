@@ -9,8 +9,10 @@ After a solve the hand's real actions are replayed through the solver's tree (be
 size map to the pot-sized raise, the only size in the tree) and, at every hero decision, the solver's
 mix for the hero's exact cards on the real board is stored with the action taken.
 
-    .venv/bin/python -m plo_premium_proof.review plan  --hh <file> --payouts 113.80,93.78,...
-    .venv/bin/python -m plo_premium_proof.review solve --hh <file> --payouts ...   (resumable)
+    .venv/bin/python -m plo_premium_proof.review plan     --hh <file> --payouts 113.80,93.78,... --entries 57 \
+        --finish 11 --first-left 45 [--start-stack 10000] [--out tmp/plo5/review]
+    .venv/bin/python -m plo_premium_proof.review solve    ... same arguments   (resumable)
+    .venv/bin/python -m plo_premium_proof.review evaluate ... same arguments   (option values, resumable)
 """
 
 from __future__ import annotations
@@ -53,6 +55,7 @@ class Session:
     entries: int
     finish: int                   # hero's finishing place (players left at the last hand + 1 is not known)
     first_left: int               # players left estimated at the first hand
+    start_stack: int = START_STACK
 
     def players_left(self, hand: Hand) -> int:
         """Linear in time from ``first_left`` at the first hand to ``finish`` at the hero's last hand."""
@@ -64,7 +67,7 @@ class Session:
     def spec(self, hand: Hand, minutes: float, label: str) -> FinalTableSpec:
         left = self.players_left(hand)
         n = len(hand.players)
-        away = self.entries * START_STACK - sum(hand.chips)
+        away = self.entries * self.start_stack - sum(hand.chips)
         field = (away / (left - n) / hand.bb) if left > n else 0.0
         caps = CAPS_DEEP_6 if n >= 6 and max(hand.stacks_bb) > 30 else CAPS
         return FinalTableSpec(stacks=tuple(round(x, 3) for x in hand.stacks_bb), payouts=self.payouts,
@@ -255,22 +258,34 @@ def run(session: Session, out: Path = OUT, only: set[str] | None = None, log=pri
              "hands": reviews}, indent=1))
 
 
-def session_from(path: Path, payouts: tuple[float, ...], entries: int, finish: int, first_left: int) -> Session:
-    return Session(parse_file(path), payouts, entries, finish, first_left)
+def session_from(path: Path, payouts: tuple[float, ...], entries: int, finish: int, first_left: int,
+                 start_stack: int = START_STACK) -> Session:
+    return Session(parse_file(path), payouts, entries, finish, first_left, start_stack)
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=("plan", "solve"))
+    parser.add_argument("command", choices=("plan", "solve", "evaluate"))
     parser.add_argument("--hh", type=Path, required=True)
     parser.add_argument("--payouts", required=True, help="prizes 1st, 2nd, ... comma separated")
     parser.add_argument("--entries", type=int, required=True)
     parser.add_argument("--finish", type=int, required=True)
     parser.add_argument("--first-left", type=int, required=True)
+    parser.add_argument("--start-stack", type=int, default=START_STACK, help="chips each entry starts with")
+    parser.add_argument("--out", type=Path, default=OUT, help="folder for this session's solves")
+    parser.add_argument("--deals", type=int, default=200_000, help="evaluate: simulated deals per decision")
     parser.add_argument("--only", nargs="*")
     args = parser.parse_args(argv)
     session = session_from(args.hh, tuple(float(x) for x in args.payouts.split(",")), args.entries, args.finish,
-                           args.first_left)
+                           args.first_left, args.start_stack)
+    if args.command == "evaluate":
+        for folder in sorted(args.out.iterdir()):
+            if (folder / "review.json").exists() and not (folder / "review_ev.json").exists():
+                try:
+                    evaluate(folder, session, deals=args.deals)
+                except Exception as error:  # noqa: BLE001 - the page shows the hand as not rated
+                    print(f"FAILED {folder.name}: {error}", flush=True)
+        return
     if args.command == "plan":
         total = 0.0
         for job in jobs(session):
@@ -281,7 +296,7 @@ def main(argv: list[str] | None = None) -> None:
                   f"{minutes_for(rows, job['kind']):.1f} min", "left", session.players_left(lead), flush=True)
         print(f"{len(jobs(session))} solves, {total / 60:.1f} hours")
     else:
-        run(session, only=set(args.only) if args.only else None)
+        run(session, out=args.out, only=set(args.only) if args.only else None)
 
 
 if __name__ == "__main__":
