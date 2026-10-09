@@ -43,7 +43,7 @@
   section { margin-top: clamp(1.5rem, 4vw, 2.5rem); }
   section > h2 { font-size: 1.2rem; margin-bottom: .75rem; }
   .sheet { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: clamp(.9rem, 2.5vw, 1.25rem); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .75rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: .75rem; }
   .card { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: .9rem 1rem; display: grid; gap: .35rem; }
   .card b { font: 600 1.6rem/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
   .card small { color: var(--ash); font-size: .82rem; }
@@ -155,6 +155,7 @@ function delta(now, before, lowerIsBetter, fmt) {
   return `<span class="delta ${better ? "better" : "worse"}">${diff > 0 ? "▲" : "▼"} ${fmt(Math.abs(diff))} ${better ? "better" : "worse"}</span>`;
 }
 $("cards").innerHTML = [
+  ["Decision quality", `${latest.quality.score.toFixed(0)}<small style="font-size:.5em">/100</small>`, delta(latest.quality.score, prev && prev.quality.score, false, x => x.toFixed(1)), `A ${latest.quality.share.A}% · B ${latest.quality.share.B}% · C ${latest.quality.share.C}%`],
   ["Buy-ins lost per 100 decisions", bi(latest.lost_per_100), delta(latest.lost_per_100, prev && prev.lost_per_100, true, bi), "ICM equity given up on trusted decisions"],
   ["Matched the solver", pct(latest.match), delta(latest.match, prev && prev.match, false, x => pct(x)), "your action is one the solver takes 25%+ of the time"],
   ["Costly mistakes per 100", latest.costly_per_100.toFixed(1), delta(latest.costly_per_100, prev && prev.costly_per_100, true, x => x.toFixed(1)), "each over $0.20 of tournament equity"],
@@ -181,8 +182,8 @@ $("cards").innerHTML = [
   $("trend").innerHTML = svg;
 })();
 
-$("ledger").innerHTML = `<thead><tr><th>Date</th><th>Tournament</th><th class="n">Finish</th><th class="n">Bullets</th><th class="n">Hands</th><th class="n">Trusted</th><th class="n">Lost (BI)</th><th class="n">Per 100</th><th class="n">Matched</th><th class="n">Costly/100</th><th>Review</th></tr></thead><tbody>`
-  + S.slice().reverse().map(s => `<tr><td>${dateLabel(s)}</td><td>${esc(s.title)}</td><td class="n">${s.finish}/${s.entries}</td><td class="n">${s.bullets}</td><td class="n">${s.hands}</td><td class="n">${s.decisions}</td><td class="n">${bi(s.lost_bi)}</td><td class="n">${bi(s.lost_per_100)}</td><td class="n">${pct(s.match)}</td><td class="n">${s.costly_per_100.toFixed(1)}</td><td>${s.dashboard ? `<a href="${esc(s.dashboard)}" target="_blank" rel="noopener">Open</a>` : "–"}</td></tr>`).join("") + "</tbody>";
+$("ledger").innerHTML = `<thead><tr><th>Date</th><th>Tournament</th><th class="n">Finish</th><th class="n">Bullets</th><th class="n">Hands</th><th class="n">Trusted</th><th class="n">Lost (BI)</th><th class="n">Per 100</th><th class="n">Score</th><th class="n">A/B/C %</th><th class="n">Matched</th><th class="n">Costly/100</th><th>Review</th></tr></thead><tbody>`
+  + S.slice().reverse().map(s => `<tr><td>${dateLabel(s)}</td><td>${esc(s.title)}</td><td class="n">${s.finish}/${s.entries}</td><td class="n">${s.bullets}</td><td class="n">${s.hands}</td><td class="n">${s.decisions}</td><td class="n">${bi(s.lost_bi)}</td><td class="n">${bi(s.lost_per_100)}</td><td class="n">${s.quality.score.toFixed(0)}</td><td class="n">${s.quality.share.A}/${s.quality.share.B}/${s.quality.share.C}</td><td class="n">${pct(s.match)}</td><td class="n">${s.costly_per_100.toFixed(1)}</td><td>${s.dashboard ? `<a href="${esc(s.dashboard)}" target="_blank" rel="noopener">Open</a>` : "–"}</td></tr>`).join("") + "</tbody>";
 
 function compare(el, key, names) {
   const rate = (s, k) => s[key][k] && s[key][k].decisions ? 100 * s[key][k].lost_bi / s[key][k].decisions : 0;

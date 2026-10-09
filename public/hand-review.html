@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตามควาย รีวิวมือ</title>
+<meta name="description" content="รีวิวมือจริงจากทัวร์ PLO5 กับ solver แบบ ICM ของตามควาย ทุกจุดตัดสินใจมีแถบ % ที่ solver เลือก ค่า equity เป็นดอลลาร์ และ range chart">
+<meta name="theme-color" content="#171512">
+<link rel="icon" type="image/png" href="/static/tamkwai-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700&family=IBM+Plex+Sans+Thai+Looped:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  /* Same CI tokens and stage layout as index.html, plo5.html and research.html */
+  :root {
+    color-scheme: light;
+    --ground: #F6F2E6; --paper: #FBF8EE; --lamp: #FFF8E6; --edge: #D9D0B8;
+    --ink: #14213D; --blue: #1B2A4A; --ash: #4F5667; --ash-2: #636A7A;
+    --bronze: #A87C3F; --bronze-txt: #6B4E22;
+    --puppet: #171512; --puppet-edge: #3A3628; --on-puppet: #F6F2E6; --on-puppet-2: #D8D2BE; --on-puppet-3: #C9BFA3;
+    --red: #C6322A; --red-edge: #8F221C;
+    --act-raise: #C6322A; --act-call: #B98A45; --act-fold: #3E5C9A;
+    --grade-a: #2E6B45; --grade-b: #8A6420; --grade-c: #B42A22;
+    --suit-s: #14213D; --suit-h: #C6322A; --suit-d: #1F5FB8; --suit-c: #2E7D4F;
+    --font-display: "Kanit", "IBM Plex Sans Thai Looped", sans-serif;
+    --font-body: "IBM Plex Sans Thai Looped", "Kanit", sans-serif;
+    --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai Looped", ui-monospace, Menlo, monospace;
+    --cut: 4px 3px 5px 2px;
+    --gutter: clamp(16px, 4vw, 40px);
+    --column: 1180px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { background: var(--ground); color: var(--ink); overflow-x: clip; }
+  body { margin: 0; font: 400 1rem/1.6 var(--font-body); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px dotted var(--blue); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .column { max-width: var(--column); margin: 0 auto; }
+
+  .stage { position: relative; background: var(--puppet); color: var(--on-puppet); padding: 0 var(--gutter) clamp(1.5rem, 4vw, 2.25rem); overflow: hidden; }
+  .stage::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(rgba(246, 242, 230, .13) 1px, transparent 1.3px); background-size: 9px 9px; }
+  .stage > * { position: relative; }
+  .stage :focus-visible { outline-color: var(--on-puppet); }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 64px; flex-wrap: wrap; }
+  .brand { display: inline-flex; align-items: center; gap: .6rem; text-decoration: none; font: 700 1.25rem/1 var(--font-display); }
+  .brand img { width: 30px; height: 30px; border-radius: var(--cut); background: var(--lamp); padding: 2px; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: .5rem clamp(1rem, 3vw, 2rem); }
+  .nav-links a { text-decoration: none; color: var(--on-puppet-2); }
+  .nav-links a[aria-current="page"] { color: var(--on-puppet); text-decoration: underline dotted; text-underline-offset: .35em; }
+  .eyebrow { font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); margin: clamp(.75rem, 3vw, 1.75rem) 0 .75rem; }
+  .headline { font-size: clamp(1.6rem, 3.8vw, 2.5rem); line-height: 1.22; font-weight: 700; max-width: 26ch; }
+  .hoof { display: inline-block; width: .32em; height: .32em; margin-right: .3em; vertical-align: .18em; background: var(--red); border-radius: 2px 1px 3px 1px; }
+  .lede { margin-top: .75rem; max-width: 68ch; color: var(--on-puppet-2); }
+
+  /* Session strip: the episode's facts in mono, the score as the one big number */
+  .session { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem clamp(1.25rem, 4vw, 2.5rem); margin-top: 1.5rem; }
+  .score { font: 600 clamp(2.6rem, 7vw, 3.8rem)/1 var(--font-mono); color: var(--on-puppet); }
+  .score small { font-size: .4em; color: var(--on-puppet-3); }
+  .fact { display: grid; gap: .2rem; }
+  .fact span { font: 500 .7rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--on-puppet-3); }
+  .fact b { font: 600 1.15rem/1.1 var(--font-mono); color: var(--on-puppet); }
+  .abc { display: flex; height: 10px; width: min(260px, 100%); border-radius: 2px; overflow: hidden; margin-top: .35rem; }
+  .abc i { display: block; }
+  .jump { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1.5rem; }
+  .jump a { min-width: 44px; min-height: 40px; display: inline-grid; place-items: center; padding: 0 .7rem; border: 1px solid var(--puppet-edge); border-radius: var(--cut); text-decoration: none; font: 500 .85rem/1 var(--font-mono); color: var(--on-puppet-2); }
+  .jump a:hover { border-color: var(--on-puppet); color: var(--on-puppet); }
+
+  main { padding: clamp(1.25rem, 3vw, 2rem) var(--gutter) 0; }
+  .label { font: 500 .72rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ash-2); }
+  .howto { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: .75rem 1.5rem; padding: 1rem 1.25rem; border: 1px dashed var(--edge); border-radius: var(--cut); color: var(--ash); font-size: .9rem; }
+  .howto b { color: var(--ink); }
+  .key { display: inline-block; width: .8em; height: .8em; border-radius: 2px; vertical-align: -.05em; margin-right: .25em; }
+
+  /* One hand = one sheet of paper; decisions stack inside it */
+  .hands { display: grid; gap: clamp(1.5rem, 4vw, 2.5rem); margin-top: 1.5rem; }
+  .hand { background: var(--paper); border: 1px solid var(--edge); border-radius: var(--cut); padding: clamp(1rem, 3vw, 1.75rem); display: grid; gap: 1.1rem; scroll-margin-top: 1rem; }
+  .hand-head { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: baseline; }
+  .hand-n { font: 600 .8rem/1 var(--font-mono); color: var(--red); }
+  .hand-theme { font: 500 .72rem/1 var(--font-mono); letter-spacing: .06em; color: var(--bronze-txt); border: 1px solid var(--edge); padding: .25rem .45rem; border-radius: 2px; }
+  .hand h2 { font-size: clamp(1.2rem, 2.6vw, 1.5rem); flex-basis: 100%; }
+  .meta { font: 400 .82rem/1.5 var(--font-mono); color: var(--ash); }
+  .cards { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .card { display: inline-grid; place-items: center; min-width: 1.9em; padding: .15em .25em; background: #fff; border: 1px solid var(--edge); border-radius: 3px; font: 600 .95rem/1.1 var(--font-mono); }
+  .s-s { color: var(--suit-s); } .s-h { color: var(--suit-h); } .s-d { color: var(--suit-d); } .s-c { color: var(--suit-c); }
+  .table-row { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; align-items: center; }
+  .summary { max-width: 72ch; color: var(--ash); }
+  .line { display: grid; gap: .3rem; font: 400 .8rem/1.5 var(--font-mono); color: var(--ash); }
+  .line div { display: flex; flex-wrap: wrap; gap: .1rem .6rem; }
+  .line .st { min-width: 4.6rem; color: var(--ash-2); text-transform: uppercase; letter-spacing: .06em; font-size: .7rem; padding-top: .1rem; }
+  .line .me { color: var(--ink); font-weight: 600; background: var(--lamp); box-shadow: inset 0 -2px 0 var(--red); padding: 0 .2rem; }
+
+  .decision { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 1rem 1.75rem; padding-top: 1.1rem; border-top: 1px solid var(--edge); }
+  .d-left { display: grid; gap: .7rem; align-content: start; min-width: 0; }
+  .d-title { display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; }
+  .d-title h3 { font-size: 1.05rem; }
+  .d-pot { font: 400 .78rem/1.4 var(--font-mono); color: var(--ash); }
+  .opts { display: grid; gap: .35rem; }
+  .opt { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) 3rem 4.4rem; gap: .6rem; align-items: center; font-size: .92rem; }
+  .opt .bar { height: 12px; background: var(--ground); border: 1px solid var(--edge); border-radius: 2px; overflow: hidden; }
+  .opt .bar i { display: block; height: 100%; }
+  .opt .p, .opt .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .opt .v { color: var(--ash); }
+  .opt.best .v { color: var(--ink); font-weight: 600; }
+  .opt.you .name::after { content: " ← เรา"; color: var(--red); font-size: .78rem; }
+  .grade { font: 600 .75rem/1 var(--font-mono); padding: .3rem .5rem; border-radius: 2px; border: 1px solid currentColor; }
+  .grade.A { color: var(--grade-a); } .grade.B { color: var(--grade-b); } .grade.C { color: var(--grade-c); } .grade.Q { color: var(--ash-2); }
+  .comment { font-size: .9rem; color: var(--ash); max-width: 60ch; }
+  .chart-wrap { overflow-x: auto; min-width: 0; }
+  .chart { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 2px; min-width: 300px; }
+  .chart div { position: relative; aspect-ratio: 1; display: flex; overflow: hidden; border-radius: 2px; background: var(--ground); }
+  .chart div i { display: block; height: 100%; }
+  .chart div b { position: absolute; inset: 0; display: grid; place-items: center; font: 500 clamp(.42rem, 1vw, .58rem)/1 var(--font-mono); color: #fff; text-shadow: 0 0 2px rgba(0, 0, 0, .6); }
+  .chart div.faint { opacity: .35; }
+  .chart div.mine { outline: 2px solid var(--ink); outline-offset: -1px; z-index: 1; }
+  .chart-key { display: flex; flex-wrap: wrap; gap: .3rem .9rem; margin-top: .4rem; font: 400 .72rem/1.3 var(--font-mono); color: var(--ash); }
+  .lesson { padding: .9rem 1.1rem; background: var(--lamp); border-left: 3px solid var(--red); border-radius: 0 var(--cut) var(--cut) 0; }
+  .lesson b { color: var(--ink); }
+  .lesson .label { display: block; margin-bottom: .35rem; }
+  .status { padding: 2rem 0; color: var(--ash); }
+
+  @media (max-width: 760px) {
+    .decision { grid-template-columns: minmax(0, 1fr); }
+    .opt { grid-template-columns: 5.2rem minmax(0, 1fr) 2.6rem 4rem; font-size: .85rem; }
+  }
+
+  footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--ink); font-size: .8125rem; color: var(--bronze-txt); }
+  footer .column { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rise { animation: rise .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+    .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; } .d3 { animation-delay: .28s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+  }
+</style>
+</head>
+<body>
+<header class="stage">
+  <div class="column">
+    <nav class="nav" aria-label="Main">
+      <a class="brand" href="/"><img src="/static/tamkwai-icon.png" alt="" width="30" height="30">ตามควาย</a>
+      <div class="nav-links"><a href="/">ถามชาร์ต</a><a href="/plo">PLO4 range</a><a href="/plo5">PLO5 ICM</a><a href="/o8">O8 range</a><a href="/hand-review" aria-current="page">รีวิวมือ</a><a href="/method">วิธีคำนวณ</a><a href="/research">งานวิจัย</a><a href="/academy">ศาลาเรียน</a></div>
+    </nav>
+    <p class="eyebrow rise" id="eyebrow">รีวิวมือ · PLO5 · ICM</p>
+    <h1 class="headline rise d1"><span class="hoof" aria-hidden="true"></span>รีวิวมือจริง กับ solver แบบ ICM</h1>
+    <p class="lede rise d2" id="lede">มือจริงจากทัวร์ PLO5 ที่เราเล่นเอง ทุกมือแก้ด้วย solver ของตามควายจากสแตกจริงของทุกที่นั่งและเงินรางวัลจริง ดูว่าแต่ละจุดเราเล่นตรงกับ solver แค่ไหน และพลาดไปกี่ดอลลาร์</p>
+    <div class="session rise d3" id="session"></div>
+    <nav class="jump" id="jump" aria-label="ไปที่มือ"></nav>
+  </div>
+</header>
+
+<main>
+  <div class="column">
+    <section class="howto" aria-label="วิธีอ่าน">
+      <p><b>แถบสีและ %</b> solver เลือกทางนั้นบ่อยแค่ไหน กับกลุ่มมือแบบเดียวกับเรา</p>
+      <p><b>ตัวเลข $</b> equity ในทัวร์หลังเลือกทางนั้น คิดจากไพ่จริงของเรา ยิ่งสูงยิ่งดี</p>
+      <p><b>ชาร์ต 13×13</b> range ทั้งหมดของ solver ณ จุดนั้น กรอบเข้มคือมือที่มีไพ่ของเรา</p>
+      <p><span class="key" style="background:var(--act-raise)"></span>bet / raise <span class="key" style="background:var(--act-call)"></span>check / call / limp <span class="key" style="background:var(--act-fold)"></span>fold</p>
+      <p><b>A game</b> เล่นตรงกับ solver · <b>B game</b> ยังไม่คมหรือยังไม่ชัด · <b>C game</b> พลาดจนเสีย equity จริง</p>
+      <p>solver bet และ raise ขนาด pot อย่างเดียว ตัวเลข pot จึงอาจใหญ่กว่าในมือจริง</p>
+    </section>
+    <div class="hands" id="hands"><p class="status">กำลังโหลดมือ…</p></div>
+  </div>
+</main>
+
+<footer>
+  <div class="column">
+    <span>รีวิวมือจาก solver ของตามควาย</span>
+    <span>Copyright &copy; 2026 Nuttakit Kundum. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+(async () => {
+  const RANKS = "AKQJT98765432";
+  const GLYPH = { s: "♠", h: "♥", d: "♦", c: "♣" };
+  const STREETS = ["Preflop", "Flop", "Turn", "River"];
+  const BOARD_AT = [0, 3, 4, 5];
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const kind = o => /^(Raise|Bet)/.test(o) ? "raise" : /^(Call|Check|Limp)/.test(o) ? "call" : "fold";
+  const color = o => `var(--act-${kind(o)})`;
+  const cards = t => `<span class="cards">${(t.match(/../g) || []).map(c => `<span class="card s-${c[1]}">${c[0]}${GLYPH[c[1]]}</span>`).join("")}</span>`;
+  const cellName = k => { const r = Math.floor(k / 13), c = k % 13; return r === c ? RANKS[r] + RANKS[r] : r < c ? RANKS[r] + RANKS[c] + "s" : RANKS[c] + RANKS[r] + "o"; };
+  const money = v => "$" + v.toFixed(2);
+
+  function lineHtml(h) {
+    return STREETS.map((name, s) => {
+      const acts = h.line.filter(a => a.street === s);
+      if (!acts.length) return "";
+      const board = s && h.board.length >= BOARD_AT[s] * 2 ? " " + h.board.slice(BOARD_AT[s - 1] * 2, BOARD_AT[s] * 2).match(/../g).join(" ") : "";
+      const items = acts.map(a => {
+        const verb = a.kind === "call" && s === 0 && Math.abs(a.bb - 1) < 1e-9 && !h.line.some(b => b.street === 0 && b.kind === "raise" && h.line.indexOf(b) < h.line.indexOf(a)) ? "limp" : a.kind;
+        const amount = a.bb > 0 && verb !== "limp" ? ` ${a.bb.toFixed(1)}` : "";
+        const text = `${a.hero ? "เรา" : a.who} ${verb}${amount}${a.all_in ? " all-in" : ""}`;
+        return a.hero ? `<span class="me">${esc(text)}</span>` : `<span>${esc(text)}</span>`;
+      }).join("");
+      return `<div><span class="st">${name}${esc(board)}</span>${items}</div>`;
+    }).join("");
+  }
+
+  function chartHtml(d) {
+    if (!d.chart) return "";
+    const order = d.options.map((_, i) => i).sort((a, b) => "rcf".indexOf(kind(d.options[a])[0]) - "rcf".indexOf(kind(d.options[b])[0]));
+    const mine = new Set(d.chart.hero_cells);
+    const cells = d.chart.cells.map((c, k) => {
+      const bars = c[0] > 0 ? order.filter(i => c[1 + i] > 0.001).map(i => `<i style="width:${(c[1 + i] * 100).toFixed(1)}%;background:${color(d.options[i])}"></i>`).join("") : "";
+      const cls = [c[0] > 0 && c[0] < 0.05 ? "faint" : "", mine.has(k) ? "mine" : ""].join(" ").trim();
+      return `<div class="${cls}" title="${cellName(k)}">${bars}<b>${cellName(k)}</b></div>`;
+    }).join("");
+    const key = order.map(i => `<span><span class="key" style="background:${color(d.options[i])}"></span>${esc(d.options[i])}</span>`).join("");
+    return `<div class="chart-wrap"><div class="chart" role="img" aria-label="range chart ของ solver">${cells}</div><div class="chart-key">${key}<span>กรอบเข้ม = มือเรา</span></div></div>`;
+  }
+
+  function decisionHtml(h, d) {
+    const best = d.values.indexOf(Math.max(...d.values));
+    const opts = d.options.map((o, i) => `<div class="opt${i === d.took ? " you" : ""}${i === best ? " best" : ""}">`
+      + `<span class="name">${esc(o)}</span><span class="bar"><i style="width:${(d.mix[i] * 100).toFixed(1)}%;background:${color(o)}"></i></span>`
+      + `<span class="p">${Math.round(d.mix[i] * 100)}%</span><span class="v">${money(d.values[i])}</span></div>`).join("");
+    const grade = d.grade === "?" ? `<span class="grade Q">ยังไม่ชัด</span>` : `<span class="grade ${d.grade}">${d.grade} game</span>`;
+    const pot = `pot ${d.pot.toFixed(1)}bb · ${d.to_call ? `ต้อง call ${d.to_call.toFixed(1)}bb` : "ยังไม่มี bet"}`;
+    return `<div class="decision"><div class="d-left">`
+      + `<div class="d-title"><h3>${d.street}</h3>${d.board ? cards(d.board) : ""}${grade}</div>`
+      + `<p class="d-pot">${pot}</p>`
+      + `<div class="opts"><p class="label">solver เลือกกี่ % · equity ในทัวร์</p>${opts}</div>`
+      + `<p class="comment">${esc(d.comment)}</p></div>${chartHtml(d)}</div>`;
+  }
+
+  function handHtml(h) {
+    const left = h.left ? ` · เหลือในทัวร์ราว ${h.left} คน` : "";
+    return `<article class="hand" id="hand-${h.n}">`
+      + `<div class="hand-head"><span class="hand-n">มือที่ ${h.n}</span><span class="hand-theme">${esc(h.theme)}</span><h2>${esc(h.title)}</h2></div>`
+      + `<div class="table-row">${cards(h.cards)}<p class="meta">${h.position} · ${h.players} คนบนโต๊ะ · สแตก ${h.stack_bb.toFixed(1)}bb${left} · Level ${h.level} (${esc(h.blinds)})</p></div>`
+      + `<p class="summary">${esc(h.summary)}</p>`
+      + `<div class="line" aria-label="action ทั้งมือ">${lineHtml(h)}</div>`
+      + h.decisions.map(d => decisionHtml(h, d)).join("")
+      + `<div class="lesson"><span class="label">บทเรียน</span>${h.lesson}</div></article>`;
+  }
+
+  function sessionHtml(s) {
+    const total = s.grades.A + s.grades.B + s.grades.C;
+    const share = g => (100 * s.grades[g] / total).toFixed(1);
+    return `<div class="fact"><span>คะแนนการตัดสินใจ</span><p class="score">${s.score}<small>/100</small></p></div>`
+      + `<div class="fact"><span>A · B · C game</span><b>${Math.round(share("A"))}% · ${Math.round(share("B"))}% · ${Math.round(share("C"))}%</b>`
+      + `<div class="abc" aria-hidden="true"><i style="width:${share("A")}%;background:var(--grade-a)"></i><i style="width:${share("B")}%;background:var(--bronze)"></i><i style="width:${share("C")}%;background:var(--red)"></i></div></div>`
+      + `<div class="fact"><span>จบอันดับ</span><b>${s.finish} / ${s.entries}</b></div>`
+      + `<div class="fact"><span>มือทั้งหมด</span><b>${s.hands}</b></div>`;
+  }
+
+  const hands = document.getElementById("hands");
+  try {
+    const index = await fetch("/static/hand-review/index.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+    const episode = index.episodes[0];
+    const data = await fetch(`/static/hand-review/${episode.tag}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+    const s = data.session;
+    document.getElementById("eyebrow").textContent = `รีวิวมือ · ${episode.label} · ${s.date}`;
+    document.getElementById("lede").textContent = `${s.title} · คนลง ${s.entries} · จ่าย ${s.paid} อันดับ · ทุกมือแก้ด้วย solver ของตามควายจากสแตกจริงของทุกที่นั่งและเงินรางวัลจริง ดูว่าแต่ละจุดเราเล่นตรงกับ solver แค่ไหน และพลาดไปกี่ดอลลาร์`;
+    document.getElementById("session").innerHTML = sessionHtml(s);
+    document.getElementById("jump").innerHTML = data.hands.map(h => `<a href="#hand-${h.n}" title="${esc(h.title)}">${h.n}</a>`).join("");
+    hands.innerHTML = data.hands.map(handHtml).join("");
+    const wanted = document.getElementById(location.hash.slice(1));
+    if (wanted) wanted.scrollIntoView();
+  } catch (e) {
+    hands.innerHTML = `<p class="status">โหลดมือไม่สำเร็จ ลองรีเฟรชอีกครั้ง</p>`;
+  }
+})();
+</script>
+<script src="/static/beacon.js" defer></script>
+</body>
+</html>

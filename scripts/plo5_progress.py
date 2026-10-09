@@ -41,6 +41,15 @@ def trusted(hand: dict, d: dict) -> bool:
     return not even and hand.get("quality") != "thin"
 
 
+def quality(decisions: list[dict]) -> dict:
+    """Decision-quality score as in session_grades.py: A 100, B 60, C 0 over trusted decisions."""
+    from session_grades import grade
+    counts = {g: sum(1 for d in decisions if grade(d) == g) for g in "ABC"}
+    n = max(len(decisions), 1)
+    return {"score": round((100 * counts["A"] + 60 * counts["B"]) / n, 1), "grades": counts,
+            "share": {g: round(100 * c / n, 1) for g, c in counts.items()}}
+
+
 def score(session: dict) -> dict:
     data = collect(Path(session["hh"]), Path(session["review"]), session["title"], session["entries"],
                    session["finish"], tuple(session["payouts"]))
@@ -59,6 +68,7 @@ def score(session: dict) -> dict:
         "decisions": len(rows),
         "lost_bi": round(sum(lost) / buy_in, 3),
         "lost_per_100": round(100 * sum(lost) / buy_in / n, 3),
+        "quality": quality([d for _, d in rows]),
         "match": round(sum(1 for _, d in rows if d["mix"][d["took"]] >= 0.25) / n, 3),
         "costly_per_100": round(100 * sum(1 for _, d in rows if severity(d) == "costly") / n, 1),
         "mistakes": sum(1 for _, d in rows if severity(d) in ("costly", "leak")),

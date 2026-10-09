@@ -95,12 +95,19 @@ def main() -> None:
     parser.add_argument("--entries", type=int, default=57)
     parser.add_argument("--finish", type=int, default=11)
     parser.add_argument("--payouts", default="113.80,93.78,77.31,63.73,52.53,43.30,35.70,24.26,19.99")
+    parser.add_argument("--bullets", type=int, default=1, help="entries the hero bought (1 + re-entries)")
+    parser.add_argument("--previous", type=Path, help="session_grades.py JSON of the last session, to show the change")
     args = parser.parse_args()
     data = collect(args.hh, args.review, args.title, args.entries, args.finish,
                    tuple(float(x) for x in args.payouts.split(",")))
+    data["bullets"] = args.bullets
+    if args.previous:
+        prev = json.loads(args.previous.read_text())
+        data["previous"] = {"date": prev.get("date", args.previous.parent.name), "score": prev["score"], "share": prev["share"]}
     template = (Path(__file__).parent / "plo5_dashboard.html").read_text()
     payload = json.dumps(data, separators=(",", ":")).replace("</", "<\\/")
     args.out.parent.mkdir(parents=True, exist_ok=True)
+    template = template.replace("<title>PLO-5 Classic Review</title>", f"<title>PLO5 Review {data['date']}</title>")
     args.out.write_text(template.replace("/*DATA*/null", payload))
     rated = sum(1 for h in data["hands"] if h["rated"])
     print(f"{args.out}: {len(data['hands'])} hands, {rated} rated, "

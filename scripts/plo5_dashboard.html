@@ -143,6 +143,24 @@
   .chart-legend i { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem; vertical-align: -.05rem; }
   .empty { color: var(--ash); font-size: .9rem; }
 
+  /* Decision quality: one big score, the A/B/C split as a stacked bar, then the split by street and position */
+  .quality { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 1rem 2rem; align-items: center; }
+  @media (max-width: 640px) { .quality { grid-template-columns: minmax(0, 1fr); } }
+  .q-score { display: grid; gap: .25rem; }
+  .q-score b { font: 600 clamp(3rem, 9vw, 4.2rem)/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+  .q-score b small { font-size: .38em; color: var(--ash-2); font-weight: 500; }
+  .q-delta { font: 500 .85rem/1.3 var(--font-mono); color: var(--ash); }
+  .q-delta .up { color: var(--good); } .q-delta .down { color: var(--bad); }
+  .abc { display: flex; height: 1.6rem; border-radius: 3px; overflow: hidden; background: var(--bar-soft); }
+  .abc i { display: grid; place-items: center; font: 600 .75rem/1 var(--font-mono); color: var(--ground); font-style: normal; min-width: 0; overflow: hidden; }
+  .g-A { background: var(--good); } .g-B { background: var(--warn); } .g-C { background: var(--bad); }
+  .abc-key { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .5rem 1rem; margin-top: .7rem; font-size: .84rem; color: var(--ash); }
+  .abc-key b { font-family: var(--font-mono); color: var(--ink); }
+  .abc-key .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .35rem; vertical-align: -.05rem; }
+  .mini { display: flex; height: .55rem; border-radius: 2px; overflow: hidden; min-width: 70px; background: var(--bar-soft); }
+  .mini i { display: block; height: 100%; }
+  .grade { font: 600 .7rem/1 var(--font-mono); padding: .25rem .4rem; border-radius: 3px; color: var(--ground); }
+  .grade.A { background: var(--good); } .grade.B { background: var(--warn); } .grade.C { background: var(--bad); }
   .notes { display: grid; gap: .5rem; font-size: .9rem; color: var(--ash); max-width: 75ch; }
   .notes li { margin-bottom: .35rem; }
   footer { margin-top: clamp(2rem, 5vw, 3rem); padding: 1.25rem var(--gutter) 1.75rem; border-top: 1px solid var(--edge); font-size: .8rem; color: var(--bronze-txt); }
@@ -163,6 +181,18 @@
     <section aria-labelledby="sum-h" style="margin-top:0">
       <h2 id="sum-h" class="label" style="margin-bottom:.6rem">Summary</h2>
       <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section aria-labelledby="q-h">
+      <h2 id="q-h">Decision quality</h2>
+      <div class="sheet quality">
+        <div class="q-score"><span class="label">Score</span><b id="q-score"></b><p class="q-delta" id="q-delta"></p></div>
+        <div><div class="abc" id="q-bar" role="img"></div><div class="abc-key" id="q-key"></div></div>
+      </div>
+      <div class="two" style="margin-top:.75rem">
+        <div class="sheet table-wrap"><table id="q-street"></table></div>
+        <div class="sheet table-wrap"><table id="q-pos"></table></div>
+      </div>
     </section>
 
     <section aria-labelledby="stack-h">
@@ -245,6 +275,7 @@ $("title").textContent = DATA.title;
 $("facts").innerHTML = [
   `<span>Finished <b>${ordinal(DATA.finish)}</b> of <b>${DATA.entries}</b> (${DATA.paid} paid)</span>`,
   `<span><b>${hands.length}</b> hands · ${DATA.start}–${DATA.end}</span>`,
+  ...(DATA.bullets > 1 ? [`<span><b>${DATA.bullets}</b> entries (${DATA.bullets - 1} re-entries)</span>`] : []),
   `<span>Prize pool <b>$${DATA.payouts.reduce((a, b) => a + b, 0).toFixed(2)}</b> · 1st <b>$${DATA.payouts[0].toFixed(2)}</b></span>`,
 ].join("");
 
@@ -254,6 +285,45 @@ $("tiles").innerHTML = [
   ["Matched the solver", sure.length ? pct(agree / sure.length) : "–", "your action is one the solver uses at least 25% of the time"],
   ["Costly decisions", sure.filter(d => d.sev === "costly").length, "each over $0.20 of tournament equity"],
 ].map(([k, v, s, cls]) => `<div class="tile ${cls || ""}"><span class="label">${k}</span><b>${v}</b><small>${s}</small></div>`).join("");
+
+// decision quality: A = an action the solver uses 25%+ and no real cost, B = 10-25%, a small leak or
+// unclear, C = costly (solver under 10% and over $0.20). Score = average of A 100, B 60, C 0.
+function gradeOf(d) {
+  const s = severity(d);
+  if (s === "costly") return "C";
+  if (s === "leak" || s === "unclear") return "B";
+  return d.mix[d.took] >= 0.25 ? "A" : "B";
+}
+sure.forEach(d => { d.grade = gradeOf(d); });
+hands.forEach(h => h.decisions.forEach(d => { if (d.trusted) d.grade = gradeOf(d); }));
+const GRADE_TEXT = { A: "A game: played like the solver", B: "B game: thin, a small leak or unclear", C: "C game: a costly mistake" };
+function gradeStats(list) {
+  const n = { A: 0, B: 0, C: 0 };
+  list.forEach(d => n[d.grade]++);
+  const total = n.A + n.B + n.C;
+  return { n, total, score: total ? (100 * n.A + 60 * n.B) / total : 0 };
+}
+(function quality() {
+  const q = gradeStats(sure);
+  $("q-score").innerHTML = `${q.score.toFixed(0)}<small>/100</small>`;
+  const prev = DATA.previous;
+  $("q-delta").innerHTML = prev ? (() => { const diff = q.score - prev.score;
+    return `<span class="${diff >= 0 ? "up" : "down"}">${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)}</span> vs ${esc(prev.date)} (${prev.score.toFixed(0)})`; })()
+    : `${q.total} trusted decisions`;
+  $("q-bar").setAttribute("aria-label", `A ${q.n.A}, B ${q.n.B}, C ${q.n.C}`);
+  $("q-bar").innerHTML = ["A", "B", "C"].map(g => q.n[g] ? `<i class="g-${g}" style="width:${(100 * q.n[g] / q.total).toFixed(1)}%">${g} ${Math.round(100 * q.n[g] / q.total)}%</i>` : "").join("");
+  $("q-key").innerHTML = ["A", "B", "C"].map(g => `<span><span class="sw g-${g}"></span><b>${q.n[g]}</b> ${GRADE_TEXT[g]}${prev ? ` <span class="mono">(was ${prev.share[g]}%)</span>` : ""}</span>`).join("")
+    + `<span>Score = average of A 100, B 60, C 0 over ${q.total} trusted decisions</span>`;
+  const table = (el, title, key, order) => {
+    const keys = order.filter(k => sure.some(d => key(d) === k));
+    $(el).innerHTML = `<thead><tr><th>${title}</th><th class="n">A</th><th class="n">B</th><th class="n">C</th><th class="n">Score</th><th></th></tr></thead><tbody>`
+      + keys.map(k => { const g = gradeStats(sure.filter(d => key(d) === k));
+        return `<tr><td>${k}</td><td class="n">${g.n.A}</td><td class="n">${g.n.B}</td><td class="n">${g.n.C}</td><td class="n">${g.score.toFixed(0)}</td>`
+          + `<td><div class="mini">${["A", "B", "C"].map(x => `<i class="g-${x}" style="width:${(100 * g.n[x] / g.total).toFixed(1)}%"></i>`).join("")}</div></td></tr>`; }).join("") + "</tbody>";
+  };
+  table("q-street", "Street", d => STREETS[d.street], STREETS);
+  table("q-pos", "Position", d => d.hand.position, ["UTG", "HJ", "CO", "BTN", "SB", "BB"]);
+})();
 
 // stack graph
 (function graph() {
@@ -299,10 +369,11 @@ $("costly").innerHTML = worst.length ? worst.map(d => `<button type="button" dat
 $("costly").addEventListener("click", e => { const b = e.target.closest("[data-hand]"); if (b) { show(b.dataset.hand); $("hands-h").scrollIntoView({ behavior: "smooth" }); } });
 
 // hand browser
-const FILTERS = [["all", "All hands"], ["leaks", "With a leak"], ["played", "Played past preflop"], ["late", "Level 12+"]];
+const FILTERS = [["all", "All hands"], ["cgame", "C game"], ["leaks", "With a leak"], ["played", "Played past preflop"], ["late", "Level 12+"]];
 let filter = "all", current = null;
 try { filter = localStorage.getItem("plo5-filter") || "all"; } catch (e) {}
 function passes(h) {
+  if (filter === "cgame") return h.decisions.some(d => d.grade === "C");
   if (filter === "leaks") return h.decisions.some(d => d.trusted && ["costly", "leak"].includes(severity(d)));
   if (filter === "played") return h.line.some(a => a.street > 0 && a.hero);
   if (filter === "late") return h.level >= 12;
@@ -363,7 +434,7 @@ function decisionHTML(d) {
   const [cls, txt] = d.trusted ? SEV[severity(d)] : ["none", "Low confidence"];
   const realSize = d.real === "bet" || d.real === "raise" ? ` (you ${d.real === "raise" ? "raised to" : "bet"} ${d.real_bb}bb${d.all_in ? ", all-in" : ""}; the tree has pot-size only)` : "";
   return `<div class="decision"><div class="decision-head"><strong>${STREETS[d.street]}${d.board ? " " + cards(d.board) : ""}</strong>
-    <span class="meta"><span>pot ${d.pot}bb</span><span>${d.to_call ? `to call ${d.to_call}bb` : "no bet to call"}</span><span class="pill ${cls}">${txt}${!d.trusted || !["costly", "leak"].includes(severity(d)) ? "" : " · " + money(d.loss)}</span></span></div>
+    <span class="meta"><span>pot ${d.pot}bb</span><span>${d.to_call ? `to call ${d.to_call}bb` : "no bet to call"}</span>${d.grade ? `<span class="grade ${d.grade}" title="${GRADE_TEXT[d.grade]}">${d.grade}</span>` : ""}<span class="pill ${cls}">${txt}${!d.trusted || !["costly", "leak"].includes(severity(d)) ? "" : " · " + money(d.loss)}</span></span></div>
     <div class="options">${d.options.map((o, i) => `<div class="opt"><span>${esc(o)}<span class="pct">${pct(d.mix[i])}</span></span><span class="bar" title="solver plays this ${pct(d.mix[i])} of the time with your hand group"><i style="width:${(d.mix[i] * 100).toFixed(1)}%;background:${actColor(o)}"></i></span>
       <span class="val">${money(d.values[i])} <small>±${d.se[i].toFixed(2)}</small></span><span class="tags">${i === d.took ? '<span class="tag you">YOU</span>' : ""}${i === d.best ? '<span class="tag best">BEST</span>' : ""}</span></div>`).join("")}</div>
     ${d.trusted && severity(d) === "unclear" ? `<p class="explain">You took an action the solver also uses (${pct(d.mix[d.took])}), but the values for your exact cards favour ${esc(d.options[d.best]).toLowerCase()} by ${money(d.loss)}. The solver groups your hand with others that play differently, so this is not counted as a mistake.</p>` : ""}
@@ -400,6 +471,7 @@ $("notes").innerHTML = [
   `Players left at each hand are estimated, falling evenly to ${DATA.finish} at your last hand. The hand history does not record it.`,
   "The solver bets and raises pot-size only. Your bets of other sizes are read as pot-size bets, so sizing itself is not judged.",
   "Hands are grouped: preflop by heads-up and three-way equity (1,000 groups), postflop by strength, flush draw and straight outs. The bars show the group's mix; the dollar values use your exact cards and the real board.",
+  "Decision quality grades every trusted decision: A when you took an action the solver uses at least 25% of the time at no real cost, B for 10-25%, a small leak or an unclear rating, C for a costly mistake. The score is the average of A 100, B 60 and C 0.",
   "Dollar values come from simulated deals weighted by how likely the opponents were to play the hand the way they did, then played out with the solver's strategy. A cost counts only when it is larger than its sampling error.",
 ].map(t => `<li>${t}</li>`).join("");
 </script>
