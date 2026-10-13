@@ -144,6 +144,22 @@
   .screen img { display: block; width: 100%; height: 100%; object-fit: contain; padding: 6%; }
   .lockup { display: none; }
 
+  /* endorsement ticket: the lamp cream of the 3rd-place card, cut like the CTA */
+  .approved {
+    display: flex; align-items: center; gap: .9rem; width: fit-content; max-width: 100%;
+    margin-bottom: 1.5rem; padding: .55rem 1rem .55rem .7rem;
+    background: var(--lamp); color: var(--ink); border: 1px solid var(--puppet-edge); border-radius: var(--cut-soft);
+    box-shadow: 0 0 0 6px rgba(246, 242, 230, .05), 0 0 40px rgba(255, 214, 150, .10);
+    text-decoration: none; transition: transform .2s var(--ease-out);
+  }
+  .approved:hover { transform: translateY(-1px); }
+  .approved .avatar { width: 30px; height: auto; flex: none; image-rendering: pixelated; }
+  .approved .who { min-width: 0; }
+  .approved b { display: block; font: 700 1.125rem/1.15 var(--font-display); }
+  .approved b em { font-style: normal; color: var(--red); }
+  .approved small { display: block; margin-top: .25rem; font: 500 .75rem/1.35 var(--font-mono); color: var(--ash); }
+  .approved .medal { width: 52px; height: auto; flex: none; filter: drop-shadow(0 2px 3px rgba(23, 21, 18, .35)); }
+
   /* ================= app frame: messages scroll, the composer stays docked at the bottom ================= */
   html, body { height: 100%; }
   body { overflow: hidden; }
@@ -348,6 +364,11 @@
 
         <div class="stage-grid">
           <div>
+            <a class="approved rise" href="https://www.facebook.com/profile.php?id=61566466530839" target="_blank" rel="noopener">
+              <img class="avatar" src="/static/nutee-avatar.png" alt="NUTEE" width="159" height="308">
+              <span class="who"><b>Approved by <em>NUTEE</em></b><small>3rd place · #73 PLO 6-max · Japan Open Poker Tour</small></span>
+              <img class="medal" src="/static/jopt-medal.png" alt="Japan Open Poker Tour bronze medal" width="200" height="193">
+            </a>
             <div class="lockup rise d1">
               <span class="screen-mini"><img src="/static/tamkwai-logo.png" alt="" width="68" height="68"></span>
               <div><b>ตามควาย</b><small>a friend at the table</small></div>
