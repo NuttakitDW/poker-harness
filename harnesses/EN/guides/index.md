@@ -1,6 +1,6 @@
 # Source-specific guides
 
-All 27 unique PDFs have a source-specific map: 353 main entries and 117 explained study themes. The ZIP contains 26 entries (25 unique PDFs) because *Play Optimal Poker* occurs twice; two more PDFs come from PokerCoaching. Each guide links the original PDF and page-faithful corpus.
+All 28 unique PDFs have a source-specific map: 362 main entries and 122 explained study themes. The ZIP contains 26 entries (25 unique PDFs) because *Play Optimal Poker* occurs twice; two more PDFs come from PokerCoaching and one paper from arXiv. Each guide links the original PDF and page-faithful corpus.
 
 | Source | PDF pages | TOC entries | Study themes | Guide |
 |---|---:|---:|---:|---|
@@ -31,5 +31,6 @@ All 27 unique PDFs have a source-specific map: 353 main entries and 117 explaine
 | The Grinder's Manual | 1567 | 15 | 5 | [guide](grinders-manual.md) |
 | PokerCoaching Cash Game Cheat Sheet | 5 | 5 | 4 | [guide](pokercoaching-cash-game-cheat-sheet.md) |
 | PokerCoaching Tournament Cheat Sheet | 5 | 5 | 5 | [guide](pokercoaching-tournament-cheat-sheet.md) |
+| Near-Exact Computation of ICM Placement Probabilities (DE-ICM) — Wataru Inariba, 2026 | 26 | 9 | 5 | [guide](de-icm-inariba-2026.md) |
 
 Read the [English source corpus](../sources/index.md) for all page-level text and PDF links.

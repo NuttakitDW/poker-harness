@@ -12,9 +12,17 @@ def source_briefs() -> list[dict]:
     return [{"id": book["id"], "title": book["title"], "pages": book["pdf_pages"]} for book in manifest["books"]]
 
 BRIEFS = source_briefs()
+PAPERS = {"de-icm-inariba-2026"}  # research papers: section map instead of a book TOC
 
 # Each row: English heading | Thai heading | English lesson | Thai lesson | phrase to locate.
 DATA = {
+"de-icm-inariba-2026": [
+ ("ICM as a stack-weighted finishing order", "ICM คือการสุ่มลำดับจบตามสัดส่วนชิป", "ICM draws the winner with probability proportional to stack, then the next place among the rest, and so on (Equation 1); the paper notes this is the Plackett-Luce model. Placement probabilities form an n by n matrix, and every prize structure's equity is a linear sum over it.", "ICM สุ่มผู้ชนะตามสัดส่วนชิป แล้วสุ่มอันดับถัดไปจากคนที่เหลือต่อไปเรื่อย ๆ (สมการ 1) บทความชี้ว่านี่คือแบบจำลอง Plackett-Luce ความน่าจะเป็นของแต่ละอันดับเป็นเมทริกซ์ n คูณ n และ equity ของโครงสร้างรางวัลใดก็เป็นผลรวมเชิงเส้นจากเมทริกซ์นี้", "The Independent Chip Model"),
+ ("Exponential clocks and the integral formula", "นาฬิกาเอ็กซ์โพเนนเชียลและสูตรอินทิกรัล", "Give each player an exponential clock with rate equal to stack; sorting the clocks reproduces the ICM order (Lemma 2.1). Fixing one player's clock, the number of opponents ahead is Poisson-binomial, so each placement probability is one integral over time (Theorem 2.2).", "ให้ผู้เล่นแต่ละคนมีนาฬิกาเอ็กซ์โพเนนเชียลที่อัตราเท่ากับชิป เรียงเวลาแล้วได้ลำดับแบบ ICM (Lemma 2.1) เมื่อตรึงเวลาของผู้เล่นหนึ่งคน จำนวนคู่แข่งที่จบก่อนเป็นการแจกแจง Poisson-binomial ความน่าจะเป็นแต่ละอันดับจึงเป็นอินทิกรัลเดียวตามเวลา (Theorem 2.2)", "The exponential race"),
+ ("One fixed double-exponential grid", "กริด double-exponential ชุดเดียว", "Stacks are scaled so the largest is 1/20 and the substitution t = exp(x - e^-x) puts every integrand on one trapezoidal grid. Truncation errors have closed-form bounds and the step follows from field size, about 1/16 at 100 players and 1/64 at 4,000 (Table 2 and Section C).", "สเกลชิปให้กองใหญ่สุดเป็น 1/20 แล้วแปลง t = exp(x - e^-x) ให้อินทิกรัลทุกตัวใช้กริดสี่เหลี่ยมคางหมูชุดเดียว ความคลาดเคลื่อนจากการตัดปลายมีขอบเขตรูปปิด และขนาดก้าวกำหนดจากจำนวนผู้เล่น ราว 1/16 ที่ 100 คน และ 1/64 ที่ 4,000 คน (ตาราง 2 และภาคผนวก C)", "The exp-exp rule"),
+ ("Stable leave-one-out division", "การหารเอาผู้เล่นออกอย่างเสถียร", "One product of all players' factors is formed per node, then each player's own factor is divided out. The division runs forward when that player's q is at least 1/2 and backward otherwise (Theorem 4.1), with each step clamped to [0, C_r]; Table 4 shows single-direction division overflowing.", "แต่ละโหนดคูณตัวประกอบของทุกคนครั้งเดียว แล้วหารตัวประกอบของผู้เล่นแต่ละคนออก ทิศการหารเดินหน้าเมื่อ q ของผู้เล่นนั้นอย่างน้อย 1/2 และถอยหลังเมื่อน้อยกว่า (Theorem 4.1) พร้อม clamp ทุกก้าวให้อยู่ใน [0, C_r] ตาราง 4 แสดงว่าการหารทิศเดียวล้นค่า", "Stable division by a linear factor"),
+ ("Accuracy and speed", "ความแม่นยำและความเร็ว", "On 1,511 exactly solvable instances up to 4,000 players, the worst equity error is 4.0e-14 relative and the worst placement error 1.1e-14 absolute. The full matrix takes 0.2 s for 1,000 players on one core and 7.58 s for 4,000 (Table 5). Small probabilities are accurate only in absolute terms.", "บนโจทย์ที่มีคำตอบแม่นตรง 1,511 ชุด สูงสุด 4,000 คน equity คลาดเคลื่อนสัมพัทธ์ไม่เกิน 4.0e-14 และความน่าจะเป็นแต่ละอันดับคลาดเคลื่อนสัมบูรณ์ไม่เกิน 1.1e-14 เมทริกซ์เต็ม 1,000 คนใช้ 0.2 วินาทีบนคอร์เดียว และ 4,000 คนใช้ 7.58 วินาที (ตาราง 5) ความน่าจะเป็นที่เล็กมากแม่นแบบสัมบูรณ์เท่านั้น", "Validation suite and accuracy"),
+],
 "pokercoaching-cash-game-cheat-sheet": [
  ("Cash fundamentals", "พื้นฐานเกมเงินสด", "The sheet asks players to value bet when weaker hands call, consider opponent ranges, and adjust preflop play to effective stacks. Its 10:1 implied-odds cue for small pairs and 20:1 for suited connectors are author heuristics, not universal thresholds.", "ชีตชวนให้เบตเพื่อมูลค่าเมื่อมือที่อ่อนกว่าคอล พิจารณาช่วงไพ่คู่ต่อสู้ และปรับก่อนฟลอปตามเงินกองที่มีผล คำแนะนำ implied odds 10:1 สำหรับคู่เล็กและ 20:1 สำหรับไพ่เรียงดอกเป็นแนวทางผู้เขียน ไม่ใช่เกณฑ์สากล", "Cash Game"),
  ("Opponent adaptation", "ปรับตามคู่ต่อสู้", "The sheet separates common player types and asks for responses to their observed tendencies. Use observed ranges and action history before applying any broad label.", "ชีตแยกคู่ต่อสู้หลายประเภทและเสนอวิธีตอบโต้ตามพฤติกรรมที่สังเกตได้ ให้ดูช่วงไพ่และประวัติการเล่นก่อนใช้ป้ายเรียกกว้าง ๆ", "Against"),
@@ -191,6 +199,17 @@ DATA = {
 # Explicit primary chapter maps. Subtopics remain searchable in the page corpus;
 # these maps keep the parent TOC sequence visible in either language.
 OUTLINE = {
+"de-icm-inariba-2026": [
+ ("Abstract and introduction", "บทคัดย่อและบทนำ", 1),
+ ("Background and the integral representation", "พื้นฐานและสูตรอินทิกรัล", 3),
+ ("Quadrature on a fixed double-exponential grid", "การอินทิเกรตบนกริด double-exponential", 4),
+ ("Stable leave-one-out deconvolution", "การหารเอาผู้เล่นออกอย่างเสถียร", 8),
+ ("Numerical results", "ผลเชิงตัวเลข", 11),
+ ("Related work", "งานที่เกี่ยวข้อง", 14),
+ ("Discussion and conclusion", "อภิปรายและสรุป", 15),
+ ("Proofs", "บทพิสูจน์", 18),
+ ("Numerical settings and validation suite", "ค่าตั้งเชิงตัวเลขและชุดทดสอบ", 24),
+],
 "pokercoaching-cash-game-cheat-sheet": [
  ("Cash fundamentals", "พื้นฐานเกมเงินสด", 1),
  ("Player-type adjustments", "ปรับตามชนิดผู้เล่น", 2),
@@ -676,6 +695,7 @@ PAGE_OVERRIDES = {
     "poker-math-preflop-workbook": {10: 140, 11: 156, 17: 246},
 }
 ROW_PAGE_OVERRIDES = {
+    "de-icm-inariba-2026": {1: 3, 2: 3, 3: 5, 4: 9, 5: 11},
     "pokercoaching-cash-game-cheat-sheet": {1: 1, 2: 2, 3: 4, 4: 3},
     "pokercoaching-tournament-cheat-sheet": {1: 1, 2: 2, 3: 3, 4: 4, 5: 5},
     "mental-game-of-poker": {2: 66, 3: 169},
@@ -691,6 +711,7 @@ ROW_PAGE_OVERRIDES = {
     "super-system-2": {2: 105, 3: 165, 4: 224, 5: 265, 6: 296, 7: 331, 8: 415},
 }
 MULTI_PAGE_EVIDENCE = {
+    "de-icm-inariba-2026": {3: (5, 7, 24), 5: (11, 13)},
     "pokercoaching-cash-game-cheat-sheet": {4: (3, 5)},
     "thai-document-915850": {4: (1, 2, 5)},
     "pot-limit-omaha-jeff-hwang": {2: (59, 77), 3: (106, 125), 4: (201, 300)},
@@ -794,9 +815,11 @@ def write_guide(lang: str, brief: dict, rows: list, pages: list):
         lines += ["## เส้นทางอ่าน", "", "ใช้แผนที่หัวข้อด้านล่างเพื่อเลือกบท แล้วเปิดหน้า PDF จริงกับข้อความ Markdown ที่สกัดตามหน้า เลขหน้า PDF รวมปกและคำนำ จึงอาจต่างจากเลขหน้าที่พิมพ์ในเล่ม ข้อความสกัดอาจขาดภาพ สัญลักษณ์ดอก ตาราง หรือรูปแบบหน้า ตรวจ [บันทึกคุณภาพต้นฉบับ](../../EN/sources/source-quality.md) เพื่อดูข้อจำกัดการสกัด", ""]
     outline = OUTLINE.get(sid)
     if outline:
-        external = sid.startswith("pokercoaching-")
+        external = sid.startswith("pokercoaching-") or sid in PAPERS
         route_intro = (f"{len(outline)} physical page sections mapped; {len(rows)} study themes explained below. This short sheet has no table of contents."
+                       if external and lang == "EN" and sid not in PAPERS else f"{len(outline)} paper sections mapped to their physical PDF pages; {len(rows)} study themes explained below."
                        if external and lang == "EN" else f"จับคู่เนื้อหาตามหน้าจริง {len(outline)} หน้า และอธิบายแก่นเรื่อง {len(rows)} กลุ่ม ชีตสั้นนี้ไม่มีสารบัญ"
+                       if external and sid not in PAPERS else f"จับคู่หัวข้อของบทความกับหน้า PDF จริง {len(outline)} หัวข้อ และอธิบายแก่นเรื่อง {len(rows)} กลุ่มด้านล่าง"
                        if external else f"{len(outline)} major contents entries mapped; {len(rows)} study themes explained below. **TOC** links point to a detected contents entry; **reference only** means the chapter start is unverified."
                        if lang == "EN" else f"จับคู่หัวข้อสารบัญหลัก {len(outline)} รายการ และอธิบายแก่นเรื่อง {len(rows)} กลุ่มด้านล่าง **สารบัญ** คือหน้ารายการสารบัญที่พบจริง ส่วน **หน้าอ้างถึง** หมายถึงยังยืนยันหน้าเปิดบทไม่ได้")
         lines += ["## Original chapter route" if lang == "EN" else "## เส้นทางบทต้นฉบับ", "", route_intro, ""]
@@ -842,6 +865,8 @@ def write_guide(lang: str, brief: dict, rows: list, pages: list):
         lines += ["The PDF hyperlink annotations point to [online Google Sheet](https://splitsuit.pro/preflop-google-sheet) and [downloadable Excel version](https://splitsuit.pro/preflop-excel). These are external pointers; neither asset is included in the archive or verified here." if lang == "EN" else "ลิงก์ที่ฝังใน PDF ชี้ไปยัง [Google Sheet ออนไลน์](https://splitsuit.pro/preflop-google-sheet) และ [ไฟล์ Excel ดาวน์โหลด](https://splitsuit.pro/preflop-excel) ทั้งสองเป็นทรัพยากรภายนอก ไม่อยู่ใน ZIP และยังไม่ได้ตรวจเนื้อหา", ""]
     if sid == "pokercoaching-cash-game-cheat-sheet":
         lines += ["Assumed use: NLHE cash, with effective stack and rake supplied by the actual game. The source does not specify a rake schedule. All five pages are image-only; OCR text is unverified, so inspect the cited PDF for exact wording and card illustrations. Tournament payouts do not apply." if lang == "EN" else "การใช้: เกมเงินสด NLHE โดยต้องนำเงินกองที่มีผลและเรกจากเกมจริงมาใส่ ต้นฉบับไม่ระบุเรก ทั้งห้าหน้าเป็นภาพและ OCR ยังไม่ผ่านการตรวจทาน จึงควรดูคำและภาพไพ่จาก PDF ที่อ้างอิง โครงสร้างรางวัลทัวร์นาเมนต์ไม่เกี่ยวกับกรณีนี้", ""]
+    if sid == "de-icm-inariba-2026":
+        lines += ["Assumed use: computing ICM equities and finishing-place probabilities for large fields (the paper tests up to 4,000 players with stack ratios up to 10^9). It is a numerical method for the ICM itself, not a claim that ICM predicts real finishes, and it gives no strategy advice. The author works at GTO Wizard; an earlier version runs in its solver, but the paper's code is not released." if lang == "EN" else "การใช้: คำนวณ equity แบบ ICM และความน่าจะเป็นแต่ละอันดับสำหรับสนามใหญ่ (บทความทดสอบถึง 4,000 คน อัตราส่วนชิปถึง 10^9) เป็นวิธีเชิงตัวเลขสำหรับ ICM เอง ไม่ได้อ้างว่า ICM ทำนายผลจริงได้ และไม่มีคำแนะนำกลยุทธ์ ผู้เขียนทำงานที่ GTO Wizard ซึ่งใช้รุ่นก่อนหน้าในโซลเวอร์ แต่โค้ดในบทความไม่ได้เปิดเผย", ""]
     if sid == "pokercoaching-tournament-cheat-sheet":
         lines += ["Assumed use: NLHE tournament, with effective stack in BB from the actual hand. Antes, payout structure and ICM model are not given, so the sheet's advice is not a calibrated push/fold or prize-EV chart. Page 4 is an illustrated hand-ranking chart; page 5 uses a Cash Game heading on a resource list." if lang == "EN" else "การใช้: ทัวร์นาเมนต์ NLHE โดยใช้เงินกองที่มีผลเป็น BB จากมือจริง ต้นฉบับไม่ระบุ ante โครงสร้างรางวัล หรือแบบจำลอง ICM จึงไม่ใช่ตาราง shove/fold หรือ prize EV ที่คำนวณตามเงื่อนไข หน้า 4 เป็นภาพลำดับไพ่ และหน้า 5 ใช้หัว Cash Game บนหน้ารวมทรัพยากร", ""]
     out.write_text("\n".join(lines))
@@ -858,7 +883,7 @@ def main():
         out = ROOT / "harnesses" / lang / "guides/index.md"
         mapped = sum(len(OUTLINE[x["id"]]) for x in BRIEFS)
         themes = sum(len(DATA[x["id"]]) for x in BRIEFS)
-        lines = ["# Source-specific guides" if lang == "EN" else "# คู่มือแยกตามต้นฉบับ", "", (f"All {len(BRIEFS)} unique PDFs have a source-specific map: {mapped} main entries and {themes} explained study themes. The ZIP contains 26 entries (25 unique PDFs) because *Play Optimal Poker* occurs twice; two more PDFs come from PokerCoaching. Each guide links the original PDF and page-faithful corpus." if lang == "EN" else f"PDF ไม่ซ้ำทั้งหมด {len(BRIEFS)} เล่ม/เอกสาร จับคู่หัวข้อหลัก {mapped} รายการและอธิบายแก่นเรื่อง {themes} กลุ่ม ZIP มี 26 รายการ (ไม่ซ้ำ 25 ไฟล์) เพราะ *Play Optimal Poker* ซ้ำกัน อีก 2 ไฟล์มาจาก PokerCoaching ทุกคู่มือเชื่อม PDF ต้นฉบับและข้อความสกัดตามหน้า"), "", "| Source | PDF pages | TOC entries | Study themes | Guide |" if lang == "EN" else "| ต้นฉบับ | หน้า PDF | หัวข้อสารบัญ | กลุ่มคำอธิบาย | คู่มือ |", "|---|---:|---:|---:|---|"]
+        lines = ["# Source-specific guides" if lang == "EN" else "# คู่มือแยกตามต้นฉบับ", "", (f"All {len(BRIEFS)} unique PDFs have a source-specific map: {mapped} main entries and {themes} explained study themes. The ZIP contains 26 entries (25 unique PDFs) because *Play Optimal Poker* occurs twice; two more PDFs come from PokerCoaching and one paper from arXiv. Each guide links the original PDF and page-faithful corpus." if lang == "EN" else f"PDF ไม่ซ้ำทั้งหมด {len(BRIEFS)} เล่ม/เอกสาร จับคู่หัวข้อหลัก {mapped} รายการและอธิบายแก่นเรื่อง {themes} กลุ่ม ZIP มี 26 รายการ (ไม่ซ้ำ 25 ไฟล์) เพราะ *Play Optimal Poker* ซ้ำกัน อีก 2 ไฟล์มาจาก PokerCoaching และบทความ 1 ฉบับจาก arXiv ทุกคู่มือเชื่อม PDF ต้นฉบับและข้อความสกัดตามหน้า"), "", "| Source | PDF pages | TOC entries | Study themes | Guide |" if lang == "EN" else "| ต้นฉบับ | หน้า PDF | หัวข้อสารบัญ | กลุ่มคำอธิบาย | คู่มือ |", "|---|---:|---:|---:|---|"]
         for x in BRIEFS:
             sid = x["id"]
             title = "Short-stack NLHE cash-game notes (Thai)" if sid == "thai-document-915850" and lang == "EN" else ("บันทึกเกมเงินสด NLHE เงินกองสั้น" if sid == "thai-document-915850" else x["title"])

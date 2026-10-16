@@ -1,8 +1,8 @@
 {
   "archive": "Poker book-20260922T043840Z-1-001.zip",
   "archive_entries": 26,
-  "unique_sha256": 27,
-  "total_unique_pdf_pages": 5685,
+  "unique_sha256": 28,
+  "total_unique_pdf_pages": 5711,
   "books": [
     {
       "id": "thai-document-915850",
@@ -7802,6 +7802,56 @@
         "url": "https://jlsecrets.s3.amazonaws.com/cheatsheet/PokerCoaching_Tournament_Cheat_Sheet.pdf",
         "landing_url": "https://pokercoaching.com/downloadable-cheatsheets-thankyou",
         "retrieved_on": "2026-09-22"
+      }
+    },
+    {
+      "id": "de-icm-inariba-2026",
+      "title": "Near-Exact Computation of ICM Placement Probabilities (DE-ICM) — Wataru Inariba, 2026",
+      "source_pdf": "sources/pdf/arxiv/2610.06028v1-de-icm.pdf",
+      "sha256": "59987557361ea8c6dfc548f59fc9e8bc25e303a2202d3fc8fe9e85f9b6c40835",
+      "pdf_pages": 26,
+      "aliases": [],
+      "empty_text_pages": [],
+      "low_text_pages": [],
+      "embedded_image_pages": [],
+      "embedded_image_count": 0,
+      "embedded_url_pages": [
+        1,
+        16,
+        17,
+        18
+      ],
+      "ocr_attempted_pages": [],
+      "ocr_nonempty_pages": [],
+      "extraction_note": null,
+      "chunks": [
+        {
+          "start": 1,
+          "end": 8,
+          "path": "EN/sources/de-icm-inariba-2026/pages-0001-0008.md"
+        },
+        {
+          "start": 9,
+          "end": 16,
+          "path": "EN/sources/de-icm-inariba-2026/pages-0009-0016.md"
+        },
+        {
+          "start": 17,
+          "end": 24,
+          "path": "EN/sources/de-icm-inariba-2026/pages-0017-0024.md"
+        },
+        {
+          "start": 25,
+          "end": 26,
+          "path": "EN/sources/de-icm-inariba-2026/pages-0025-0026.md"
+        }
+      ],
+      "en_index": "EN/sources/de-icm-inariba-2026/index.md",
+      "th_index": "TH/sources/de-icm-inariba-2026/index.md",
+      "provenance": {
+        "url": "https://arxiv.org/pdf/2610.06028v1",
+        "landing_url": "https://arxiv.org/abs/2610.06028",
+        "retrieved_on": "2026-10-13"
       }
     }
   ]

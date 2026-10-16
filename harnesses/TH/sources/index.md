@@ -32,3 +32,4 @@
 - [The Grinder's Manual](grinders-manual/index.md) — 1567 หน้า PDF
 - [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md) — 5 หน้า PDF
 - [PokerCoaching Tournament Cheat Sheet](pokercoaching-tournament-cheat-sheet/index.md) — 5 หน้า PDF
+- [Near-Exact Computation of ICM Placement Probabilities (DE-ICM) — Wataru Inariba, 2026](de-icm-inariba-2026/index.md) — 26 หน้า PDF

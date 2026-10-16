@@ -32,3 +32,4 @@ Full text is organized by 1-based PDF page number. Each book links to its origin
 - [The Grinder's Manual](grinders-manual/index.md) — 1567 PDF pages
 - [PokerCoaching Cash Game Cheat Sheet](pokercoaching-cash-game-cheat-sheet/index.md) — 5 PDF pages
 - [PokerCoaching Tournament Cheat Sheet](pokercoaching-tournament-cheat-sheet/index.md) — 5 PDF pages
+- [Near-Exact Computation of ICM Placement Probabilities (DE-ICM) — Wataru Inariba, 2026](de-icm-inariba-2026/index.md) — 26 PDF pages

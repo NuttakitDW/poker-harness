@@ -31,8 +31,8 @@ Using cash-game call thresholds near payout jumps; following a shove chart witho
 
 ## Source pages
 
-[DN Workbook 9036, PDF p. 65](../sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-65) · [Gripsed MTT Strategy Guide, PDF p. 24](../sources/gripsed-mtt-strategy-guide/pages-0017-0024.md#pdf-page-24) · [DN Workbook 9036, PDF p. 68](../sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-68) · [PokerCoaching Tournament Cheat Sheet, PDF p. 1](../sources/pokercoaching-tournament-cheat-sheet/pages-0001-0005.md#pdf-page-1)
+[DN Workbook 9036, PDF p. 65](../sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-65) · [Gripsed MTT Strategy Guide, PDF p. 24](../sources/gripsed-mtt-strategy-guide/pages-0017-0024.md#pdf-page-24) · [DN Workbook 9036, PDF p. 68](../sources/dn-workbook-9036/pages-0065-0072.md#pdf-page-68) · [PokerCoaching Tournament Cheat Sheet, PDF p. 1](../sources/pokercoaching-tournament-cheat-sheet/pages-0001-0005.md#pdf-page-1) · [DE-ICM (Inariba 2026), PDF p. 3](../sources/de-icm-inariba-2026/pages-0001-0008.md#pdf-page-3)
 
 ## Related
 
-[Stack depth and pot geometry](./03-stack-depth-and-spr.md) · [Equity, pot odds and EV](./04-equity-pot-odds-ev.md) · [PokerCoaching tournament cheat sheet](../guides/pokercoaching-tournament-cheat-sheet.md) · [Mental game, performance and bankroll](./19-mental-game-and-bankroll.md) · [Topic index](../INDEX.md)
+[Stack depth and pot geometry](./03-stack-depth-and-spr.md) · [Equity, pot odds and EV](./04-equity-pot-odds-ev.md) · [PokerCoaching tournament cheat sheet](../guides/pokercoaching-tournament-cheat-sheet.md) · [DE-ICM paper guide (computing ICM for large fields)](../guides/de-icm-inariba-2026.md) · [Mental game, performance and bankroll](./19-mental-game-and-bankroll.md) · [Topic index](../INDEX.md)

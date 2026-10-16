@@ -1,6 +1,6 @@
 # คู่มือแยกตามต้นฉบับ
 
-PDF ไม่ซ้ำทั้งหมด 27 เล่ม/เอกสาร จับคู่หัวข้อหลัก 353 รายการและอธิบายแก่นเรื่อง 117 กลุ่ม ZIP มี 26 รายการ (ไม่ซ้ำ 25 ไฟล์) เพราะ *Play Optimal Poker* ซ้ำกัน อีก 2 ไฟล์มาจาก PokerCoaching ทุกคู่มือเชื่อม PDF ต้นฉบับและข้อความสกัดตามหน้า
+PDF ไม่ซ้ำทั้งหมด 28 เล่ม/เอกสาร จับคู่หัวข้อหลัก 362 รายการและอธิบายแก่นเรื่อง 122 กลุ่ม ZIP มี 26 รายการ (ไม่ซ้ำ 25 ไฟล์) เพราะ *Play Optimal Poker* ซ้ำกัน อีก 2 ไฟล์มาจาก PokerCoaching และบทความ 1 ฉบับจาก arXiv ทุกคู่มือเชื่อม PDF ต้นฉบับและข้อความสกัดตามหน้า
 
 | ต้นฉบับ | หน้า PDF | หัวข้อสารบัญ | กลุ่มคำอธิบาย | คู่มือ |
 |---|---:|---:|---:|---|
@@ -31,5 +31,6 @@ PDF ไม่ซ้ำทั้งหมด 27 เล่ม/เอกสาร �
 | The Grinder's Manual | 1567 | 15 | 5 | [อ่านคู่มือ](grinders-manual.md) |
 | PokerCoaching Cash Game Cheat Sheet | 5 | 5 | 4 | [อ่านคู่มือ](pokercoaching-cash-game-cheat-sheet.md) |
 | PokerCoaching Tournament Cheat Sheet | 5 | 5 | 5 | [อ่านคู่มือ](pokercoaching-tournament-cheat-sheet.md) |
+| Near-Exact Computation of ICM Placement Probabilities (DE-ICM) — Wataru Inariba, 2026 | 26 | 9 | 5 | [อ่านคู่มือ](de-icm-inariba-2026.md) |
 
 ดู [คลังต้นฉบับภาษาอังกฤษ](../../EN/sources/index.md) เพื่อค้นข้อความตามหน้าและลิงก์ PDF
