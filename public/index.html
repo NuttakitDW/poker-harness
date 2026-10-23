@@ -159,6 +159,11 @@
   .approved b em { font-style: normal; color: var(--red); }
   .approved small { display: block; margin-top: .25rem; font: 500 .75rem/1.35 var(--font-mono); color: var(--ash); }
   .approved .medal { width: 52px; height: auto; flex: none; filter: drop-shadow(0 2px 3px rgba(23, 21, 18, .35)); }
+  .approved small + small { margin-top: .15rem; }
+  .approved .emblems { display: flex; align-items: center; gap: .6rem; flex: none; }
+  /* gold-on-black artwork needs its own puppet-leather plate on the cream ticket */
+  .approved .tmtc { box-sizing: content-box; width: 66px; height: auto; flex: none; padding: 5px 6px; background: var(--puppet); border-radius: 8px; }
+  @media (max-width: 560px) { .approved { flex-wrap: wrap; } .approved .who { flex: 1 1 12rem; } .approved .emblems { margin-left: 38px; } }
 
   /* ================= app frame: messages scroll, the composer stays docked at the bottom ================= */
   html, body { height: 100%; }
@@ -366,8 +371,11 @@
           <div>
             <a class="approved rise" href="https://www.facebook.com/profile.php?id=61566466530839" target="_blank" rel="noopener">
               <img class="avatar" src="/static/nutee-avatar.png" alt="NUTEE" width="159" height="308">
-              <span class="who"><b>Approved by <em>NUTEE</em></b><small>3rd place · #73 PLO 6-max · Japan Open Poker Tour</small></span>
-              <img class="medal" src="/static/jopt-medal.png" alt="Japan Open Poker Tour bronze medal" width="200" height="193">
+              <span class="who"><b>Approved by <em>NUTEE</em></b><small>3rd place · #73 PLO 6-max · Japan Open Poker Tour</small><small>9th place · PLO Head Hunter Bounty · TMTC 2026</small></span>
+              <span class="emblems">
+                <img class="medal" src="/static/jopt-medal.png" alt="Japan Open Poker Tour bronze medal" width="200" height="193">
+                <img class="tmtc" src="/static/tmtc-logo.png" alt="TMT Championship" width="480" height="209">
+              </span>
             </a>
             <div class="lockup rise d1">
               <span class="screen-mini"><img src="/static/tamkwai-logo.png" alt="" width="68" height="68"></span>
