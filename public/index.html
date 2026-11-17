@@ -144,26 +144,53 @@
   .screen img { display: block; width: 100%; height: 100%; object-fit: contain; padding: 6%; }
   .lockup { display: none; }
 
-  /* endorsement ticket: the lamp cream of the 3rd-place card, cut like the CTA */
+  /* honours ticket: NUTEE stands beside a ledger of live results, best finish first.
+     Each finish is a poker chip in its medal colour; every venue mark sits on the same leather plate,
+     so a new result is one more <li>, never a new layout. */
   .approved {
-    display: flex; align-items: center; gap: .9rem; width: fit-content; max-width: 100%;
-    margin-bottom: 1.5rem; padding: .55rem 1rem .55rem .7rem;
+    --gold: #C9A227; --silver: #8E96A3;  /* chip edge colours only, never text */
+    --chip: 2.2rem;
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "av head" "av list";
+    column-gap: .85rem; width: min(100%, 31rem); margin-bottom: 1.25rem; padding: .6rem .9rem .3rem .75rem;
     background: var(--lamp); color: var(--ink); border: 1px solid var(--puppet-edge); border-radius: var(--cut-soft);
     box-shadow: 0 0 0 6px rgba(246, 242, 230, .05), 0 0 40px rgba(255, 214, 150, .10);
     text-decoration: none; transition: transform .2s var(--ease-out);
   }
   .approved:hover { transform: translateY(-1px); }
-  .approved .avatar { width: 30px; height: auto; flex: none; image-rendering: pixelated; }
-  .approved .who { min-width: 0; }
-  .approved b { display: block; font: 700 1.125rem/1.15 var(--font-display); }
-  .approved b em { font-style: normal; color: var(--red); }
-  .approved small { display: block; margin-top: .25rem; font: 500 .75rem/1.35 var(--font-mono); color: var(--ash); }
-  .approved .medal { width: 52px; height: auto; flex: none; filter: drop-shadow(0 2px 3px rgba(23, 21, 18, .35)); }
-  .approved small + small { margin-top: .15rem; }
-  .approved .emblems { display: flex; align-items: center; gap: .6rem; flex: none; }
-  /* gold-on-black artwork needs its own puppet-leather plate on the cream ticket */
-  .approved .tmtc { box-sizing: content-box; width: 66px; height: auto; flex: none; padding: 5px 6px; background: var(--puppet); border-radius: 8px; }
-  @media (max-width: 560px) { .approved { flex-wrap: wrap; } .approved .who { flex: 1 1 12rem; } .approved .emblems { margin-left: 38px; } }
+  .approved .avatar { grid-area: av; align-self: end; width: 46px; height: auto; margin-bottom: .35rem; image-rendering: pixelated; }
+  .approved-head {
+    grid-area: head; display: flex; align-items: center; padding-bottom: .45rem;
+    background: radial-gradient(circle, var(--bronze) 1.1px, transparent 1.4px) 0 100% / 8px 3px repeat-x;  /* stipple rule */
+  }
+  .approved-head b { display: block; font: 700 1.125rem/1.15 var(--font-display); }
+  .approved-head em { font-style: normal; color: var(--red); }
+  .honours { grid-area: list; list-style: none; margin: 0; padding: 0; }
+  .honours li { display: grid; grid-template-columns: var(--chip) minmax(0, 1fr) 4.75rem; align-items: center; gap: .7rem; padding: .32rem 0; }
+  .honours li + li { border-top: 1px dashed var(--edge); }
+  .honours .event b { display: block; font: 600 .9375rem/1.15 var(--font-display); }
+  .honours .event small { display: block; margin-top: .1rem; font: 500 .75rem/1.3 var(--font-mono); color: var(--ash); }
+  /* the place as a chip: cream centre carries the number, tier ring, eight edge spots */
+  .place {
+    --tier: var(--blue);
+    display: block; width: var(--chip); height: var(--chip); border-radius: 50%; text-align: center;
+    background:
+      radial-gradient(circle closest-side, var(--lamp) 70%, var(--tier) 0 79%, transparent 0),
+      repeating-conic-gradient(var(--lamp) 0 14deg, var(--tier) 0 45deg);
+    box-shadow: inset 0 0 0 1px rgba(23, 21, 18, .3), 0 1px 3px rgba(23, 21, 18, .3);
+    font: 600 .875rem/var(--chip) var(--font-mono); color: var(--ink);
+  }
+  .place sup { font-size: .55rem; line-height: 0; vertical-align: .32rem; }
+  .place--1 { --tier: var(--gold); }
+  .place--2 { --tier: var(--silver); }
+  .place--3 { --tier: var(--bronze); }
+  /* gold-on-black venue artwork needs its own puppet-leather plate on the cream ticket */
+  .honours .plate { display: flex; align-items: center; justify-content: center; height: 2.1rem; padding: 4px 7px; background: var(--puppet); border-radius: 6px; }
+  .honours .plate img { display: block; max-width: 100%; max-height: calc(2.1rem - 8px); width: auto; height: auto; }
+  @media (max-width: 560px) {
+    .approved { grid-template-areas: "av head" "list list"; column-gap: .6rem; }
+    .approved .avatar { width: 22px; margin-bottom: .45rem; }
+    .honours li { grid-template-columns: var(--chip) minmax(0, 1fr) 4.25rem; gap: .6rem; }
+  }
 
   /* ================= app frame: messages scroll, the composer stays docked at the bottom ================= */
   html, body { height: 100%; }
@@ -319,6 +346,12 @@
     .rise { animation: rise .7s var(--ease-out) backwards; }
     .d1 { animation-delay: .08s; } .d2 { animation-delay: .18s; } .d3 { animation-delay: .28s; } .d4 { animation-delay: .38s; }
     @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+    /* the ledger fills in one result at a time, after the ticket lands */
+    .honours li { animation: rise .6s var(--ease-out) backwards; }
+    .honours li:nth-child(1) { animation-delay: .2s; }
+    .honours li:nth-child(2) { animation-delay: .3s; }
+    .honours li:nth-child(3) { animation-delay: .4s; }
+    .honours li:nth-child(n+4) { animation-delay: .5s; }
     /* a puppet only turns sharp when it touches the screen */
     .screen img, .chart img { animation: focus-in 1.1s var(--ease-out) backwards; }
     .screen img { animation-delay: .3s; }
@@ -371,11 +404,24 @@
           <div>
             <a class="approved rise" href="https://www.facebook.com/profile.php?id=61566466530839" target="_blank" rel="noopener">
               <img class="avatar" src="/static/nutee-avatar.png" alt="NUTEE" width="159" height="308">
-              <span class="who"><b>Approved by <em>NUTEE</em></b><small>3rd place · #73 PLO 6-max · Japan Open Poker Tour</small><small>9th place · PLO Head Hunter Bounty · TMTC 2026</small></span>
-              <span class="emblems">
-                <img class="medal" src="/static/jopt-medal.png" alt="Japan Open Poker Tour bronze medal" width="200" height="193">
-                <img class="tmtc" src="/static/tmtc-logo.png" alt="TMT Championship" width="480" height="209">
-              </span>
+              <span class="approved-head"><b>Approved by <em>NUTEE</em></b></span>
+              <ol class="honours" aria-label="NUTEE live results">
+                <li>
+                  <span class="place place--2">2<sup>nd</sup></span>
+                  <span class="event"><b>Omaha 5 Pot Limit</b><small>56 entries · Casino Helsinki</small></span>
+                  <span class="plate"><img src="/static/casino-helsinki-logo.png" alt="Casino Helsinki" width="480" height="138"></span>
+                </li>
+                <li>
+                  <span class="place place--3">3<sup>rd</sup></span>
+                  <span class="event"><b>#73 PLO 6-max</b><small>Japan Open Poker Tour</small></span>
+                  <span class="plate"><img src="/static/jopt-medal.png" alt="Japan Open Poker Tour bronze medal" width="200" height="193"></span>
+                </li>
+                <li>
+                  <span class="place">9<sup>th</sup></span>
+                  <span class="event"><b>PLO Head Hunter Bounty</b><small>TMTC 2026</small></span>
+                  <span class="plate"><img src="/static/tmtc-logo.png" alt="TMT Championship" width="480" height="209"></span>
+                </li>
+              </ol>
             </a>
             <div class="lockup rise d1">
               <span class="screen-mini"><img src="/static/tamkwai-logo.png" alt="" width="68" height="68"></span>
